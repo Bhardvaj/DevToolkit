@@ -67,5 +67,5 @@ def test_audit_docker_project(tmp_path):
     report = auditor.audit_project(tmp_path)
     assert "Docker" in report.detected_types
     check_names = {c.name for c in report.checks}
-    assert "Docker Engine" in check_names
+    assert "Docker CLI" in check_names
 

@@ -293,7 +293,7 @@ class ProjectAuditor:
         if not docker_tool:
             checks.append(
                 RequirementCheck(
-                    name="Docker Engine",
+                    name="Docker CLI",
                     required="Installed",
                     detected="Missing",
                     satisfied=False,
@@ -302,6 +302,16 @@ class ProjectAuditor:
             )
             actions.append("Install Docker Desktop (https://docker.com).")
             return
+
+        checks.append(
+            RequirementCheck(
+                name="Docker CLI",
+                required="Installed",
+                detected=f"v{docker_tool.version or 'detected'}",
+                satisfied=True,
+                message="Docker CLI is installed.",
+            )
+        )
 
         daemon_running = docker_tool.metadata.get("daemon_running", False)
         checks.append(
