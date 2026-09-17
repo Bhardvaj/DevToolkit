@@ -99,7 +99,7 @@ def test_serve_dashboard():
     assert "Environment" in response
     assert "Port Manager" in response
     assert "Project Auditor" in response
-    assert "Watcher Active" in response
+    assert "Environment Watcher" in response
 
 
 def test_apply_fix_handler():

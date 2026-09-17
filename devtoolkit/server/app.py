@@ -279,7 +279,7 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
   <div class="flex flex-1 overflow-hidden">
 
     <!-- LEFT FIXED VERTICAL SIDEBAR -->
-    <aside class="w-56 sm:w-64 bg-sidebarBg border-r border-slate-800/80 flex flex-col justify-between p-3 sm:p-3.5 select-none flex-shrink-0 z-20">
+    <aside class="w-56 sm:w-64 bg-sidebarBg border-r border-slate-800/80 flex flex-col p-3 sm:p-3.5 select-none flex-shrink-0 z-20">
       <div class="space-y-4">
         <!-- Brand Header -->
         <div class="flex items-center gap-3 px-1.5 pt-1">
@@ -296,12 +296,11 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
         </div>
 
         <!-- Host Pill -->
-        <div class="bg-[#0e1526] border border-slate-800/90 rounded-lg px-3 py-1.5 flex items-center justify-between text-xs min-w-0">
-          <span class="flex items-center gap-1.5 text-slate-300 font-medium text-[11px] truncate">
+        <div class="bg-[#0e1526] border border-slate-800/90 rounded-lg px-3 py-1.5 flex items-center text-xs min-w-0">
+          <span class="flex items-center gap-2 text-slate-300 font-medium text-[11px] truncate">
             <span class="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_6px_#34d399] flex-shrink-0"></span>
             Host: <span id="side-host-name" class="text-white font-semibold truncate">DEXTER-2</span>
           </span>
-          <span class="text-emerald-400 text-[11px] font-mono font-medium flex-shrink-0 ml-1.5" id="side-uptime">Up 1d 1h</span>
         </div>
 
         <!-- Navigation Group: WORKSPACE HUB -->
@@ -330,13 +329,6 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
                 <span class="truncate">Project Auditor</span>
               </div>
             </button>
-
-            <button onclick="switchTab('ports'); setPortsDevToggle(false);" id="nav-btn-process" class="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition border nav-inactive">
-              <div class="flex items-center gap-2.5 truncate">
-                <i class="fa-solid fa-chart-line flex-shrink-0"></i>
-                <span class="truncate">Process Monitor</span>
-              </div>
-            </button>
           </div>
         </div>
 
@@ -350,27 +342,6 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
                 <span class="truncate">Settings</span>
               </div>
             </button>
-          </div>
-        </div>
-      </div>
-
-      <!-- Sidebar Footer: Watcher + Git Profile -->
-      <div class="space-y-2 pt-2 border-t border-slate-800/80">
-        <div class="flex items-center justify-between text-[11px] text-slate-400 px-1">
-          <span class="flex items-center gap-1.5 text-slate-300 font-medium truncate">
-            <span class="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_6px_#34d399] animate-pulse flex-shrink-0"></span>
-            Watcher Active
-          </span>
-          <span class="font-mono text-slate-500 text-[10px] flex-shrink-0" id="side-path-badge">v0.2.0 / 25 PATH</span>
-        </div>
-
-        <div class="bg-[#0e1526] border border-slate-800/80 rounded-xl p-2.5 flex items-center gap-3">
-          <div id="side-avatar-box" class="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-600 to-indigo-700 text-white font-bold text-xs flex items-center justify-center flex-shrink-0 shadow-sm">
-            B
-          </div>
-          <div class="truncate flex-1 min-w-0">
-            <div class="font-bold text-xs text-white truncate" id="side-git-user">Bhardvaj</div>
-            <div class="text-[10px] text-slate-400 truncate font-mono">user.name (Git)</div>
           </div>
         </div>
       </div>
@@ -393,7 +364,7 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
 
         <!-- Global Search Bar & Actions -->
         <div class="flex items-center gap-2 sm:gap-3 flex-shrink-0">
-          <div class="relative w-36 sm:w-64 md:w-80 lg:w-96">
+          <div class="relative w-36 sm:w-64 md:w-80 lg:w-96" id="top-search-wrapper">
             <i class="fa-solid fa-search absolute left-3 top-2.5 text-xs text-slate-400"></i>
             <input type="text" id="global-search-input" oninput="onSearchChange()" placeholder="Search SDK, runtime, path..." class="w-full pl-8 pr-14 sm:pr-16 py-1.5 bg-[#070a13] border border-slate-800/90 rounded-lg text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 transition font-sans" />
             <kbd class="absolute right-2 top-2 px-1.5 py-0.5 rounded bg-slate-800/80 border border-slate-700/80 text-[10px] font-mono text-slate-400 hidden sm:inline">Ctrl+K</kbd>
@@ -622,6 +593,10 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
                 <input type="checkbox" id="ports-dev-toggle" onchange="fetchPorts()" class="rounded border-slate-600 text-blue-600 focus:ring-blue-500" />
                 <span>Developer Ports Only</span>
               </label>
+              <button onclick="fetchPorts()" class="px-3 py-1.5 bg-[#0e1526] hover:bg-[#131d36] text-slate-300 hover:text-white border border-slate-700/80 rounded-lg text-xs font-semibold transition flex items-center gap-1.5 shadow-sm">
+                <i class="fa-solid fa-rotate text-xs"></i>
+                <span>Refresh</span>
+              </button>
               <span class="text-xs text-slate-500 hidden sm:inline">• Highlights 3000, 5173, 8080, 27017, etc.</span>
             </div>
             <div class="relative w-full sm:w-72">
@@ -821,10 +796,6 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
             <kbd class="px-1.5 py-0.2 rounded bg-slate-800 border border-slate-700 text-[10px] font-mono text-slate-300">R</kbd>
             <span class="hidden sm:inline">Rescan</span>
           </button>
-          <button onclick="fixAllSafe()" class="hover:text-white transition flex items-center gap-1">
-            <kbd class="px-1.5 py-0.2 rounded bg-slate-800 border border-slate-700 text-[10px] font-mono text-slate-300">F</kbd>
-            <span class="hidden sm:inline">Fix All Safe</span>
-          </button>
           <button onclick="toggleHelpModal()" class="hover:text-white transition flex items-center gap-1">
             <kbd class="px-1.5 py-0.2 rounded bg-slate-800 border border-slate-700 text-[10px] font-mono text-slate-300">?</kbd>
             <span>Help</span>
@@ -999,23 +970,6 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
       }
     }
 
-    function fixAllSafe() {
-      const fixable = [];
-      allReports.forEach(r => {
-        (r.diagnostics || []).forEach(d => {
-          if (d.suggested_fix && d.suggested_fix.toLowerCase().startsWith('setx ')) {
-            fixable.push(d.suggested_fix);
-          }
-        });
-      });
-      if (fixable.length === 0) {
-        showToast('No auto-fixable environment variables found.');
-        return;
-      }
-      fixable.forEach(cmd => applyFix(cmd));
-      showToast(`Applied ${fixable.length} environment fix(es)!`);
-    }
-
     // Tab Switching
     function switchTab(tab) {
       activeTab = tab;
@@ -1034,6 +988,17 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
           view.classList.add('hidden');
         }
       });
+
+      // Show/hide top search bar & rescan button based on active tab (only visible on Environment tab)
+      const searchWrapper = document.getElementById('top-search-wrapper');
+      const rescanBtn = document.getElementById('rescan-btn');
+      if (tab === 'env') {
+        if (searchWrapper) searchWrapper.classList.remove('hidden');
+        if (rescanBtn) rescanBtn.classList.remove('hidden');
+      } else {
+        if (searchWrapper) searchWrapper.classList.add('hidden');
+        if (rescanBtn) rescanBtn.classList.add('hidden');
+      }
 
       // Update Top Breadcrumb
       const bc = document.getElementById('top-breadcrumb');
@@ -1387,20 +1352,17 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
         // Update system info
         const sys = data.system;
         if (sys) {
-          document.getElementById('side-os-info').innerText = `${sys.os_name} ${sys.os_release} (${sys.arch})`;
-          document.getElementById('side-host-name').innerText = sys.hostname || 'LOCAL';
-          if (sys.uptime) document.getElementById('side-uptime').innerText = sys.uptime;
+          const sideOs = document.getElementById('side-os-info');
+          if (sideOs) sideOs.innerText = `${sys.os_name} ${sys.os_release} (${sys.arch})`;
+          const sideHost = document.getElementById('side-host-name');
+          if (sideHost) sideHost.innerText = sys.hostname || 'LOCAL';
           if (sys.path_count) {
-            document.getElementById('side-path-badge').innerText = `v0.2.0 / ${sys.path_count} PATH`;
-            document.getElementById('status-path-count').innerText = sys.path_count;
+            const statusPath = document.getElementById('status-path-count');
+            if (statusPath) statusPath.innerText = sys.path_count;
           }
           if (sys.ram_footprint_mb) {
-            document.getElementById('status-ram-count').innerText = `${sys.ram_footprint_mb} MB`;
-          }
-          if (sys.git_user_name) {
-            document.getElementById('side-git-user').innerText = sys.git_user_name;
-            const initials = sys.git_user_name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
-            document.getElementById('side-avatar-box').innerText = initials || 'D';
+            const statusRam = document.getElementById('status-ram-count');
+            if (statusRam) statusRam.innerText = `${sys.ram_footprint_mb} MB`;
           }
         }
 
@@ -1742,8 +1704,13 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
 
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
         e.preventDefault();
-        const searchInput = document.getElementById('global-search-input');
-        if (searchInput) searchInput.focus();
+        if (activeTab === 'env') {
+          const searchInput = document.getElementById('global-search-input');
+          if (searchInput) searchInput.focus();
+        } else if (activeTab === 'ports') {
+          const portsSearch = document.getElementById('ports-search-input');
+          if (portsSearch) portsSearch.focus();
+        }
         return;
       }
 
@@ -1751,9 +1718,6 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
         if (e.key.toLowerCase() === 'r') {
           e.preventDefault();
           refreshActiveTab();
-        } else if (e.key.toLowerCase() === 'f') {
-          e.preventDefault();
-          fixAllSafe();
         } else if (e.key === '?') {
           e.preventDefault();
           toggleHelpModal();
