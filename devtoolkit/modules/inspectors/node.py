@@ -79,4 +79,3 @@ class NodeInspector(BaseInspector):
             diagnostics=diagnostics,
             metadata={"prefix": str(node_bin.parent)},
         )
-

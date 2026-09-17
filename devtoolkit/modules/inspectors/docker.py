@@ -97,4 +97,3 @@ class DockerInspector(BaseInspector):
             diagnostics=diagnostics,
             metadata={"daemon_running": daemon_running},
         )
-

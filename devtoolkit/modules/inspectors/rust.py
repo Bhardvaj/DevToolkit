@@ -84,4 +84,3 @@ class RustInspector(BaseInspector):
             companions=companions,
             diagnostics=diagnostics,
         )
-

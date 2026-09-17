@@ -90,4 +90,3 @@ class GitInspector(BaseInspector):
             diagnostics=diagnostics,
             metadata={"user.name": user_name, "user.email": user_email},
         )
-

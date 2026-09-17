@@ -39,24 +39,12 @@ This document is continuously updated to reflect current project status, complet
   - [x] Modern, responsive dark-mode UI with live search, category pills, badges, 1-click copy path, open folder in Explorer, and refresh audit
   - [x] Desktop window launcher (PyWebView Edge WebView2) and local browser dashboard (`devtoolkit ui --web`)
 - [x] Step 6: Automated Test Suite:
-  - [x] 16 automated tests passing in `tests/` (`test_runner.py`, `test_registry.py`, `test_inspectors.py`, `test_server.py`)
-- [x] Step 7: Push Phase 1 codebase to GitHub.
-- [x] Step 8: Multi-drive SDK heuristics & Android Studio IDE detection:
-  - [x] Detected Android SDK at `D:\Dev\android_sdk` (adb 37.0.0, build-tools 35/36/37, platforms android-36/36.1)
-  - [x] Detected Android Studio at `D:\Dev\android_studio` (studio64.exe, version 2026.1.1)
-  - [x] Detected bundled OpenJDK 21 & javac in Android Studio JBR (`D:\Dev\android_studio\jbr`)
-  - [x] Health Doctor warnings generated for unset `ANDROID_HOME`, `JAVA_HOME`, and PATH exposure
+  - [x] 13 automated tests passing in `tests/` (`test_runner.py`, `test_registry.py`, `test_inspectors.py`, `test_server.py`)
+- [ ] Step 7: Push Phase 1 codebase to GitHub.
 
 ---
 
 ## Session Notes & Environment Verification
 - Machine: Windows 11 (AMD64), Host `DEXTER-2`.
-- Active runtimes detected:
-  - Python 3.14.5
-  - Node.js 24.20.0 (via NVM shim)
-  - Flutter 3.44.2 (with Dart 3.12.2)
-  - Git 2.54.0 (with gh 2.94.0)
-  - Android Studio 2026.1.1 (`D:\Dev\android_studio`)
-  - Android SDK 37.0.0 (`D:\Dev\android_sdk`)
-  - OpenJDK 21.0.10 & javac (`D:\Dev\android_studio\jbr`)
+- Active runtimes detected: Python 3.14.5, Node.js 24.20.0 (via NVM shim), Flutter 3.44.2 (with Dart 3.12.2), Git 2.54.0 (with gh 2.94.0).
 - Windows console UTF-8 stream reconfigured in CLI and formatters to prevent codepage 1252 character map issues.

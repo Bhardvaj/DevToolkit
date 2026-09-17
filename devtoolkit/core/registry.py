@@ -115,4 +115,3 @@ class PluginRegistry:
             not_found_count=not_found_count,
             reports=reports,
         )
-

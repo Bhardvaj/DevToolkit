@@ -64,4 +64,3 @@ class AuditSummary(BaseModel):
     error_count: int = 0
     not_found_count: int = 0
     reports: List[ToolReport] = Field(default_factory=list)
-

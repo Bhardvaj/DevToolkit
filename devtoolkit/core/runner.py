@@ -157,4 +157,3 @@ class SafeRunner:
             hostname=platform.node(),
             python_version=platform.python_version(),
         )
-

@@ -1,2 +1,1 @@
 """DevToolkit CLI module."""
-

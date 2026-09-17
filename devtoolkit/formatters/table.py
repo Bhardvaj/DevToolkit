@@ -115,4 +115,3 @@ def render_doctor(summary: AuditSummary) -> None:
 
     if not issues_found:
         console.print("\n[bold green]+ All inspected tools and environment variables are in good health![/bold green]\n")
-
