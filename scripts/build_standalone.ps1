@@ -94,6 +94,10 @@ $EntryScript = Join-Path $WorkspaceRoot "devtoolkit\cli\main.py"
     --hidden-import "devtoolkit.core" `
     --hidden-import "devtoolkit.modules.inspectors" `
     --hidden-import "devtoolkit.modules.utilities" `
+    --hidden-import "webview" `
+    --hidden-import "webview.platforms" `
+    --hidden-import "webview.platforms.winforms" `
+    --hidden-import "webview.platforms.edgechromium" `
     $EntryScript
 
 if ($LASTEXITCODE -eq 0) {

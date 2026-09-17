@@ -52,6 +52,11 @@ class SystemInfo(BaseModel):
     arch: str
     hostname: str
     python_version: str
+    uptime: Optional[str] = None
+    path_count: Optional[int] = None
+    git_user_name: Optional[str] = None
+    git_user_email: Optional[str] = None
+    ram_footprint_mb: Optional[int] = None
 
 
 class AuditSummary(BaseModel):

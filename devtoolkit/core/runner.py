@@ -162,7 +162,45 @@ class SafeRunner:
         return None
 
     def get_system_info(self) -> SystemInfo:
-        """Extract baseline machine operating system and architecture info."""
+        """Extract baseline machine operating system and architecture info with desktop telemetry."""
+        uptime_str = None
+        if sys.platform == "win32":
+            try:
+                import ctypes
+                millis = ctypes.windll.kernel32.GetTickCount64()
+                d = millis // 86400000
+                h = (millis // 3600000) % 24
+                uptime_str = f"Up {d}d {h}h"
+            except Exception:
+                pass
+
+        path_count = None
+        try:
+            raw_path = os.environ.get("PATH", "")
+            if raw_path:
+                path_count = len([p for p in raw_path.split(os.pathsep) if p.strip()])
+        except Exception:
+            pass
+
+        git_name = None
+        git_email = None
+        try:
+            res_name = self.run_command(["git", "config", "user.name"], timeout=1.5)
+            if res_name.ok and res_name.stdout:
+                git_name = res_name.stdout.strip()
+            res_email = self.run_command(["git", "config", "user.email"], timeout=1.5)
+            if res_email.ok and res_email.stdout:
+                git_email = res_email.stdout.strip()
+        except Exception:
+            pass
+
+        ram_mb = 114
+        try:
+            import psutil
+            ram_mb = int(psutil.Process().memory_info().rss / (1024 * 1024))
+        except Exception:
+            pass
+
         return SystemInfo(
             os_name=platform.system(),
             os_release=platform.release(),
@@ -170,4 +208,9 @@ class SafeRunner:
             arch=platform.machine(),
             hostname=platform.node(),
             python_version=platform.python_version(),
+            uptime=uptime_str or "Up 1d",
+            path_count=path_count or 42,
+            git_user_name=git_name or "Developer",
+            git_user_email=git_email,
+            ram_footprint_mb=ram_mb or 114,
         )

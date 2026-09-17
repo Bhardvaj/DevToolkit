@@ -27,6 +27,7 @@ def test_server_routes_registered():
     assert "/api/config" in route_paths
     assert "/api/config/search-paths" in route_paths
     assert "/api/action/open-folder" in route_paths
+    assert "/api/action/apply-fix" in route_paths
     assert "/api/ports" in route_paths
     assert "/api/ports/kill" in route_paths
     assert "/api/project/audit" in route_paths
@@ -94,7 +95,17 @@ def test_config_handlers(tmp_path, monkeypatch):
 def test_serve_dashboard():
     response = serve_dashboard()
     assert "DevToolkit" in response
-    assert "glass-card" in response
+    assert "WORKSPACE HUB" in response
+    assert "Environment" in response
     assert "Port Manager" in response
     assert "Project Auditor" in response
+    assert "Watcher Active" in response
+
+
+def test_apply_fix_handler():
+    from devtoolkit.server.app import post_apply_fix, ApplyFixRequest
+
+    res = post_apply_fix(ApplyFixRequest(command="npm install -g example-cli"))
+    assert res["status"] in ("info", "ok")
+    assert "npm install" in res["message"]
 

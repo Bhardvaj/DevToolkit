@@ -4,9 +4,9 @@ This document is continuously updated to reflect current project status, complet
 
 ---
 
-## Current Status: Phase 2 Complete (Utilities, Project Auditor, 4-Tab UI, and CI Packaging Pipeline)
-- **Active Task**: Phase 2 fully verified and signed off.
-- **Architecture**: Decoupled Engine + 4-Layer Generalized Discovery + 4-Tab Hybrid UI + Port Manager + Project Auditor + Standalone CI Pipeline.
+## Current Status: Phase 3 Complete (Course Correction, Vertical Desktop UI, Dual-Mode .exe, Master Docs)
+- **Active Task**: Phase 3 complete and fully verified.
+- **Architecture**: Decoupled Engine + 4-Layer Generalized Discovery + Vertical Sidebar Desktop UI + Port Manager + Project Auditor + Dual-Mode Executable Entrypoint + Full Documentation Suite.
 - **Repository**: Synced on GitHub at [https://github.com/Bhardvaj/DevToolkit](https://github.com/Bhardvaj/DevToolkit).
 
 ---
@@ -17,54 +17,45 @@ This document is continuously updated to reflect current project status, complet
 ---
 
 ## Milestone Checklist: Phase 2 (Completed)
-- [x] Step 2.1: Port Manager & Killer (`devtoolkit/modules/utilities/ports.py`):
-  - [x] Native Windows socket discovery via `netstat -ano -p tcp` and `tasklist /FO CSV`.
-  - [x] Developer port highlighting (3000, 5173, 8080, 27017, etc.).
-  - [x] Hard-coded protection for critical Windows OS processes (`System`, `svchost.exe`, `csrss.exe`, etc.).
-  - [x] Safe termination via `taskkill /PID <pid> /F`.
-  - [x] Unit tests in `tests/test_ports.py`.
-- [x] Step 2.2: Project Workstation Auditor (`devtoolkit/modules/utilities/project_auditor.py`):
-  - [x] Manifest inspection for Node (`package.json`), Python (`pyproject.toml`), Flutter (`pubspec.yaml`), Android (`build.gradle`), Docker (`Dockerfile`), Rust (`Cargo.toml`), Go (`go.mod`).
-  - [x] Workstation prerequisite matching against live environment audit.
-  - [x] Actionable remediation command suggestions with 1-click copy.
-  - [x] Unit tests in `tests/test_project_auditor.py`.
-- [x] Step 2.3: CLI Integration (`devtoolkit/cli/main.py`):
-  - [x] `devtoolkit ports` (lists sockets, `--dev-only` flag, `--kill <port>` quick kill).
-  - [x] `devtoolkit ports kill <port>` (safely terminates process on port).
-  - [x] `devtoolkit project [path]` (runs repository readiness audit).
-- [x] Step 2.4: Modern 4-Tab Web & Desktop Dashboard (`devtoolkit/server/app.py`):
-  - [x] Tab 1: **Environment Auditor** (Stats, filters, cards, paths, copy/open actions).
-  - [x] Tab 2: **Port Manager** (Interactive table, dev port tags, kill confirmation modal with system process warning).
-  - [x] Tab 3: **Project Auditor** (Path selector, scan button, readiness badge, checklist table, copy command buttons).
-  - [x] Tab 4: **Settings** (Layer-4 monitored search roots, preset suggestions, system specs).
-  - [x] REST endpoints: `GET /api/ports`, `POST /api/ports/kill`, `POST /api/project/audit`.
-  - [x] Unit tests in `tests/test_server.py`.
-- [x] Step 2.5: Packaging & CI Automation:
-  - [x] Standalone build script: `scripts/build_standalone.ps1`.
-  - [x] GitHub Actions workflow: `.github/workflows/build.yml`.
-- [x] Step 2.6: Verified Standalone Distribution Pipeline:
-  - [x] Automated CI compilation on GitHub Actions Windows Server runner (`windows-latest`).
-  - [x] Verified binary build artifact (`DevToolkit-Windows-x64`) generated, smoke tested, and downloaded.
-- [x] Step 2.7: Manual Release Trigger Control:
-  - [x] Removed automatic `push` and `pull_request` triggers from `.github/workflows/build.yml`.
-  - [x] Configured `workflow_dispatch` with release options + `release: published` trigger.
+- [x] Step 2.1: Port Manager & Killer (`devtoolkit/modules/utilities/ports.py`).
+- [x] Step 2.2: Project Workstation Auditor (`devtoolkit/modules/utilities/project_auditor.py`).
+- [x] Step 2.3: CLI Integration (`ports`, `project`, `config`).
+- [x] Step 2.4: 4-Tab Web & Desktop Dashboard.
+- [x] Step 2.5: Packaging & Manual GitHub Actions CI Automation.
 
 ---
 
-## Phase 3 Candidate Ideas & Horizons
+## Milestone Checklist: Phase 3 (Completed)
+- [x] Step 3.1: **Vertical Sidebar Navigation & Layout Matching Target Design**:
+  - [x] Re-architected `EMBEDDED_UI_HTML` in `devtoolkit/server/app.py`.
+  - [x] Left fixed vertical sidebar with DevToolkit squircle branding, `v0.2.0` badge, host pill with live uptime, `WORKSPACE HUB` section, `PREFERENCES` section, live watcher indicator, PATH count badge, and Git user avatar profile.
+  - [x] Top header breadcrumb trail (`toolkit / • Environment & Diagnostics`) updating dynamically per tab.
+  - [x] Global search bar with `Ctrl+K` keyboard shortcut badge.
+  - [x] Horizontal 6-metric stat row (*Audited Tools*, *Installed*, *Healthy*, *Action Needed*, *Critical Errors*, *Not Found*) with colored progress underline indicators matching design.
+  - [x] Category filter pills with live counts, Grid/List view toggle, and multi-field sorting selector.
+  - [x] Rich dark glassmorphic cards with root paths, binary paths, companion subsystems, diagnostics callout, and 1-click **Apply System Fix** action.
+  - [x] Persistent bottom status bar (`Environment Watcher: Active | PATH Entries: X | RAM Footprint: X MB | [R] Rescan | [F] Fix All Safe | [?] Help`).
+- [x] Step 3.2: **Native PC Software Ergonomics & Responsiveness**:
+  - [x] Viewport lock (`h-screen overflow-hidden flex flex-col`) preventing whole-page browser scrolling.
+  - [x] Independent scrollable main content panel with custom slim dark scrollbars.
+  - [x] Desktop keyboard accelerators: `Ctrl+K` (focus search), `R` (rescan), `1-4` (tabs), `F` (apply fixes), `?` (help modal), `Esc` (close modal/blur).
+- [x] Step 3.3: **Dual-Mode Executable Entrypoint (`DevToolkit.exe`)**:
+  - [x] Configured Typer callback in `devtoolkit/cli/main.py` with `invoke_without_command=True`.
+  - [x] Double-clicking in Windows Explorer or running `DevToolkit.exe` with no subcommands automatically launches the Desktop UI window.
+  - [x] Terminal invocations with subcommands (`inspect`, `doctor`, `ports`, `project`, `config`, `ui`, `--help`) execute as standard CLI commands.
+  - [x] Updated `scripts/build_standalone.ps1` with PyInstaller hidden imports for PyWebView (`webview.platforms.winforms`, `webview.platforms.edgechromium`).
+- [x] Step 3.4: **Comprehensive `README.md` Overhaul**:
+  - [x] Fully documented all CLI commands, UI walkthrough, keyboard shortcuts, dual-mode behavior, 4-layer discovery pipeline, and plugin authoring.
+- [x] Step 3.5: **Master Software Documentation**:
+  - [x] Authored `agent/documentation.md` containing an exhaustive architectural and technical manual.
+- [x] Step 3.6: **Test Suite Verification**:
+  - [x] 100% of unit tests passing (29 test suite items verified).
+
+---
+
+## Future Horizons & Candidate Roadmap
 
 1. **Build Cache & Disk Cleaner (`devtoolkit clean`)**:
-   - Free gigabytes of workstation storage by auditing and pruning build caches:
-     - `npm cache clean` / `pnpm store prune` / `yarn cache clean`
-     - `pip cache purge`
-     - `.gradle/caches` and `.gradle/daemon`
-     - `docker system prune -f`
-     - Flutter `.pub-cache`
-2. **Environment Variable Auto-Fixer**:
-   - 1-click apply suggested doctor fixes directly from CLI or UI (e.g. setting missing `ANDROID_HOME` or `JAVA_HOME` in Windows User Registry).
-3. **Multi-Platform Distribution**:
-   - Expand the CI matrix in `.github/workflows/build.yml` to build macOS (`DevToolkit-macOS-arm64`) and Linux (`DevToolkit-linux-x86_64`) standalone binaries alongside Windows.
-
-
-
-
+   - Audit and prune build caches across Node (`npm`, `pnpm`, `yarn`), Python (`pip`), Gradle (`.gradle/caches`), Docker (`docker system prune`), Flutter (`.pub-cache`).
+2. **Multi-Platform CI Matrix**:
+   - Expand `.github/workflows/build.yml` to compile standalone binaries for macOS (`DevToolkit-macOS-arm64`) and Linux (`DevToolkit-linux-x86_64`).

@@ -26,6 +26,7 @@ app = typer.Typer(
     name="devtoolkit",
     help="Extensible developer environment auditor and workstation utility.",
     add_completion=False,
+    invoke_without_command=True,
 )
 config_app = typer.Typer(
     name="config",
@@ -34,6 +35,18 @@ config_app = typer.Typer(
 )
 app.add_typer(config_app, name="config")
 console = Console()
+
+
+@app.callback(invoke_without_command=True)
+def default_callback(
+    ctx: typer.Context,
+    port: int = typer.Option(4321, "--port", "-p", help="Local server port when launching UI."),
+    web: bool = typer.Option(False, "--web", help="Open in default browser instead of native desktop window."),
+) -> None:
+    """DevToolkit: Extensible developer environment auditor and workstation utility."""
+    if ctx.invoked_subcommand is None:
+        from devtoolkit.server.app import launch_ui
+        launch_ui(port=port, web_only=web)
 
 
 @app.command(name="inspect", help="Audit installed SDKs, runtimes, and development CLIs.")
