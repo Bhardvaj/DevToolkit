@@ -52,6 +52,14 @@ This document is continuously updated to reflect current project status, complet
   - [x] 100% of unit tests passing (30 test suite items verified).
   - [x] Fixed PyInstaller standalone binary inspector discovery: exported `BUILTIN_INSPECTORS` in `devtoolkit/modules/inspectors/__init__.py` and registered them directly in `PluginRegistry.discover_inspectors()`.
   - [x] Fixed grid card spacing (`gap-5 lg:gap-6`) and top stat boxes alignment on narrow screens (`grid-cols-2 sm:grid-cols-3 xl:grid-cols-6` with flex clipping and standard padding).
+- [x] Step 3.7: **UI Ergonomics & Element Decluttering**:
+  - [x] Removed redundant non-functional "Process Monitor" tab from side panel.
+  - [x] Made top environment search bar and rescan button conditional on Tab 1 (Environment), automatically hiding them on Port Manager, Project Auditor, and Settings tabs.
+  - [x] Added in-view "Refresh" action button directly into Port Manager filter bar.
+  - [x] Removed uptime counter from Host pill at the top of the sidebar.
+  - [x] Removed sidebar footer (profile card and "watcher active" block) for a cleaner vertical navigation panel.
+  - [x] Removed "Fix all safe" button and shortcut from bottom right status bar.
+  - [x] Updated standalone packaging and verified all 30 tests pass.
 
 ---
 
