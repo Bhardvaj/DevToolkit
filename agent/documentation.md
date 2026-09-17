@@ -150,13 +150,19 @@ The discovery engine dynamically resolves tool roots, binaries, and companion SD
 
 ## 3. Tool Inspector Catalog & Diagnostics
 
-DevToolkit includes 10 native inspectors located in `devtoolkit/modules/inspectors/`:
+DevToolkit includes 16 native inspectors located in `devtoolkit/modules/inspectors/`:
 
 | Tool ID | Inspector Name | Category | Primary Detection Vectors | Key Diagnostics & Companion Checks |
 | :--- | :--- | :--- | :--- | :--- |
 | `node` | Node.js & Corepack | `runtime` | `node.exe`, nvm-windows, Registry | Checks for `npm`, `pnpm`, `yarn`, `corepack`. Detects nvm active alias. |
 | `python` | Python 3 | `runtime` | `python.exe`, pyenv-win, Registry | Detects Windows Microsoft Store 0KB execution alias intercepting standard CPython. Checks for `pip`, `poetry`. |
-| `git` | Git for Windows | `vcs` | `git.exe`, Registry | Checks `user.name`, `user.email`, `core.autocrlf` safe Windows configuration, SSH auth agent status, and GitHub CLI (`gh`). |
+| `git` | Git for Windows | `vcs` | `git.exe`, Registry | Checks `user.name`, `user.email`, `core.autocrlf` safe Windows configuration, SSH auth agent status. |
+| `gh` | GitHub CLI | `vcs` | `gh.exe`, PATH | Probes GitHub authentication state (`gh auth status`), account name, and Git integration. |
+| `vscode` | Visual Studio Code | `ide` | `Code.exe`, Registry, Local AppData | Audits `code` CLI in system PATH, `code-insiders`, and warns if app is installed but CLI is missing from PATH. |
+| `dotnet` | .NET SDK & Runtime | `runtime` | `dotnet.exe`, `DOTNET_ROOT`, Program Files | Probes installed SDKs (`--list-sdks`), runtimes (`--list-runtimes`), `msbuild`, and `nuget`. |
+| `bun` | Bun Runtime | `runtime` | `bun.exe`, `BUN_INSTALL`, `%USERPROFILE%\.bun` | Audits fast JS/TS runtime, `bunx` companion, and PATH inclusion. |
+| `cmake` | CMake Build System | `build` | `cmake.exe`, PATH, Content Signature | Probes build generator, companion `ninja`, `ctest`, and `cpack`. |
+| `ollama` | Ollama Local AI | `ai` | `ollama.exe`, `%LOCALAPPDATA%\Programs\Ollama` | Audits local LLM inference daemon (:11434), installed models list, and `OLLAMA_MODELS`. |
 | `docker` | Docker Engine | `container` | `docker.exe`, Docker Desktop | Queries Docker daemon pipe `\\.\pipe\docker_engine`. Checks for `docker-compose`. |
 | `golang` | Go Programming Language | `runtime` | `go.exe`, `GOROOT`, Registry | Checks `GOPATH`, compiler build version. |
 | `rust` | Rust Toolchain | `runtime` | `rustc.exe`, `cargo.exe`, rustup | Audits cargo package manager and active toolchain. |
@@ -250,11 +256,10 @@ The desktop interface (`EMBEDDED_UI_HTML` in `devtoolkit/server/app.py`) is styl
 
 ### Views & Navigation
 1. **Environment & Diagnostics (`view-env`)**:
-   - 6 horizontal stat cards: *Audited Tools*, *Installed*, *Healthy*, *Action Needed*, *Critical Errors*, *Not Found* with percentage coverage and progress underlines.
-   - Category filter pills (`All`, `Runtimes`, `Mobile & SDKs`, `IDEs & Editors`, `VCS / Git`, `Containers`) with live counters.
+   - Dynamic domain category pills (`All`, `Runtimes`, `IDEs & Editors`, `Build & Tools`, `VCS & Git`, `Mobile & SDKs`, `Containers`, `AI & ML`) with live counters, icon badges, and persistent selection via `localStorage`.
    - Grid / List view toggle.
    - Sorting by *Severity*, *Name*, *Category*, and *Status*.
-   - Rich glassmorphic tool cards with root path, binary path, companion chips, and 1-click **Apply System Fix** action buttons.
+   - Rich glassmorphic tool cards with root path, binary path, companion chips, and native Explorer launch buttons.
 2. **Port Manager (`view-ports`)**:
    - Total sockets, developer ports, and system-protected counters.
    - Developer port filter toggle and live socket search.

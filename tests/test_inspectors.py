@@ -61,3 +61,73 @@ def test_multiple_categories():
     java = JavaInspector()
     assert "runtime" in java.categories
     assert "mobile" in java.categories
+
+
+def test_vscode_inspector():
+    from devtoolkit.modules.inspectors.vscode import VSCodeInspector
+    runner = SafeRunner()
+    inspector = VSCodeInspector()
+    report = inspector.inspect(runner)
+
+    assert isinstance(report, ToolReport)
+    assert report.id == "vscode"
+    assert "ide" in report.categories
+    assert "editor" in report.categories
+
+
+def test_dotnet_inspector():
+    from devtoolkit.modules.inspectors.dotnet import DotNetInspector
+    runner = SafeRunner()
+    inspector = DotNetInspector()
+    report = inspector.inspect(runner)
+
+    assert isinstance(report, ToolReport)
+    assert report.id == "dotnet"
+    assert "runtime" in report.categories
+    assert "framework" in report.categories
+
+
+def test_bun_inspector():
+    from devtoolkit.modules.inspectors.bun import BunInspector
+    runner = SafeRunner()
+    inspector = BunInspector()
+    report = inspector.inspect(runner)
+
+    assert isinstance(report, ToolReport)
+    assert report.id == "bun"
+    assert "runtime" in report.categories
+
+
+def test_gh_inspector():
+    from devtoolkit.modules.inspectors.gh import GitHubCLIInspector
+    runner = SafeRunner()
+    inspector = GitHubCLIInspector()
+    report = inspector.inspect(runner)
+
+    assert isinstance(report, ToolReport)
+    assert report.id == "gh"
+    assert "vcs" in report.categories
+    assert "cli" in report.categories
+
+
+def test_cmake_inspector():
+    from devtoolkit.modules.inspectors.cmake import CMakeInspector
+    runner = SafeRunner()
+    inspector = CMakeInspector()
+    report = inspector.inspect(runner)
+
+    assert isinstance(report, ToolReport)
+    assert report.id == "cmake"
+    assert "build" in report.categories
+
+
+def test_ollama_inspector():
+    from devtoolkit.modules.inspectors.ollama import OllamaInspector
+    runner = SafeRunner()
+    inspector = OllamaInspector()
+    report = inspector.inspect(runner)
+
+    assert isinstance(report, ToolReport)
+    assert report.id == "ollama"
+    assert "ai" in report.categories
+

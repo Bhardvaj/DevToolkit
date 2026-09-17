@@ -489,24 +489,7 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
           <div class="flex flex-col sm:flex-row items-center justify-between gap-3 bg-[#0a0f1e]/70 p-2.5 rounded-xl border border-slate-800/80">
             <!-- Left: Filter Pills with Counts -->
             <div class="flex items-center gap-1.5 overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0 custom-scrollbar" id="category-filters">
-              <button onclick="setCategory('all')" class="cat-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#131d36] text-white border border-blue-500/40 shadow-sm transition flex-shrink-0" data-cat="all">
-                All <span class="ml-1 text-[10px] text-blue-300 font-mono" id="cat-count-all">0</span>
-              </button>
-              <button onclick="setCategory('runtime')" class="cat-btn px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-white hover:bg-slate-800/50 border border-transparent transition flex-shrink-0" data-cat="runtime">
-                Runtimes <span class="ml-1 text-[10px] text-slate-500 font-mono" id="cat-count-runtime">0</span>
-              </button>
-              <button onclick="setCategory('mobile')" class="cat-btn px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-white hover:bg-slate-800/50 border border-transparent transition flex-shrink-0" data-cat="mobile">
-                Mobile & SDKs <span class="ml-1 text-[10px] text-slate-500 font-mono" id="cat-count-mobile">0</span>
-              </button>
-              <button onclick="setCategory('ide')" class="cat-btn px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-white hover:bg-slate-800/50 border border-transparent transition flex-shrink-0" data-cat="ide">
-                IDEs & Editors <span class="ml-1 text-[10px] text-slate-500 font-mono" id="cat-count-ide">0</span>
-              </button>
-              <button onclick="setCategory('vcs')" class="cat-btn px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-white hover:bg-slate-800/50 border border-transparent transition flex-shrink-0" data-cat="vcs">
-                VCS / Git <span class="ml-1 text-[10px] text-slate-500 font-mono" id="cat-count-vcs">0</span>
-              </button>
-              <button onclick="setCategory('container')" class="cat-btn px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-white hover:bg-slate-800/50 border border-transparent transition flex-shrink-0" data-cat="container">
-                Containers <span class="ml-1 text-[10px] text-slate-500 font-mono" id="cat-count-container">0</span>
-              </button>
+              <!-- Dynamically populated by renderCategoryPills() -->
             </div>
 
             <!-- Right: Layout Switcher & Sort Selector -->
@@ -912,6 +895,10 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
     let allReports = [];
     let allPorts = [];
     let currentCategory = 'all';
+    try {
+      const savedCat = localStorage.getItem('devtoolkit_last_category');
+      if (savedCat) currentCategory = savedCat;
+    } catch (e) {}
     let currentLayout = 'grid';
     let currentSort = 'severity';
     let currentConfig = { search_paths: [] };
@@ -1043,6 +1030,17 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
     setInterval(updateTimerDisplay, 30000);
 
     // ==================== TAB 1: ENVIRONMENT & AUDITING ====================
+    const DOMAIN_CATEGORIES = [
+      { id: 'all', label: 'All', icon: 'fa-cubes' },
+      { id: 'runtime', label: 'Runtimes', icon: 'fa-terminal', match: ['runtime', 'framework', 'language'] },
+      { id: 'ide', label: 'IDEs & Editors', icon: 'fa-code', match: ['ide', 'editor'] },
+      { id: 'build', label: 'Build & Tools', icon: 'fa-screwdriver-wrench', match: ['build', 'tools', 'compiler'] },
+      { id: 'vcs', label: 'VCS & Git', icon: 'fa-code-branch', match: ['vcs', 'scm', 'cli'] },
+      { id: 'mobile', label: 'Mobile & SDKs', icon: 'fa-mobile-screen', match: ['mobile', 'sdk'] },
+      { id: 'container', label: 'Containers', icon: 'fa-box', match: ['container', 'devops', 'cloud'] },
+      { id: 'ai', label: 'AI & ML', icon: 'fa-brain', match: ['ai', 'ml'] },
+    ];
+
     function getToolIcon(id, category) {
       if (id === 'docker') return '<i class="fa-brands fa-docker text-blue-400"></i>';
       if (id === 'android_studio') return '<i class="fa-brands fa-android text-emerald-400"></i>';
@@ -1054,8 +1052,16 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
       if (id === 'flutter') return '<i class="fa-solid fa-feather-pointed text-cyan-400"></i>';
       if (id === 'golang') return '<i class="fa-brands fa-golang text-cyan-400"></i>';
       if (id === 'rust') return '<i class="fa-brands fa-rust text-amber-500"></i>';
+      if (id === 'vscode') return '<i class="fa-solid fa-code text-blue-400"></i>';
+      if (id === 'dotnet') return '<i class="fa-brands fa-microsoft text-purple-400"></i>';
+      if (id === 'bun') return '<i class="fa-solid fa-bread-slice text-amber-200"></i>';
+      if (id === 'gh') return '<i class="fa-brands fa-github text-white"></i>';
+      if (id === 'cmake') return '<i class="fa-solid fa-screwdriver-wrench text-rose-400"></i>';
+      if (id === 'ollama') return '<i class="fa-solid fa-brain text-purple-400"></i>';
       if (category === 'runtime') return '<i class="fa-solid fa-terminal text-blue-400"></i>';
       if (category === 'ide') return '<i class="fa-solid fa-code text-indigo-400"></i>';
+      if (category === 'build') return '<i class="fa-solid fa-screwdriver-wrench text-amber-400"></i>';
+      if (category === 'ai') return '<i class="fa-solid fa-brain text-purple-400"></i>';
       return '<i class="fa-solid fa-cube text-slate-400"></i>';
     }
 
@@ -1072,15 +1078,47 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
       return '<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-slate-800/80 text-slate-400 border border-slate-700/80 whitespace-nowrap"><span class="w-1.5 h-1.5 rounded-full bg-slate-500"></span> Not Detected</span>';
     }
 
+    function toolMatchesCategory(r, cat) {
+      if (!cat || cat === 'all') return true;
+      const domain = DOMAIN_CATEGORIES.find(d => d.id === cat);
+      const cats = (r.categories && r.categories.length > 0) 
+        ? r.categories.map(c => c.toLowerCase()) 
+        : [(r.category || '').toLowerCase()];
+      
+      if (domain && domain.match) {
+        return domain.match.some(m => cats.includes(m.toLowerCase()) || cats.some(c => c.includes(m.toLowerCase())));
+      }
+      return cats.includes(cat.toLowerCase());
+    }
+
+    function renderCategoryPills() {
+      const container = document.getElementById('category-filters');
+      if (!container) return;
+
+      container.innerHTML = DOMAIN_CATEGORIES.map(domain => {
+        const count = domain.id === 'all' 
+          ? allReports.length 
+          : allReports.filter(r => toolMatchesCategory(r, domain.id)).length;
+        const isActive = currentCategory === domain.id;
+        const activeClass = 'cat-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#131d36] text-white border border-blue-500/40 shadow-sm transition flex-shrink-0 flex items-center gap-1.5';
+        const inactiveClass = 'cat-btn px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-white hover:bg-slate-800/50 border border-transparent transition flex-shrink-0 flex items-center gap-1.5';
+        
+        return `
+          <button onclick="setCategory('${domain.id}')" class="${isActive ? activeClass : inactiveClass}" data-cat="${domain.id}">
+            <i class="fa-solid ${domain.icon} text-[10px] ${isActive ? 'text-blue-400' : 'text-slate-500'}"></i>
+            <span>${domain.label}</span>
+            <span class="ml-0.5 text-[10px] ${isActive ? 'text-blue-300 font-bold' : 'text-slate-500 font-mono'}">${count}</span>
+          </button>
+        `;
+      }).join('');
+    }
+
     function setCategory(cat) {
       currentCategory = cat;
-      document.querySelectorAll('.cat-btn').forEach(b => {
-        if (b.getAttribute('data-cat') === cat) {
-          b.className = 'cat-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#131d36] text-white border border-blue-500/40 shadow-sm transition flex-shrink-0';
-        } else {
-          b.className = 'cat-btn px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-white hover:bg-slate-800/50 border border-transparent transition flex-shrink-0';
-        }
-      });
+      try {
+        localStorage.setItem('devtoolkit_last_category', cat);
+      } catch (e) {}
+      renderCategoryPills();
       renderTools();
     }
 
@@ -1116,24 +1154,6 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
 
     function onGlobalSearch() {
       renderTools();
-    }
-
-    function toolMatchesCategory(r, cat) {
-      if (cat === 'all') return true;
-      const cats = (r.categories && r.categories.length > 0) ? r.categories.map(c => c.toLowerCase()) : [r.category.toLowerCase()];
-      if (cat === 'mobile') {
-        return cats.includes('mobile') || cats.includes('sdk');
-      }
-      return cats.includes(cat.toLowerCase());
-    }
-
-    function updateCategoryCounts() {
-      document.getElementById('cat-count-all').innerText = allReports.length;
-      ['runtime', 'mobile', 'ide', 'vcs', 'container'].forEach(c => {
-        const count = allReports.filter(r => toolMatchesCategory(r, c)).length;
-        const el = document.getElementById(`cat-count-${c}`);
-        if (el) el.innerText = count;
-      });
     }
 
     function renderTools() {
@@ -1369,7 +1389,7 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
           }
         }
 
-        updateCategoryCounts();
+        renderCategoryPills();
         renderTools();
       } catch (err) {
         showToast('Error auditing environment', true);

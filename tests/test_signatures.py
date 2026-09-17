@@ -53,3 +53,35 @@ def test_scan_roots_signature(tmp_path):
 
     results = scan_roots_for_tools([root], max_depth=1)
     assert sdk in results["android"]
+
+
+def test_signature_dotnet(tmp_path):
+    from devtoolkit.core.signatures import is_dotnet_sdk
+    dotnet_dir = tmp_path / "custom_dotnet"
+    dotnet_dir.mkdir()
+    (dotnet_dir / "dotnet.exe").write_text("dummy", encoding="utf-8")
+    (dotnet_dir / "sdk").mkdir()
+
+    assert is_dotnet_sdk(dotnet_dir) is True
+
+
+def test_signature_vscode(tmp_path):
+    from devtoolkit.core.signatures import is_vscode
+    vscode_dir = tmp_path / "custom_vscode"
+    vscode_dir.mkdir()
+    (vscode_dir / "Code.exe").write_text("dummy", encoding="utf-8")
+    (vscode_dir / "resources" / "app").mkdir(parents=True)
+
+    assert is_vscode(vscode_dir) is True
+
+
+def test_signature_cmake(tmp_path):
+    from devtoolkit.core.signatures import is_cmake
+    cmake_dir = tmp_path / "custom_cmake"
+    cmake_dir.mkdir()
+    (cmake_dir / "bin").mkdir()
+    (cmake_dir / "bin" / "cmake.exe").write_text("dummy", encoding="utf-8")
+    (cmake_dir / "share").mkdir()
+
+    assert is_cmake(cmake_dir) is True
+

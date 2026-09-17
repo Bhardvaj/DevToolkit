@@ -104,6 +104,39 @@ def is_go_sdk(path: Path) -> bool:
         return False
 
 
+def is_dotnet_sdk(path: Path) -> bool:
+    """Check if directory is a .NET SDK / Runtime installation."""
+    try:
+        dotnet_name = "dotnet.exe" if sys.platform == "win32" else "dotnet"
+        has_bin = (path / dotnet_name).is_file()
+        has_sub = (path / "sdk").is_dir() or (path / "shared").is_dir()
+        return has_bin and has_sub
+    except Exception:
+        return False
+
+
+def is_vscode(path: Path) -> bool:
+    """Check if directory is a Visual Studio Code installation."""
+    try:
+        code_name = "Code.exe" if sys.platform == "win32" else "code"
+        has_bin = (path / code_name).is_file() or (path / "bin" / "code.cmd").is_file()
+        has_res = (path / "resources" / "app").is_dir()
+        return has_bin and has_res
+    except Exception:
+        return False
+
+
+def is_cmake(path: Path) -> bool:
+    """Check if directory is a CMake installation."""
+    try:
+        cmake_name = "cmake.exe" if sys.platform == "win32" else "cmake"
+        has_bin = (path / "bin" / cmake_name).is_file()
+        has_share = (path / "share").is_dir()
+        return has_bin and has_share
+    except Exception:
+        return False
+
+
 SIGNATURE_CHECKERS = {
     "android": is_android_sdk,
     "java": is_jdk,
@@ -111,6 +144,9 @@ SIGNATURE_CHECKERS = {
     "flutter": is_flutter_sdk,
     "rust": is_rust_sdk,
     "golang": is_go_sdk,
+    "dotnet": is_dotnet_sdk,
+    "vscode": is_vscode,
+    "cmake": is_cmake,
 }
 
 
