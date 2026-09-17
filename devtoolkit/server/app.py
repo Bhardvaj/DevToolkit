@@ -279,29 +279,29 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
   <div class="flex flex-1 overflow-hidden">
 
     <!-- LEFT FIXED VERTICAL SIDEBAR -->
-    <aside class="w-64 bg-sidebarBg border-r border-slate-800/80 flex flex-col justify-between p-3.5 select-none flex-shrink-0 z-20">
+    <aside class="w-56 sm:w-64 bg-sidebarBg border-r border-slate-800/80 flex flex-col justify-between p-3 sm:p-3.5 select-none flex-shrink-0 z-20">
       <div class="space-y-4">
         <!-- Brand Header -->
         <div class="flex items-center gap-3 px-1.5 pt-1">
           <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white shadow-lg shadow-blue-500/25 flex-shrink-0">
             <i class="fa-solid fa-bolt text-lg"></i>
           </div>
-          <div>
+          <div class="min-w-0">
             <div class="flex items-center gap-2">
-              <h1 class="text-base font-black tracking-tight text-white">DevToolkit</h1>
-              <span class="text-[10px] font-mono px-1.5 py-0.2 rounded bg-indigo-500/20 text-indigo-300 font-semibold border border-indigo-500/30">v0.2.0</span>
+              <h1 class="text-base font-black tracking-tight text-white truncate">DevToolkit</h1>
+              <span class="text-[10px] font-mono px-1.5 py-0.2 rounded bg-indigo-500/20 text-indigo-300 font-semibold border border-indigo-500/30 flex-shrink-0">v0.2.0</span>
             </div>
-            <div class="text-[11px] text-slate-400 font-medium" id="side-os-info">Windows 11 (x64)</div>
+            <div class="text-[11px] text-slate-400 font-medium truncate" id="side-os-info">Windows 11 (x64)</div>
           </div>
         </div>
 
         <!-- Host Pill -->
-        <div class="bg-[#0e1526] border border-slate-800/90 rounded-lg px-3 py-1.5 flex items-center justify-between text-xs">
-          <span class="flex items-center gap-1.5 text-slate-300 font-medium text-[11px]">
-            <span class="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_6px_#34d399]"></span>
-            Host: <span id="side-host-name" class="text-white font-semibold">DEXTER-2</span>
+        <div class="bg-[#0e1526] border border-slate-800/90 rounded-lg px-3 py-1.5 flex items-center justify-between text-xs min-w-0">
+          <span class="flex items-center gap-1.5 text-slate-300 font-medium text-[11px] truncate">
+            <span class="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_6px_#34d399] flex-shrink-0"></span>
+            Host: <span id="side-host-name" class="text-white font-semibold truncate">DEXTER-2</span>
           </span>
-          <span class="text-emerald-400 text-[11px] font-mono font-medium" id="side-uptime">Up 1d 1h</span>
+          <span class="text-emerald-400 text-[11px] font-mono font-medium flex-shrink-0 ml-1.5" id="side-uptime">Up 1d 1h</span>
         </div>
 
         <!-- Navigation Group: WORKSPACE HUB -->
@@ -309,32 +309,32 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
           <div class="text-[10px] font-bold text-slate-500 tracking-wider uppercase px-2 mb-1.5 mt-3">WORKSPACE HUB</div>
           <div class="space-y-1">
             <button onclick="switchTab('env')" id="nav-btn-env" class="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition border nav-active">
-              <div class="flex items-center gap-2.5">
-                <i class="fa-solid fa-table-cells-large text-blue-400"></i>
-                <span>Environment</span>
+              <div class="flex items-center gap-2.5 truncate">
+                <i class="fa-solid fa-table-cells-large text-blue-400 flex-shrink-0"></i>
+                <span class="truncate">Environment</span>
               </div>
-              <span class="w-2 h-2 rounded-full bg-blue-400 shadow-[0_0_8px_#60a5fa]" id="dot-env"></span>
+              <span class="w-2 h-2 rounded-full bg-blue-400 shadow-[0_0_8px_#60a5fa] flex-shrink-0" id="dot-env"></span>
             </button>
 
             <button onclick="switchTab('ports')" id="nav-btn-ports" class="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition border nav-inactive">
-              <div class="flex items-center gap-2.5">
-                <i class="fa-solid fa-network-wired"></i>
-                <span>Port Manager</span>
+              <div class="flex items-center gap-2.5 truncate">
+                <i class="fa-solid fa-network-wired flex-shrink-0"></i>
+                <span class="truncate">Port Manager</span>
               </div>
-              <span id="side-ports-badge" class="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-blue-500/20 text-blue-300 border border-blue-500/30">0</span>
+              <span id="side-ports-badge" class="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-blue-500/20 text-blue-300 border border-blue-500/30 flex-shrink-0">0</span>
             </button>
 
             <button onclick="switchTab('project')" id="nav-btn-project" class="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition border nav-inactive">
-              <div class="flex items-center gap-2.5">
-                <i class="fa-solid fa-code-branch"></i>
-                <span>Project Auditor</span>
+              <div class="flex items-center gap-2.5 truncate">
+                <i class="fa-solid fa-code-branch flex-shrink-0"></i>
+                <span class="truncate">Project Auditor</span>
               </div>
             </button>
 
             <button onclick="switchTab('ports'); setPortsDevToggle(false);" id="nav-btn-process" class="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition border nav-inactive">
-              <div class="flex items-center gap-2.5">
-                <i class="fa-solid fa-chart-line"></i>
-                <span>Process Monitor</span>
+              <div class="flex items-center gap-2.5 truncate">
+                <i class="fa-solid fa-chart-line flex-shrink-0"></i>
+                <span class="truncate">Process Monitor</span>
               </div>
             </button>
           </div>
@@ -345,9 +345,9 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
           <div class="text-[10px] font-bold text-slate-500 tracking-wider uppercase px-2 mb-1.5 mt-4">PREFERENCES</div>
           <div class="space-y-1">
             <button onclick="switchTab('settings')" id="nav-btn-settings" class="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition border nav-inactive">
-              <div class="flex items-center gap-2.5">
-                <i class="fa-solid fa-gear"></i>
-                <span>Settings</span>
+              <div class="flex items-center gap-2.5 truncate">
+                <i class="fa-solid fa-gear flex-shrink-0"></i>
+                <span class="truncate">Settings</span>
               </div>
             </button>
           </div>
@@ -357,11 +357,11 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
       <!-- Sidebar Footer: Watcher + Git Profile -->
       <div class="space-y-2 pt-2 border-t border-slate-800/80">
         <div class="flex items-center justify-between text-[11px] text-slate-400 px-1">
-          <span class="flex items-center gap-1.5 text-slate-300 font-medium">
-            <span class="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_6px_#34d399] animate-pulse"></span>
+          <span class="flex items-center gap-1.5 text-slate-300 font-medium truncate">
+            <span class="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_6px_#34d399] animate-pulse flex-shrink-0"></span>
             Watcher Active
           </span>
-          <span class="font-mono text-slate-500 text-[10px]" id="side-path-badge">v0.2.0 / 25 PATH</span>
+          <span class="font-mono text-slate-500 text-[10px] flex-shrink-0" id="side-path-badge">v0.2.0 / 25 PATH</span>
         </div>
 
         <div class="bg-[#0e1526] border border-slate-800/80 rounded-xl p-2.5 flex items-center gap-3">
@@ -377,57 +377,57 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
     </aside>
 
     <!-- RIGHT MAIN CONTENT PANEL -->
-    <div class="flex-1 flex flex-col overflow-hidden bg-darkBg">
+    <div class="flex-1 flex flex-col overflow-hidden bg-darkBg min-w-0">
 
       <!-- Top Header: Breadcrumbs + Global Search + Actions -->
-      <header class="h-14 px-6 border-b border-slate-800/80 flex items-center justify-between bg-[#090d19]/90 backdrop-blur-md flex-shrink-0 z-10">
+      <header class="h-14 px-4 sm:px-6 border-b border-slate-800/80 flex items-center justify-between bg-[#090d19]/90 backdrop-blur-md flex-shrink-0 z-10 gap-3">
         <!-- Breadcrumbs -->
-        <div class="flex items-center gap-2 text-xs text-slate-400 font-medium select-none">
-          <span class="text-slate-500 font-mono">toolkit</span>
-          <span class="text-slate-600">/</span>
-          <span class="flex items-center gap-2 text-white font-semibold" id="top-breadcrumb">
-            <span class="w-1.5 h-1.5 rounded-full bg-blue-400 shadow-[0_0_6px_#60a5fa]"></span>
+        <div class="flex items-center gap-2 text-xs text-slate-400 font-medium select-none min-w-0 truncate">
+          <span class="text-slate-500 font-mono flex-shrink-0">toolkit</span>
+          <span class="text-slate-600 flex-shrink-0">/</span>
+          <span class="flex items-center gap-1.5 text-white font-semibold truncate" id="top-breadcrumb">
+            <span class="w-1.5 h-1.5 rounded-full bg-blue-400 shadow-[0_0_6px_#60a5fa] flex-shrink-0"></span>
             Environment & Diagnostics
           </span>
         </div>
 
         <!-- Global Search Bar & Actions -->
-        <div class="flex items-center gap-3">
-          <div class="relative w-64 md:w-80 lg:w-96">
+        <div class="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+          <div class="relative w-36 sm:w-64 md:w-80 lg:w-96">
             <i class="fa-solid fa-search absolute left-3 top-2.5 text-xs text-slate-400"></i>
-            <input type="text" id="global-search-input" oninput="onSearchChange()" placeholder="Search SDK, runtime, path..." class="w-full pl-8 pr-16 py-1.5 bg-[#070a13] border border-slate-800/90 rounded-lg text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 transition font-sans" />
-            <kbd class="absolute right-2 top-2 px-1.5 py-0.5 rounded bg-slate-800/80 border border-slate-700/80 text-[10px] font-mono text-slate-400">Ctrl+K</kbd>
+            <input type="text" id="global-search-input" oninput="onSearchChange()" placeholder="Search SDK, runtime, path..." class="w-full pl-8 pr-14 sm:pr-16 py-1.5 bg-[#070a13] border border-slate-800/90 rounded-lg text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 transition font-sans" />
+            <kbd class="absolute right-2 top-2 px-1.5 py-0.5 rounded bg-slate-800/80 border border-slate-700/80 text-[10px] font-mono text-slate-400 hidden sm:inline">Ctrl+K</kbd>
           </div>
 
-          <button onclick="refreshActiveTab()" id="rescan-btn" class="flex items-center gap-2 px-3.5 py-1.5 bg-[#0e1526] hover:bg-[#131d36] text-slate-200 border border-slate-700/80 rounded-lg text-xs font-semibold transition shadow-sm">
+          <button onclick="refreshActiveTab()" id="rescan-btn" class="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3.5 py-1.5 bg-[#0e1526] hover:bg-[#131d36] text-slate-200 border border-slate-700/80 rounded-lg text-xs font-semibold transition shadow-sm flex-shrink-0">
             <i class="fa-solid fa-rotate text-xs" id="rescan-icon"></i>
-            <span>Rescan</span>
+            <span class="hidden sm:inline">Rescan</span>
             <span class="text-[10px] font-mono text-slate-400" id="rescan-timer">(now)</span>
           </button>
 
-          <button onclick="toggleHelpModal()" class="p-2 hover:bg-slate-800/60 text-slate-400 hover:text-white rounded-lg transition" title="Shortcuts & Help (?)">
+          <button onclick="toggleHelpModal()" class="p-2 hover:bg-slate-800/60 text-slate-400 hover:text-white rounded-lg transition flex-shrink-0" title="Shortcuts & Help (?)">
             <i class="fa-regular fa-circle-question text-sm"></i>
           </button>
         </div>
       </header>
 
       <!-- Scrollable Main Content -->
-      <main class="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar">
+      <main class="flex-1 overflow-y-auto p-4 sm:p-6 space-y-5 sm:space-y-6 custom-scrollbar">
 
         <!-- ==================== VIEW 1: ENVIRONMENT AUDITOR ==================== -->
         <div id="view-env" class="space-y-6">
 
-          <!-- 6 Horizontal Stat Cards -->
-          <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3.5" id="stats-container">
+          <!-- 6 Horizontal Stat Cards (Responsive: 2 cols on mobile, 3 cols on medium/narrow, 6 cols on xl desktop) -->
+          <div class="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-3 sm:gap-4" id="stats-container">
             <!-- 1. Audited Tools -->
-            <div class="glass-card rounded-xl p-3.5 flex flex-col justify-between relative overflow-hidden">
-              <div class="flex items-center justify-between text-xs text-slate-400 font-medium">
-                <span>Audited Tools</span>
-                <i class="fa-regular fa-pen-to-square text-[11px] text-slate-500"></i>
+            <div class="glass-card rounded-xl p-3.5 sm:p-4 flex flex-col justify-between relative overflow-hidden min-w-0">
+              <div class="flex items-center justify-between gap-1 text-xs text-slate-400 font-medium min-w-0">
+                <span class="truncate">Audited Tools</span>
+                <i class="fa-regular fa-pen-to-square text-[11px] text-slate-500 flex-shrink-0"></i>
               </div>
-              <div class="flex items-baseline justify-between mt-2 mb-2">
-                <div class="text-2xl font-bold text-white tracking-tight" id="stat-total">10</div>
-                <div class="text-[11px] text-slate-400 font-mono">100% total</div>
+              <div class="flex items-baseline justify-between gap-2 my-2 min-w-0">
+                <div class="text-xl sm:text-2xl font-black text-white tracking-tight leading-none flex-shrink-0" id="stat-total">10</div>
+                <div class="text-[10px] sm:text-[11px] text-slate-400 font-mono truncate text-right">100% total</div>
               </div>
               <div class="w-full h-1 rounded-full bg-slate-800 overflow-hidden">
                 <div class="h-full bg-slate-500 rounded-full w-full"></div>
@@ -435,14 +435,14 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
             </div>
 
             <!-- 2. Installed -->
-            <div class="glass-card rounded-xl p-3.5 flex flex-col justify-between relative overflow-hidden">
-              <div class="flex items-center justify-between text-xs text-slate-400 font-medium">
-                <span>Installed</span>
-                <span class="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_6px_#34d399]"></span>
+            <div class="glass-card rounded-xl p-3.5 sm:p-4 flex flex-col justify-between relative overflow-hidden min-w-0">
+              <div class="flex items-center justify-between gap-1 text-xs text-slate-400 font-medium min-w-0">
+                <span class="truncate">Installed</span>
+                <span class="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_6px_#34d399] flex-shrink-0"></span>
               </div>
-              <div class="flex items-baseline justify-between mt-2 mb-2">
-                <div class="text-2xl font-bold text-white tracking-tight" id="stat-installed">—</div>
-                <div class="text-[11px] text-emerald-400 font-mono" id="stat-coverage">— coverage</div>
+              <div class="flex items-baseline justify-between gap-2 my-2 min-w-0">
+                <div class="text-xl sm:text-2xl font-black text-white tracking-tight leading-none flex-shrink-0" id="stat-installed">—</div>
+                <div class="text-[10px] sm:text-[11px] text-emerald-400 font-mono truncate text-right" id="stat-coverage">— coverage</div>
               </div>
               <div class="w-full h-1 rounded-full bg-slate-800 overflow-hidden">
                 <div class="h-full bg-emerald-500 rounded-full transition-all duration-500" id="stat-installed-bar" style="width: 70%"></div>
@@ -450,14 +450,14 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
             </div>
 
             <!-- 3. Healthy -->
-            <div class="glass-card rounded-xl p-3.5 flex flex-col justify-between relative overflow-hidden">
-              <div class="flex items-center justify-between text-xs text-slate-400 font-medium">
-                <span>Healthy</span>
-                <span class="text-[10px] px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-300 font-semibold border border-emerald-500/30">Optimal</span>
+            <div class="glass-card rounded-xl p-3.5 sm:p-4 flex flex-col justify-between relative overflow-hidden min-w-0">
+              <div class="flex items-center justify-between gap-1 text-xs text-slate-400 font-medium min-w-0">
+                <span class="truncate">Healthy</span>
+                <span class="text-[10px] px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-300 font-semibold border border-emerald-500/30 flex-shrink-0">Optimal</span>
               </div>
-              <div class="flex items-baseline justify-between mt-2 mb-2">
-                <div class="text-2xl font-bold text-white tracking-tight" id="stat-healthy">—</div>
-                <div class="text-[11px] text-emerald-400 font-mono">Ready to build</div>
+              <div class="flex items-baseline justify-between gap-2 my-2 min-w-0">
+                <div class="text-xl sm:text-2xl font-black text-white tracking-tight leading-none flex-shrink-0" id="stat-healthy">—</div>
+                <div class="text-[10px] sm:text-[11px] text-emerald-400 font-mono truncate text-right">Ready to build</div>
               </div>
               <div class="w-full h-1 rounded-full bg-slate-800 overflow-hidden">
                 <div class="h-full bg-emerald-400 rounded-full transition-all duration-500" id="stat-healthy-bar" style="width: 60%"></div>
@@ -465,14 +465,14 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
             </div>
 
             <!-- 4. Action Needed -->
-            <div class="glass-card rounded-xl p-3.5 flex flex-col justify-between relative overflow-hidden">
-              <div class="flex items-center justify-between text-xs text-slate-400 font-medium">
-                <span>Action Needed</span>
-                <span class="w-2 h-2 rounded-full bg-amber-400 shadow-[0_0_6px_#fbbf24]"></span>
+            <div class="glass-card rounded-xl p-3.5 sm:p-4 flex flex-col justify-between relative overflow-hidden min-w-0">
+              <div class="flex items-center justify-between gap-1 text-xs text-slate-400 font-medium min-w-0">
+                <span class="truncate">Action Needed</span>
+                <span class="w-2 h-2 rounded-full bg-amber-400 shadow-[0_0_6px_#fbbf24] flex-shrink-0"></span>
               </div>
-              <div class="flex items-baseline justify-between mt-2 mb-2">
-                <div class="text-2xl font-bold text-white tracking-tight" id="stat-warning">—</div>
-                <div class="text-[11px] text-amber-400 font-mono">Path & Var</div>
+              <div class="flex items-baseline justify-between gap-2 my-2 min-w-0">
+                <div class="text-xl sm:text-2xl font-black text-white tracking-tight leading-none flex-shrink-0" id="stat-warning">—</div>
+                <div class="text-[10px] sm:text-[11px] text-amber-400 font-mono truncate text-right">Path & Var</div>
               </div>
               <div class="w-full h-1 rounded-full bg-slate-800 overflow-hidden">
                 <div class="h-full bg-amber-400 rounded-full transition-all duration-500" id="stat-warning-bar" style="width: 20%"></div>
@@ -480,14 +480,14 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
             </div>
 
             <!-- 5. Critical Errors -->
-            <div class="glass-card rounded-xl p-3.5 flex flex-col justify-between relative overflow-hidden">
-              <div class="flex items-center justify-between text-xs text-slate-400 font-medium">
-                <span>Critical Errors</span>
-                <span class="w-2 h-2 rounded-full bg-slate-500"></span>
+            <div class="glass-card rounded-xl p-3.5 sm:p-4 flex flex-col justify-between relative overflow-hidden min-w-0">
+              <div class="flex items-center justify-between gap-1 text-xs text-slate-400 font-medium min-w-0">
+                <span class="truncate">Critical Errors</span>
+                <span class="w-2 h-2 rounded-full bg-slate-500 flex-shrink-0"></span>
               </div>
-              <div class="flex items-baseline justify-between mt-2 mb-2">
-                <div class="text-2xl font-bold text-white tracking-tight" id="stat-error">—</div>
-                <div class="text-[11px] text-slate-400 font-mono">No crash flags</div>
+              <div class="flex items-baseline justify-between gap-2 my-2 min-w-0">
+                <div class="text-xl sm:text-2xl font-black text-white tracking-tight leading-none flex-shrink-0" id="stat-error">—</div>
+                <div class="text-[10px] sm:text-[11px] text-slate-400 font-mono truncate text-right">No crash flags</div>
               </div>
               <div class="w-full h-1 rounded-full bg-slate-800 overflow-hidden">
                 <div class="h-full bg-rose-500 rounded-full transition-all duration-500" id="stat-error-bar" style="width: 0%"></div>
@@ -495,14 +495,14 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
             </div>
 
             <!-- 6. Not Found -->
-            <div class="glass-card rounded-xl p-3.5 flex flex-col justify-between relative overflow-hidden">
-              <div class="flex items-center justify-between text-xs text-slate-400 font-medium">
-                <span>Not Found</span>
-                <span class="w-2 h-2 rounded-full bg-slate-600"></span>
+            <div class="glass-card rounded-xl p-3.5 sm:p-4 flex flex-col justify-between relative overflow-hidden min-w-0">
+              <div class="flex items-center justify-between gap-1 text-xs text-slate-400 font-medium min-w-0">
+                <span class="truncate">Not Found</span>
+                <span class="w-2 h-2 rounded-full bg-slate-600 flex-shrink-0"></span>
               </div>
-              <div class="flex items-baseline justify-between mt-2 mb-2">
-                <div class="text-2xl font-bold text-white tracking-tight" id="stat-missing">—</div>
-                <div class="text-[11px] text-slate-400 font-mono">Unconfigured</div>
+              <div class="flex items-baseline justify-between gap-2 my-2 min-w-0">
+                <div class="text-xl sm:text-2xl font-black text-white tracking-tight leading-none flex-shrink-0" id="stat-missing">—</div>
+                <div class="text-[10px] sm:text-[11px] text-slate-400 font-mono truncate text-right">Unconfigured</div>
               </div>
               <div class="w-full h-1 rounded-full bg-slate-800 overflow-hidden">
                 <div class="h-full bg-slate-700 rounded-full transition-all duration-500" id="stat-missing-bar" style="width: 30%"></div>
@@ -511,31 +511,31 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
           </div>
 
           <!-- Category Filter Pills + Layout Toggle & Sort Bar -->
-          <div class="flex flex-col sm:flex-row items-center justify-between gap-3 bg-[#0a0f1e]/70 p-2 rounded-xl border border-slate-800/80">
+          <div class="flex flex-col sm:flex-row items-center justify-between gap-3 bg-[#0a0f1e]/70 p-2.5 rounded-xl border border-slate-800/80">
             <!-- Left: Filter Pills with Counts -->
-            <div class="flex items-center gap-1.5 overflow-x-auto w-full sm:w-auto" id="category-filters">
-              <button onclick="setCategory('all')" class="cat-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#131d36] text-white border border-blue-500/40 shadow-sm transition" data-cat="all">
+            <div class="flex items-center gap-1.5 overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0 custom-scrollbar" id="category-filters">
+              <button onclick="setCategory('all')" class="cat-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#131d36] text-white border border-blue-500/40 shadow-sm transition flex-shrink-0" data-cat="all">
                 All <span class="ml-1 text-[10px] text-blue-300 font-mono" id="cat-count-all">0</span>
               </button>
-              <button onclick="setCategory('runtime')" class="cat-btn px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-white hover:bg-slate-800/50 border border-transparent transition" data-cat="runtime">
+              <button onclick="setCategory('runtime')" class="cat-btn px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-white hover:bg-slate-800/50 border border-transparent transition flex-shrink-0" data-cat="runtime">
                 Runtimes <span class="ml-1 text-[10px] text-slate-500 font-mono" id="cat-count-runtime">0</span>
               </button>
-              <button onclick="setCategory('mobile')" class="cat-btn px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-white hover:bg-slate-800/50 border border-transparent transition" data-cat="mobile">
+              <button onclick="setCategory('mobile')" class="cat-btn px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-white hover:bg-slate-800/50 border border-transparent transition flex-shrink-0" data-cat="mobile">
                 Mobile & SDKs <span class="ml-1 text-[10px] text-slate-500 font-mono" id="cat-count-mobile">0</span>
               </button>
-              <button onclick="setCategory('ide')" class="cat-btn px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-white hover:bg-slate-800/50 border border-transparent transition" data-cat="ide">
+              <button onclick="setCategory('ide')" class="cat-btn px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-white hover:bg-slate-800/50 border border-transparent transition flex-shrink-0" data-cat="ide">
                 IDEs & Editors <span class="ml-1 text-[10px] text-slate-500 font-mono" id="cat-count-ide">0</span>
               </button>
-              <button onclick="setCategory('vcs')" class="cat-btn px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-white hover:bg-slate-800/50 border border-transparent transition" data-cat="vcs">
+              <button onclick="setCategory('vcs')" class="cat-btn px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-white hover:bg-slate-800/50 border border-transparent transition flex-shrink-0" data-cat="vcs">
                 VCS / Git <span class="ml-1 text-[10px] text-slate-500 font-mono" id="cat-count-vcs">0</span>
               </button>
-              <button onclick="setCategory('container')" class="cat-btn px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-white hover:bg-slate-800/50 border border-transparent transition" data-cat="container">
+              <button onclick="setCategory('container')" class="cat-btn px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-white hover:bg-slate-800/50 border border-transparent transition flex-shrink-0" data-cat="container">
                 Containers <span class="ml-1 text-[10px] text-slate-500 font-mono" id="cat-count-container">0</span>
               </button>
             </div>
 
             <!-- Right: Layout Switcher & Sort Selector -->
-            <div class="flex items-center gap-2.5 w-full sm:w-auto justify-end">
+            <div class="flex items-center gap-2.5 w-full sm:w-auto justify-end flex-shrink-0">
               <div class="flex items-center bg-slate-900 border border-slate-800 rounded-lg p-0.5">
                 <button onclick="setLayout('grid')" id="layout-grid-btn" class="p-1.5 rounded-md text-xs bg-blue-600/30 text-blue-400 hover:text-white transition" title="Grid Layout">
                   <i class="fa-solid fa-table-cells-large"></i>
@@ -564,8 +564,8 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
             <button onclick="switchTab('settings')" class="text-blue-400 hover:text-blue-300 font-semibold text-xs flex-shrink-0">Manage Paths &rarr;</button>
           </div>
 
-          <!-- Tools Container: Grid View -->
-          <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4.5" id="tools-grid"></div>
+          <!-- Tools Container: Grid View with standard gap-5 lg:gap-6 -->
+          <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5 lg:gap-6" id="tools-grid"></div>
 
           <!-- Tools Container: List View -->
           <div id="tools-list-container" class="hidden glass-card rounded-xl border border-slate-800 overflow-hidden shadow-xl">
@@ -733,7 +733,7 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
           </div>
         </div>
 
-        <!-- ==================== VIEW 4: SETTINGS & SEARCH PATHS ==================== -->
+        <!-- ==================== VIEW 4: SETTINGS & SEARCH ROOTS ==================== -->
         <div id="view-settings" class="space-y-6 hidden">
           <!-- Monitored Search Roots Card -->
           <div class="glass-card rounded-xl p-6 border border-slate-800 space-y-5">
@@ -804,26 +804,26 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
       </main>
 
       <!-- PERSISTENT BOTTOM STATUS BAR -->
-      <footer class="h-9 px-5 bg-[#080d18] border-t border-slate-800/80 text-[11px] text-slate-400 flex items-center justify-between flex-shrink-0 z-20 select-none">
-        <div class="flex items-center gap-2.5">
-          <span class="flex items-center gap-1.5">
-            <span class="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_6px_#34d399]"></span>
-            Environment Watcher: <strong class="text-slate-200 font-semibold">Active</strong>
+      <footer class="h-9 px-4 sm:px-5 bg-[#080d18] border-t border-slate-800/80 text-[11px] text-slate-400 flex items-center justify-between flex-shrink-0 z-20 select-none">
+        <div class="flex items-center gap-2 sm:gap-2.5 truncate">
+          <span class="flex items-center gap-1.5 truncate">
+            <span class="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_6px_#34d399] flex-shrink-0"></span>
+            Environment Watcher: <strong class="text-slate-200 font-semibold truncate">Active</strong>
           </span>
-          <span class="text-slate-700">|</span>
-          <span class="font-mono">PATH Entries: <strong class="text-slate-200" id="status-path-count">25</strong></span>
-          <span class="text-slate-700">|</span>
-          <span class="font-mono">RAM Footprint: <strong class="text-slate-200" id="status-ram-count">114 MB</strong></span>
+          <span class="text-slate-700 hidden sm:inline">|</span>
+          <span class="font-mono hidden sm:inline">PATH Entries: <strong class="text-slate-200" id="status-path-count">25</strong></span>
+          <span class="text-slate-700 hidden md:inline">|</span>
+          <span class="font-mono hidden md:inline">RAM Footprint: <strong class="text-slate-200" id="status-ram-count">114 MB</strong></span>
         </div>
 
-        <div class="flex items-center gap-3">
+        <div class="flex items-center gap-2 sm:gap-3 flex-shrink-0">
           <button onclick="refreshActiveTab()" class="hover:text-white transition flex items-center gap-1">
             <kbd class="px-1.5 py-0.2 rounded bg-slate-800 border border-slate-700 text-[10px] font-mono text-slate-300">R</kbd>
-            <span>Rescan</span>
+            <span class="hidden sm:inline">Rescan</span>
           </button>
           <button onclick="fixAllSafe()" class="hover:text-white transition flex items-center gap-1">
             <kbd class="px-1.5 py-0.2 rounded bg-slate-800 border border-slate-700 text-[10px] font-mono text-slate-300">F</kbd>
-            <span>Fix All Safe</span>
+            <span class="hidden sm:inline">Fix All Safe</span>
           </button>
           <button onclick="toggleHelpModal()" class="hover:text-white transition flex items-center gap-1">
             <kbd class="px-1.5 py-0.2 rounded bg-slate-800 border border-slate-700 text-[10px] font-mono text-slate-300">?</kbd>
@@ -1038,14 +1038,14 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
       // Update Top Breadcrumb
       const bc = document.getElementById('top-breadcrumb');
       if (tab === 'env') {
-        bc.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-blue-400 shadow-[0_0_6px_#60a5fa]"></span> Environment & Diagnostics';
+        bc.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-blue-400 shadow-[0_0_6px_#60a5fa] flex-shrink-0"></span> Environment & Diagnostics';
       } else if (tab === 'ports') {
-        bc.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-indigo-400 shadow-[0_0_6px_#818cf8]"></span> Port Manager & Sockets';
+        bc.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-indigo-400 shadow-[0_0_6px_#818cf8] flex-shrink-0"></span> Port Manager & Sockets';
         fetchPorts();
       } else if (tab === 'project') {
-        bc.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_6px_#34d399]"></span> Project Workstation Auditor';
+        bc.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_6px_#34d399] flex-shrink-0"></span> Project Workstation Auditor';
       } else if (tab === 'settings') {
-        bc.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-slate-400"></span> Preferences & Search Roots';
+        bc.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-slate-400 flex-shrink-0"></span> Preferences & Search Roots';
         loadConfig();
         loadSystemInfo();
       }
@@ -1090,24 +1090,24 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
 
     function getBadge(status) {
       if (status === 'healthy') {
-        return '<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30"><span class="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_6px_#34d399]"></span> Healthy</span>';
+        return '<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 whitespace-nowrap"><span class="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_6px_#34d399]"></span> Healthy</span>';
       }
       if (status === 'warning') {
-        return '<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-amber-500/15 text-amber-300 border border-amber-500/30"><i class="fa-solid fa-triangle-exclamation text-[10px]"></i> Action Needed</span>';
+        return '<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-amber-500/15 text-amber-300 border border-amber-500/30 whitespace-nowrap"><i class="fa-solid fa-triangle-exclamation text-[10px]"></i> Action Needed</span>';
       }
       if (status === 'error') {
-        return '<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-rose-500/15 text-rose-300 border border-rose-500/30"><i class="fa-solid fa-xmark text-[10px]"></i> Error</span>';
+        return '<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-rose-500/15 text-rose-300 border border-rose-500/30 whitespace-nowrap"><i class="fa-solid fa-xmark text-[10px]"></i> Error</span>';
       }
-      return '<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-slate-800/80 text-slate-400 border border-slate-700/80"><span class="w-1.5 h-1.5 rounded-full bg-slate-500"></span> Not Detected</span>';
+      return '<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-slate-800/80 text-slate-400 border border-slate-700/80 whitespace-nowrap"><span class="w-1.5 h-1.5 rounded-full bg-slate-500"></span> Not Detected</span>';
     }
 
     function setCategory(cat) {
       currentCategory = cat;
       document.querySelectorAll('.cat-btn').forEach(b => {
         if (b.getAttribute('data-cat') === cat) {
-          b.className = 'cat-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#131d36] text-white border border-blue-500/40 shadow-sm transition';
+          b.className = 'cat-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#131d36] text-white border border-blue-500/40 shadow-sm transition flex-shrink-0';
         } else {
-          b.className = 'cat-btn px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-white hover:bg-slate-800/50 border border-transparent transition';
+          b.className = 'cat-btn px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-white hover:bg-slate-800/50 border border-transparent transition flex-shrink-0';
         }
       });
       renderTools();
@@ -1202,13 +1202,13 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
 
       tools.forEach(r => {
         const card = document.createElement('div');
-        card.className = 'glass-card rounded-2xl p-5 flex flex-col justify-between transition-all duration-200';
+        card.className = 'glass-card rounded-2xl p-5 sm:p-6 flex flex-col justify-between transition-all duration-200 border border-slate-800/80 hover:border-slate-700/90 shadow-xl';
 
         // Paths block
         let pathsHtml = '';
         if (r.home_path) {
           pathsHtml += `
-            <div class="bg-[#070b16] p-2.5 rounded-lg border border-slate-800/80 flex items-center justify-between gap-2">
+            <div class="bg-[#070b16] p-2.5 rounded-lg border border-slate-800/80 flex items-center justify-between gap-2 min-w-0">
               <div class="truncate text-slate-300 font-mono text-[11px]" title="ROOT: ${r.home_path}">
                 <span class="text-blue-400 font-sans font-bold text-[10px] uppercase tracking-wider mr-1">ROOT:</span>${r.home_path}
               </div>
@@ -1221,7 +1221,7 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
         }
         if (r.binary_path && r.binary_path !== r.home_path) {
           pathsHtml += `
-            <div class="bg-[#070b16] p-2.5 rounded-lg border border-slate-800/80 flex items-center justify-between gap-2">
+            <div class="bg-[#070b16] p-2.5 rounded-lg border border-slate-800/80 flex items-center justify-between gap-2 min-w-0">
               <div class="truncate text-slate-300 font-mono text-[11px]" title="BINARY: ${r.binary_path}">
                 <span class="text-emerald-400 font-sans font-bold text-[10px] uppercase tracking-wider mr-1">BINARY:</span>${r.binary_path}
               </div>
@@ -1235,7 +1235,7 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
 
         // Companions block
         const companionsHtml = (r.companions || []).map(c => `
-          <span class="inline-flex items-center gap-1.5 text-[11px] px-2 py-0.5 rounded ${c.installed ? 'bg-slate-800/90 text-slate-300 border border-slate-700/80' : 'bg-slate-900/60 text-slate-600'}">
+          <span class="inline-flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-md ${c.installed ? 'bg-slate-800/90 text-slate-300 border border-slate-700/80' : 'bg-slate-900/60 text-slate-600'}">
             <i class="fa-solid ${c.installed ? 'fa-check text-emerald-400' : 'fa-xmark text-slate-600'} text-[10px]"></i>
             <span class="font-medium">${c.name}</span>
             ${c.version ? '<span class="text-slate-400 font-mono text-[10px]">' + c.version + '</span>' : ''}
@@ -1244,19 +1244,19 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
 
         // Diagnostics block
         const diagnosticsHtml = (r.diagnostics || []).map(d => `
-          <div class="mt-3 p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs space-y-2">
-            <div class="font-medium flex items-start gap-2">
+          <div class="mt-3.5 p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs space-y-2.5">
+            <div class="font-medium flex items-start gap-2 leading-snug">
               <i class="fa-solid fa-triangle-exclamation text-amber-400 mt-0.5 flex-shrink-0"></i>
               <span>${d.message}</span>
             </div>
             ${d.suggested_fix ? `
-              <div class="space-y-1.5 pt-1">
-                <div class="bg-slate-950 p-2 rounded-lg border border-amber-500/20 flex items-center justify-between gap-2 font-mono text-[11px] text-slate-200">
+              <div class="space-y-2 pt-1">
+                <div class="bg-slate-950 p-2.5 rounded-lg border border-amber-500/20 flex items-center justify-between gap-2 font-mono text-[11px] text-slate-200 min-w-0">
                   <code class="truncate">${d.suggested_fix}</code>
                   <button onclick="copyToClipboard('${d.suggested_fix.replace(/\\\\/g, '\\\\\\\\')}', 'command')" class="px-2 py-0.5 rounded bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 text-[10px] font-bold flex-shrink-0 transition">Copy</button>
                 </div>
                 <div class="flex justify-end pt-1">
-                  <button onclick="applyFix('${d.suggested_fix.replace(/\\\\/g, '\\\\\\\\')}')" class="px-3 py-1 bg-amber-500 hover:bg-amber-400 text-slate-950 rounded-lg text-xs font-bold transition flex items-center gap-1.5 shadow-sm">
+                  <button onclick="applyFix('${d.suggested_fix.replace(/\\\\/g, '\\\\\\\\')}')" class="px-3.5 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 rounded-lg text-xs font-bold transition flex items-center gap-1.5 shadow-sm">
                     <i class="fa-solid fa-bolt text-[10px]"></i>
                     <span>Apply System Fix</span>
                   </button>
@@ -1269,51 +1269,51 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
         // Card footer action
         let footerHtml = '';
         if (r.status === 'healthy') {
-          footerHtml = `<div class="pt-3 border-t border-slate-800/80 flex items-center justify-between text-[11px] text-slate-400">
+          footerHtml = `<div class="flex items-center justify-between text-[11px] text-slate-400">
             <span class="flex items-center gap-1.5 text-emerald-400 font-medium"><span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> Ready to build</span>
-            ${r.home_path ? `<button onclick="openFolder('${r.home_path.replace(/\\\\/g, '\\\\\\\\')}')" class="text-blue-400 hover:text-blue-300 font-medium">Explore &rarr;</button>` : ''}
+            ${r.home_path ? `<button onclick="openFolder('${r.home_path.replace(/\\\\/g, '\\\\\\\\')}')" class="text-blue-400 hover:text-blue-300 font-semibold transition">Explore &rarr;</button>` : ''}
           </div>`;
         } else if (r.status === 'not_found') {
-          footerHtml = `<div class="pt-3 border-t border-slate-800/80 flex items-center justify-between text-[11px] text-slate-500">
+          footerHtml = `<div class="flex items-center justify-between text-[11px] text-slate-500">
             <span>Not configured</span>
-            <button onclick="switchTab('settings')" class="text-blue-400 hover:text-blue-300 font-medium">Detect Custom Path</button>
+            <button onclick="switchTab('settings')" class="text-blue-400 hover:text-blue-300 font-semibold transition">Detect Custom Path</button>
           </div>`;
         } else {
-          footerHtml = `<div class="pt-3 border-t border-slate-800/80 flex items-center justify-between text-[11px] text-amber-400 font-medium">
+          footerHtml = `<div class="flex items-center justify-between text-[11px] text-amber-400 font-medium">
             <span>Action recommended</span>
-            <button onclick="switchTab('settings')" class="text-slate-400 hover:text-white">Settings</button>
+            <button onclick="switchTab('settings')" class="text-slate-400 hover:text-white transition">Settings</button>
           </div>`;
         }
 
         card.innerHTML = `
           <div>
-            <div class="flex items-start justify-between gap-2 mb-3">
-              <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-xl bg-[#0e1526] border border-slate-700/60 flex items-center justify-center text-lg flex-shrink-0">
+            <div class="flex items-start justify-between gap-3 mb-4">
+              <div class="flex items-center gap-3 min-w-0">
+                <div class="w-11 h-11 rounded-xl bg-[#0e1526] border border-slate-700/60 flex items-center justify-center text-lg flex-shrink-0 shadow-inner">
                   ${getToolIcon(r.id, r.category)}
                 </div>
-                <div>
-                  <h3 class="font-bold text-white text-base tracking-tight flex items-center gap-2">
+                <div class="min-w-0">
+                  <h3 class="font-bold text-white text-base tracking-tight truncate flex items-center gap-2" title="${r.name}">
                     ${r.name}
                   </h3>
-                  <div class="text-xs font-mono font-semibold text-blue-400 mt-0.5">
+                  <div class="text-xs font-mono font-semibold text-blue-400 mt-0.5 truncate">
                     ${r.version ? 'v' + r.version : (r.installed ? '<span class="text-slate-400 font-normal">Installed</span>' : '<span class="text-slate-500 font-normal">Not detected</span>')}
                   </div>
                 </div>
               </div>
-              <div class="flex flex-col items-end gap-1.5">
-                <span class="text-[10px] text-slate-400 uppercase tracking-wider font-mono font-semibold px-2 py-0.5 bg-slate-800/80 rounded border border-slate-700/60">${r.category}</span>
+              <div class="flex flex-col items-end gap-1.5 flex-shrink-0">
+                <span class="text-[10px] text-slate-400 uppercase tracking-wider font-mono font-semibold px-2 py-0.5 bg-slate-800/90 rounded border border-slate-700/60">${r.category}</span>
                 ${getBadge(r.status)}
               </div>
             </div>
 
-            <div class="space-y-2 mt-4 text-xs">
-              ${pathsHtml || '<div class="text-xs text-slate-500 italic p-2 bg-[#070b16] rounded-lg border border-slate-800/60">No binary or home path resolved in system</div>'}
+            <div class="space-y-2.5 my-3.5 text-xs">
+              ${pathsHtml || '<div class="text-xs text-slate-500 italic p-2.5 bg-[#070b16] rounded-lg border border-slate-800/60">No binary or home path resolved in system</div>'}
 
               ${r.companions && r.companions.length > 0 ? `
                 <div class="pt-2">
-                  <div class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Companion Subsystems:</div>
-                  <div class="flex flex-wrap gap-1.5">${companionsHtml}</div>
+                  <div class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">COMPANION SUBSYSTEMS:</div>
+                  <div class="flex flex-wrap gap-2">${companionsHtml}</div>
                 </div>
               ` : ''}
 
@@ -1321,7 +1321,7 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
             </div>
           </div>
 
-          <div class="mt-4">
+          <div class="mt-5 pt-3.5 border-t border-slate-800/80">
             ${footerHtml}
           </div>
         `;
@@ -1344,7 +1344,7 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
         tr.innerHTML = `
           <td class="py-3 px-4 font-bold text-white flex items-center gap-2">
             <span class="w-6 h-6 rounded bg-slate-800 flex items-center justify-center text-xs flex-shrink-0">${getToolIcon(r.id, r.category)}</span>
-            <span>${r.name}</span>
+            <span class="truncate max-w-[150px]">${r.name}</span>
           </td>
           <td class="py-3 px-4 uppercase text-[10px] font-mono text-slate-400">${r.category}</td>
           <td class="py-3 px-4">${getBadge(r.status)}</td>

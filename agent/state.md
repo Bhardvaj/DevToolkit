@@ -48,8 +48,10 @@ This document is continuously updated to reflect current project status, complet
   - [x] Fully documented all CLI commands, UI walkthrough, keyboard shortcuts, dual-mode behavior, 4-layer discovery pipeline, and plugin authoring.
 - [x] Step 3.5: **Master Software Documentation**:
   - [x] Authored `agent/documentation.md` containing an exhaustive architectural and technical manual.
-- [x] Step 3.6: **Test Suite Verification**:
-  - [x] 100% of unit tests passing (29 test suite items verified).
+- [x] Step 3.6: **Test Suite Verification & Packaging Hardening**:
+  - [x] 100% of unit tests passing (30 test suite items verified).
+  - [x] Fixed PyInstaller standalone binary inspector discovery: exported `BUILTIN_INSPECTORS` in `devtoolkit/modules/inspectors/__init__.py` and registered them directly in `PluginRegistry.discover_inspectors()`.
+  - [x] Fixed grid card spacing (`gap-5 lg:gap-6`) and top stat boxes alignment on narrow screens (`grid-cols-2 sm:grid-cols-3 xl:grid-cols-6` with flex clipping and standard padding).
 
 ---
 

@@ -36,22 +36,34 @@ class PluginRegistry:
 
     def discover_inspectors(self) -> None:
         """Dynamically find and load all BaseInspector subclasses in devtoolkit.modules.inspectors."""
-        package = inspectors_pkg
-        for _, module_name, _ in pkgutil.iter_modules(package.__path__):
-            full_module_name = f"{package.__name__}.{module_name}"
+        # 1. Register builtin inspectors (guaranteed bundled and available in PyInstaller frozen executables)
+        builtin = getattr(inspectors_pkg, "BUILTIN_INSPECTORS", [])
+        for cls in builtin:
             try:
-                module = importlib.import_module(full_module_name)
-                for _, obj in inspect.getmembers(module, inspect.isclass):
-                    if (
-                        issubclass(obj, BaseInspector)
-                        and obj is not BaseInspector
-                        and getattr(obj, "id", "base") != "base"
-                    ):
-                        instance = obj()
-                        self.register_inspector(instance)
-            except Exception as e:
-                # Silently catch module import failures or log in verbose mode
+                self.register_inspector(cls())
+            except Exception:
                 continue
+
+        # 2. Also dynamically scan package directory for any custom/external inspector modules
+        package = inspectors_pkg
+        try:
+            for _, module_name, _ in pkgutil.iter_modules(package.__path__):
+                full_module_name = f"{package.__name__}.{module_name}"
+                try:
+                    module = importlib.import_module(full_module_name)
+                    for _, obj in inspect.getmembers(module, inspect.isclass):
+                        if (
+                            issubclass(obj, BaseInspector)
+                            and obj is not BaseInspector
+                            and getattr(obj, "id", "base") != "base"
+                        ):
+                            if obj.id not in self._inspectors:
+                                instance = obj()
+                                self.register_inspector(instance)
+                except Exception:
+                    continue
+        except Exception:
+            pass
 
     def run_audit(
         self,

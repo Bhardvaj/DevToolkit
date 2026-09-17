@@ -23,13 +23,13 @@ Write-Host "=================================================" -ForegroundColor 
 
 # 1. Check Python and Virtual Environment
 if (-not $PythonExe) {
-    $SysPython = Get-Command python -ErrorAction SilentlyContinue
-    if ($SysPython) {
-        $PythonExe = $SysPython.Source
+    $VenvPython = Join-Path $PSScriptRoot "..\.venv\Scripts\python.exe"
+    if (Test-Path $VenvPython) {
+        $PythonExe = (Resolve-Path $VenvPython).Path
     } else {
-        $VenvPython = Join-Path $PSScriptRoot "..\.venv\Scripts\python.exe"
-        if (Test-Path $VenvPython) {
-            $PythonExe = $VenvPython
+        $SysPython = Get-Command python -ErrorAction SilentlyContinue
+        if ($SysPython) {
+            $PythonExe = $SysPython.Source
         }
     }
 }
@@ -94,6 +94,7 @@ $EntryScript = Join-Path $WorkspaceRoot "devtoolkit\cli\main.py"
     --hidden-import "devtoolkit.core" `
     --hidden-import "devtoolkit.modules.inspectors" `
     --hidden-import "devtoolkit.modules.utilities" `
+    --collect-submodules "devtoolkit" `
     --hidden-import "webview" `
     --hidden-import "webview.platforms" `
     --hidden-import "webview.platforms.winforms" `
