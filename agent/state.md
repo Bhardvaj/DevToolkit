@@ -45,5 +45,9 @@ This document is continuously updated to reflect current project status, complet
 - [x] Step 2.6: Verified Standalone Distribution Pipeline:
   - [x] Automated CI compilation on GitHub Actions Windows Server runner (`windows-latest`).
   - [x] Verified binary build artifact (`DevToolkit-Windows-x64`) generated, smoke tested, and downloaded.
+- [x] Step 2.7: Manual Release Trigger Control:
+  - [x] Removed automatic `push` and `pull_request` triggers from `.github/workflows/build.yml`.
+  - [x] Configured `workflow_dispatch` with release options + `release: published` trigger.
+
 
 
