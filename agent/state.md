@@ -4,13 +4,14 @@ This document is continuously updated to reflect current project status, complet
 
 ---
 
-## Current Status: Phase 1.5 Complete (Generalized 4-Layer Discovery Pipeline)
-- **Active Task**: Verification and documentation of 4-layer discovery pipeline complete; ready to commit and push to GitHub.
+## Current Status: Phase 1 Complete (Auditor, Generalized Discovery & UI)
+- **Active Task**: Phase 1 signed off. Ready for Phase 2 roadmap planning.
 - **Architecture**: Decoupled Engine + 4-Layer Generalized Discovery + PyWebView & FastAPI Hybrid UI.
+- **Repository**: Synced on GitHub at [https://github.com/Bhardvaj/DevToolkit](https://github.com/Bhardvaj/DevToolkit).
 
 ---
 
-## Milestone Checklist
+## Milestone Checklist: Phase 1
 
 - [x] Step 0.1: Define project requirements and extensible architecture.
 - [x] Step 0.2: Design `agent/` persistent knowledge base (`map.md`, `codebase.md`, `decisions.md`, `state.md`).
@@ -37,11 +38,12 @@ This document is continuously updated to reflect current project status, complet
   - [x] `devtoolkit doctor`: Health diagnostic checks with actionable suggestions
   - [x] `devtoolkit config`: Manage user settings and custom search roots
 - [x] Step 5: Implement UI & Desktop Layer:
-  - [x] FastAPI REST endpoints (`/api/audit`, `/api/tools`, `/api/system`, `/api/config`, `/api/action/open-folder`)
+  - [x] FastAPI REST endpoints (`/api/audit`, `/api/tools`, `/api/system`, `/api/config`, `/api/config/search-paths`, `/api/action/open-folder`)
   - [x] Modern, responsive dark-mode UI with live search, category pills, badges, 1-click copy path, open folder in Explorer, and refresh audit
+  - [x] Settings & Search Paths modal for Layer 4 directory management
   - [x] Desktop window launcher (PyWebView Edge WebView2) and local browser dashboard (`devtoolkit ui --web`)
 - [x] Step 6: Automated Test Suite:
-  - [x] 19 automated tests passing in `tests/` (`test_runner.py`, `test_registry.py`, `test_inspectors.py`, `test_server.py`, `test_signatures.py`, `test_config.py`, `test_discovery.py`)
+  - [x] 20 automated tests passing in `tests/` with 0 warnings (`test_runner.py`, `test_registry.py`, `test_inspectors.py`, `test_server.py`, `test_signatures.py`, `test_config.py`, `test_discovery.py`)
 - [x] Step 7: Generalized 4-Layer Discovery Architecture:
   - [x] Layer 1: System PATH & official environment variables
   - [x] Layer 2: Dynamic OS application inventory (Windows Registry Uninstall & App Paths hives)
@@ -51,14 +53,14 @@ This document is continuously updated to reflect current project status, complet
 
 ---
 
-## Session Notes & Environment Verification
-- Machine: Windows 11 (AMD64), Host `DEXTER-2`.
-- Active runtimes dynamically discovered (0 hardcoded paths):
-  - Node.js 24.20.0 (via NVM shim)
-  - Python 3.14.5 (system runtime)
-  - Git 2.54.0 (with gh 2.94.0)
-  - Flutter 3.44.2 (with Dart 3.12.2)
-  - Android Studio 2026.1.1 (resolved via OS Inventory Registry)
-  - Android SDK 37.0.0 (resolved via Android Studio standard XML & Flutter ecosystem)
-  - OpenJDK 21.0.10 & javac (resolved via Android Studio JBR ecosystem)
-- Actionable doctor warnings correctly generated for missing `ANDROID_HOME`, `JAVA_HOME`, and PATH exposure.
+## Phase 2 Candidate Roadmap
+
+1. **Extensible Utilities (`devtoolkit/modules/utilities/`)**:
+   - **Environment Variable Manager / Auto-Fixer**: 1-click apply suggested doctor fixes (e.g. set `ANDROID_HOME` or `JAVA_HOME` into Windows User environment variables).
+   - **Cache & Artifact Cleaners**: Free disk space by auditing and cleaning build caches (`npm cache`, `pip cache`, `.gradle/caches`, `docker system prune`, `.pub-cache`).
+   - **Port Manager & Killer**: Inspect processes occupying developer ports (`3000`, `8080`, `5000`, `8000`, etc.) with 1-click safe kill.
+   - **Project Workstation Auditor**: Point DevToolkit at any repo folder to verify if your machine satisfies the project's prerequisites (e.g. Flutter app, Node.js app, or Python project).
+
+2. **UI & Desktop Enhancements**:
+   - Tabbed navigation in UI: **Auditor** | **Utilities** | **Settings**.
+   - Standalone executable compilation (`pyinstaller` single-file `.exe` distribution).
