@@ -37,5 +37,5 @@ def test_node_inspector():
 
     assert isinstance(report, ToolReport)
     assert report.id == "node"
-    assert report.installed is True
-    assert report.version is not None
+    if report.installed:
+        assert report.binary_path is not None

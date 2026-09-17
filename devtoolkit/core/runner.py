@@ -27,7 +27,7 @@ class CommandResult(BaseModel):
 class SafeRunner:
     """Executes safe, non-destructive external commands with timeouts and resolves paths."""
 
-    def __init__(self, default_timeout: float = 3.0):
+    def __init__(self, default_timeout: float = 5.0):
         self.default_timeout = default_timeout
         self._discovery = None
 
@@ -55,17 +55,23 @@ class SafeRunner:
         try:
             # On Windows, prevent flashing a command prompt console window
             startupinfo = None
+            use_shell = False
             if sys.platform == "win32":
                 startupinfo = subprocess.STARTUPINFO()
                 startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+                startupinfo.wShowWindow = subprocess.SW_HIDE
+                if cmd and any(str(cmd[0]).lower().endswith(ext) for ext in [".cmd", ".bat"]):
+                    use_shell = True
 
             process = subprocess.run(
                 cmd,
                 capture_output=True,
+                stdin=subprocess.DEVNULL,
                 text=True,
                 timeout=effective_timeout,
                 env=run_env,
                 startupinfo=startupinfo,
+                shell=use_shell,
                 errors="replace",
             )
             return CommandResult(
