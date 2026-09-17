@@ -49,5 +49,22 @@ This document is continuously updated to reflect current project status, complet
   - [x] Removed automatic `push` and `pull_request` triggers from `.github/workflows/build.yml`.
   - [x] Configured `workflow_dispatch` with release options + `release: published` trigger.
 
+---
+
+## Phase 3 Candidate Ideas & Horizons
+
+1. **Build Cache & Disk Cleaner (`devtoolkit clean`)**:
+   - Free gigabytes of workstation storage by auditing and pruning build caches:
+     - `npm cache clean` / `pnpm store prune` / `yarn cache clean`
+     - `pip cache purge`
+     - `.gradle/caches` and `.gradle/daemon`
+     - `docker system prune -f`
+     - Flutter `.pub-cache`
+2. **Environment Variable Auto-Fixer**:
+   - 1-click apply suggested doctor fixes directly from CLI or UI (e.g. setting missing `ANDROID_HOME` or `JAVA_HOME` in Windows User Registry).
+3. **Multi-Platform Distribution**:
+   - Expand the CI matrix in `.github/workflows/build.yml` to build macOS (`DevToolkit-macOS-arm64`) and Linux (`DevToolkit-linux-x86_64`) standalone binaries alongside Windows.
+
+
 
 
