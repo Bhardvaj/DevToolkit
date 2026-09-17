@@ -99,12 +99,13 @@ $EntryScript = Join-Path $WorkspaceRoot "devtoolkit\cli\main.py"
 if ($LASTEXITCODE -eq 0) {
     $TargetExe = Join-Path $DistPath "$BinaryName.exe"
     if (Test-Path $TargetExe) {
-        $SizeMB = [math]::Round((Get-Item $TargetExe).Length / 1MB, 2)
-        Write-Host "`n✓ SUCCESS: Standalone binary compiled successfully!" -ForegroundColor Green
-        Write-Host "  Binary: $TargetExe ($SizeMB MB)" -ForegroundColor White
-        Write-Host "  Test it: & '$TargetExe' inspect" -ForegroundColor White
+        $Item = Get-Item $TargetExe
+        $Size = [math]::Round($Item.Length / 1MB, 2)
+        Write-Host "`n[+] SUCCESS: Standalone binary compiled successfully!" -ForegroundColor Green
+        Write-Host "  Binary: $TargetExe" -ForegroundColor White
+        Write-Host "  Size: $Size MB" -ForegroundColor White
     }
 } else {
-    Write-Error "`n✗ Build failed with exit code $LASTEXITCODE."
+    Write-Error "Build failed with exit code $LASTEXITCODE."
 }
 
