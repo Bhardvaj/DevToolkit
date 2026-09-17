@@ -11,7 +11,8 @@
 [CmdletBinding()]
 param(
     [string]$OutputDir = "dist",
-    [string]$BinaryName = "DevToolkit"
+    [string]$BinaryName = "DevToolkit",
+    [string]$PythonExe = ""
 )
 
 $ErrorActionPreference = "Stop"
@@ -21,13 +22,20 @@ Write-Host " DevToolkit Standalone Distribution Builder      " -ForegroundColor 
 Write-Host "=================================================" -ForegroundColor Cyan
 
 # 1. Check Python and Virtual Environment
-$PythonExe = Join-Path $PSScriptRoot "..\.venv\Scripts\python.exe"
-if (-not (Test-Path $PythonExe)) {
-    $PythonExe = (Get-Command python -ErrorAction SilentlyContinue).Source
+if (-not $PythonExe) {
+    $SysPython = Get-Command python -ErrorAction SilentlyContinue
+    if ($SysPython) {
+        $PythonExe = $SysPython.Source
+    } else {
+        $VenvPython = Join-Path $PSScriptRoot "..\.venv\Scripts\python.exe"
+        if (Test-Path $VenvPython) {
+            $PythonExe = $VenvPython
+        }
+    }
 }
 
-if (-not $PythonExe) {
-    Write-Error "Python executable not found. Please activate your virtual environment."
+if (-not $PythonExe -or -not (Test-Path $PythonExe)) {
+    Write-Error "Python executable not found. Please specify -PythonExe or activate your environment."
     exit 1
 }
 
@@ -99,3 +107,4 @@ if ($LASTEXITCODE -eq 0) {
 } else {
     Write-Error "`n✗ Build failed with exit code $LASTEXITCODE."
 }
+

@@ -21,3 +21,4 @@ def test_port_manager_system_critical_protection():
     res = pm.kill_port(target_port=99999)
     assert res.success is False
     assert "No active process" in res.message
+

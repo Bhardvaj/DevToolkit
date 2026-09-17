@@ -345,3 +345,4 @@ class ProjectAuditor:
         )
         if not has_go:
             actions.append("Install Go compiler (https://go.dev).")
+
