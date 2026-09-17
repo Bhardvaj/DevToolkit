@@ -59,3 +59,15 @@ def add_search_path(path_str: str) -> bool:
         save_config(config)
         return True
     return False
+
+
+def remove_search_path(path_str: str) -> bool:
+    """Remove a custom search path from user configuration."""
+    config = load_config()
+    normalized = str(Path(path_str).expanduser().resolve())
+    for sp in list(config.search_paths):
+        if sp == path_str or str(Path(sp).expanduser().resolve()) == normalized:
+            config.search_paths.remove(sp)
+            save_config(config)
+            return True
+    return False

@@ -1,6 +1,17 @@
 """Tests for DevToolkit local API server routing and handlers."""
 
-from devtoolkit.server.app import app, get_system, get_tools, get_audit, serve_dashboard
+from pathlib import Path
+from devtoolkit.server.app import (
+    app,
+    get_system,
+    get_tools,
+    get_audit,
+    get_config,
+    post_search_path,
+    delete_search_path,
+    serve_dashboard,
+    SearchPathRequest,
+)
 
 
 def test_server_routes_registered():
@@ -8,6 +19,8 @@ def test_server_routes_registered():
     assert "/api/system" in route_paths
     assert "/api/tools" in route_paths
     assert "/api/audit" in route_paths
+    assert "/api/config" in route_paths
+    assert "/api/config/search-paths" in route_paths
     assert "/api/action/open-folder" in route_paths
     assert "/" in route_paths
 
@@ -33,7 +46,29 @@ def test_get_audit_handler():
     assert len(summary.reports) == summary.total_tools
 
 
+def test_config_handlers(tmp_path, monkeypatch):
+    test_cfg = tmp_path / "test_config.yaml"
+    monkeypatch.setattr("devtoolkit.core.config.get_config_path", lambda: test_cfg)
+
+    cfg = get_config()
+    assert hasattr(cfg, "search_paths")
+
+    custom_dir = tmp_path / "custom_tools"
+    custom_dir.mkdir()
+
+    # Add path
+    res = post_search_path(SearchPathRequest(path=str(custom_dir)))
+    assert res["status"] == "ok"
+    assert str(custom_dir) in res["config"].search_paths
+
+    # Remove path
+    del_res = delete_search_path(SearchPathRequest(path=str(custom_dir)))
+    assert del_res["status"] == "ok"
+    assert str(custom_dir) not in del_res["config"].search_paths
+
+
 def test_serve_dashboard():
     response = serve_dashboard()
     assert "DevToolkit" in response
     assert "glass-card" in response
+    assert "Settings & Search Paths" in response

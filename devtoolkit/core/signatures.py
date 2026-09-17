@@ -129,17 +129,10 @@ def scan_roots_for_tools(roots: List[Path], max_depth: int = 2) -> Dict[str, Lis
 
 
 def _scan_recursive(current: Path, depth: int, max_depth: int, results: Dict[str, List[Path]]) -> None:
-    # First check current directory against all signatures
-    matched_any = False
     for tool_id, checker in SIGNATURE_CHECKERS.items():
         if checker(current):
             if current not in results[tool_id]:
                 results[tool_id].append(current)
-            matched_any = True
-
-    # If the directory matched a top-level tool, we don't need to deeply recurse inside its internals
-    if matched_any:
-        return
 
     if depth >= max_depth:
         return
