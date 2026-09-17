@@ -17,6 +17,7 @@ class GoInspector(BaseInspector):
     id = "golang"
     name = "Go"
     category = "runtime"
+    categories = ["runtime", "compiler"]
     description = "Go compiler runtime, GOPATH, and GOROOT environment"
 
     def inspect(self, runner: SafeRunner) -> ToolReport:
@@ -26,6 +27,7 @@ class GoInspector(BaseInspector):
                 id=self.id,
                 name=self.name,
                 category=self.category,
+                categories=self.categories,
                 installed=False,
                 status=HealthStatus.NOT_FOUND,
             )
@@ -53,6 +55,7 @@ class GoInspector(BaseInspector):
             id=self.id,
             name=self.name,
             category=self.category,
+            categories=self.categories,
             installed=True,
             version=version,
             binary_path=str(go_bin),

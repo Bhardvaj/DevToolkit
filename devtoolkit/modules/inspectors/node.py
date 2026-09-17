@@ -17,6 +17,7 @@ class NodeInspector(BaseInspector):
     id = "node"
     name = "Node.js"
     category = "runtime"
+    categories = ["runtime", "web"]
     description = "Node.js runtime, npm, and modern JavaScript package managers"
 
     def inspect(self, runner: SafeRunner) -> ToolReport:
@@ -26,6 +27,7 @@ class NodeInspector(BaseInspector):
                 id=self.id,
                 name=self.name,
                 category=self.category,
+                categories=self.categories,
                 installed=False,
                 status=HealthStatus.NOT_FOUND,
             )
@@ -70,6 +72,7 @@ class NodeInspector(BaseInspector):
             id=self.id,
             name=self.name,
             category=self.category,
+            categories=self.categories,
             installed=True,
             version=version,
             binary_path=str(node_bin),

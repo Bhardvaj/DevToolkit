@@ -21,6 +21,7 @@ class AndroidStudioInspector(BaseInspector):
     id = "android_studio"
     name = "Android Studio"
     category = "ide"
+    categories = ["ide", "mobile"]
     description = "Android Studio IDE, JetBrains Runtime (JBR), and mobile tooling"
 
     def inspect(self, runner: SafeRunner) -> ToolReport:
@@ -30,6 +31,7 @@ class AndroidStudioInspector(BaseInspector):
                 id=self.id,
                 name=self.name,
                 category=self.category,
+                categories=self.categories,
                 installed=False,
                 status=HealthStatus.NOT_FOUND,
             )
@@ -100,6 +102,7 @@ class AndroidStudioInspector(BaseInspector):
             id=self.id,
             name=self.name,
             category=self.category,
+            categories=self.categories,
             installed=True,
             version=version,
             binary_path=str(launcher_bin) if launcher_bin else None,

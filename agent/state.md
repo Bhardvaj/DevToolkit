@@ -59,7 +59,13 @@ This document is continuously updated to reflect current project status, complet
   - [x] Removed uptime counter from Host pill at the top of the sidebar.
   - [x] Removed sidebar footer (profile card and "watcher active" block) for a cleaner vertical navigation panel.
   - [x] Removed "Fix all safe" button and shortcut from bottom right status bar.
-  - [x] Updated standalone packaging and verified all 30 tests pass.
+- [x] Step 3.8: **Card Action Simplification & Multi-Category Architecture**:
+  - [x] Removed card footer ("Ready to build", "Explore &rarr;", "Not configured", "Settings" buttons) for a cleaner, compact presentation.
+  - [x] Streamlined ROOT and BINARY actions: removed redundant Run button (`play` icon), added reliable Copy and Open Folder actions to both.
+  - [x] Fixed Open Folder action on Windows: resolved JavaScript backslash escape string interpolation by binding paths through HTML `data-path` attributes and using native Win32 `os.startfile` on backend with Explorer fallback.
+  - [x] Implemented multi-category architecture: added `categories: List[str]` across `BaseInspector`, `ToolReport`, `PluginRegistry`, and all 10 inspector implementations.
+  - [x] Updated UI category filter pills and tool cards to render multiple category badges and match across all applicable tags.
+  - [x] Verified full test suite (31 tests passing) and recompiled standalone executable (`dist/DevToolkit.exe`).
 
 ---
 

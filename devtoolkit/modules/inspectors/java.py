@@ -21,6 +21,7 @@ class JavaInspector(BaseInspector):
     id = "java"
     name = "Java / JDK"
     category = "runtime"
+    categories = ["runtime", "mobile", "sdk"]
     description = "Java Virtual Machine (JVM), Java Compiler (javac), and JAVA_HOME environment"
 
     def inspect(self, runner: SafeRunner) -> ToolReport:
@@ -39,6 +40,7 @@ class JavaInspector(BaseInspector):
                 id=self.id,
                 name=self.name,
                 category=self.category,
+                categories=self.categories,
                 installed=False,
                 status=HealthStatus.NOT_FOUND,
             )
@@ -120,6 +122,7 @@ class JavaInspector(BaseInspector):
             id=self.id,
             name=self.name,
             category=self.category,
+            categories=self.categories,
             installed=True,
             version=version,
             binary_path=str(resolved_java) if resolved_java else None,

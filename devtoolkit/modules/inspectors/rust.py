@@ -17,6 +17,7 @@ class RustInspector(BaseInspector):
     id = "rust"
     name = "Rust / Cargo"
     category = "runtime"
+    categories = ["runtime", "compiler"]
     description = "Rust compiler (rustc), Cargo package manager, and rustup toolchains"
 
     def inspect(self, runner: SafeRunner) -> ToolReport:
@@ -26,6 +27,7 @@ class RustInspector(BaseInspector):
                 id=self.id,
                 name=self.name,
                 category=self.category,
+                categories=self.categories,
                 installed=False,
                 status=HealthStatus.NOT_FOUND,
             )
@@ -76,6 +78,7 @@ class RustInspector(BaseInspector):
             id=self.id,
             name=self.name,
             category=self.category,
+            categories=self.categories,
             installed=True,
             version=version,
             binary_path=str(rustc_bin),

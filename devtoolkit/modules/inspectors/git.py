@@ -17,6 +17,7 @@ class GitInspector(BaseInspector):
     id = "git"
     name = "Git"
     category = "vcs"
+    categories = ["vcs", "tool"]
     description = "Git distributed version control system and GitHub CLI"
 
     def inspect(self, runner: SafeRunner) -> ToolReport:
@@ -26,6 +27,7 @@ class GitInspector(BaseInspector):
                 id=self.id,
                 name=self.name,
                 category=self.category,
+                categories=self.categories,
                 installed=False,
                 status=HealthStatus.NOT_FOUND,
             )
@@ -81,6 +83,7 @@ class GitInspector(BaseInspector):
             id=self.id,
             name=self.name,
             category=self.category,
+            categories=self.categories,
             installed=True,
             version=version,
             binary_path=str(git_bin),

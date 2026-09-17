@@ -17,6 +17,8 @@ def test_python_inspector():
     assert report.installed is True
     assert report.version is not None
     assert report.binary_path is not None
+    assert isinstance(report.categories, list)
+    assert "runtime" in report.categories
 
 
 def test_git_inspector():
@@ -28,6 +30,7 @@ def test_git_inspector():
     assert report.id == "git"
     assert report.installed is True
     assert report.version is not None
+    assert "vcs" in report.categories
 
 
 def test_node_inspector():
@@ -37,5 +40,24 @@ def test_node_inspector():
 
     assert isinstance(report, ToolReport)
     assert report.id == "node"
+    assert "runtime" in report.categories
     if report.installed:
         assert report.binary_path is not None
+
+
+def test_multiple_categories():
+    from devtoolkit.modules.inspectors.android_studio import AndroidStudioInspector
+    from devtoolkit.modules.inspectors.android import AndroidInspector
+    from devtoolkit.modules.inspectors.java import JavaInspector
+
+    studio = AndroidStudioInspector()
+    assert "ide" in studio.categories
+    assert "mobile" in studio.categories
+
+    sdk = AndroidInspector()
+    assert "mobile" in sdk.categories
+    assert "sdk" in sdk.categories
+
+    java = JavaInspector()
+    assert "runtime" in java.categories
+    assert "mobile" in java.categories

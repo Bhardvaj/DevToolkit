@@ -21,6 +21,7 @@ class AndroidInspector(BaseInspector):
     id = "android"
     name = "Android SDK"
     category = "mobile"
+    categories = ["mobile", "sdk"]
     description = "Android SDK tools, adb, build-tools, emulator, and ANDROID_HOME environment"
 
     def inspect(self, runner: SafeRunner) -> ToolReport:
@@ -43,6 +44,7 @@ class AndroidInspector(BaseInspector):
                 id=self.id,
                 name=self.name,
                 category=self.category,
+                categories=self.categories,
                 installed=False,
                 status=HealthStatus.NOT_FOUND,
             )
@@ -128,6 +130,7 @@ class AndroidInspector(BaseInspector):
             id=self.id,
             name=self.name,
             category=self.category,
+            categories=self.categories,
             installed=True,
             version=version or (build_tools_installed[-1] if build_tools_installed else None),
             binary_path=str(resolved_adb) if resolved_adb else None,

@@ -76,7 +76,12 @@ class PluginRegistry:
 
         if categories:
             norm_cats = {c.lower() for c in categories}
-            target_inspectors = [i for i in target_inspectors if i.category.lower() in norm_cats]
+            target_inspectors = [
+                i
+                for i in target_inspectors
+                if any(c.lower() in norm_cats for c in getattr(i, "categories", [i.category]))
+                or i.category.lower() in norm_cats
+            ]
 
         if tool_ids:
             norm_ids = {t.lower() for t in tool_ids}
@@ -100,6 +105,7 @@ class PluginRegistry:
                             id=inspector.id,
                             name=inspector.name,
                             category=inspector.category,
+                            categories=getattr(inspector, "categories", [inspector.category]),
                             installed=False,
                             status=HealthStatus.ERROR,
                             metadata={"error": str(e)},

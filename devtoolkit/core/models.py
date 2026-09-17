@@ -35,6 +35,7 @@ class ToolReport(BaseModel):
     id: str
     name: str
     category: str = "general"
+    categories: List[str] = Field(default_factory=list)
     installed: bool = False
     version: Optional[str] = None
     binary_path: Optional[str] = None
@@ -43,6 +44,12 @@ class ToolReport(BaseModel):
     companions: List[CompanionTool] = Field(default_factory=list)
     diagnostics: List[DiagnosticIssue] = Field(default_factory=list)
     metadata: Dict[str, Any] = Field(default_factory=dict)
+
+    def model_post_init(self, __context: Any) -> None:
+        if not self.categories and self.category:
+            self.categories = [self.category]
+        elif self.categories and not self.category:
+            self.category = self.categories[0]
 
 
 class SystemInfo(BaseModel):

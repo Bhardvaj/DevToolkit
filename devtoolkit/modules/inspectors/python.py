@@ -18,6 +18,7 @@ class PythonInspector(BaseInspector):
     id = "python"
     name = "Python"
     category = "runtime"
+    categories = ["runtime", "scripting", "ai"]
     description = "Python interpreter, pip, uv, poetry, and virtualenv tooling"
 
     def inspect(self, runner: SafeRunner) -> ToolReport:
@@ -27,6 +28,7 @@ class PythonInspector(BaseInspector):
                 id=self.id,
                 name=self.name,
                 category=self.category,
+                categories=self.categories,
                 installed=False,
                 status=HealthStatus.NOT_FOUND,
             )
@@ -79,6 +81,7 @@ class PythonInspector(BaseInspector):
             id=self.id,
             name=self.name,
             category=self.category,
+            categories=self.categories,
             installed=True,
             version=version,
             binary_path=str(py_bin),

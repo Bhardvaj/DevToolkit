@@ -17,6 +17,7 @@ class DockerInspector(BaseInspector):
     id = "docker"
     name = "Docker"
     category = "container"
+    categories = ["container", "runtime"]
     description = "Docker container engine, Docker CLI, and Docker Compose"
 
     def inspect(self, runner: SafeRunner) -> ToolReport:
@@ -26,6 +27,7 @@ class DockerInspector(BaseInspector):
                 id=self.id,
                 name=self.name,
                 category=self.category,
+                categories=self.categories,
                 installed=False,
                 status=HealthStatus.NOT_FOUND,
             )
@@ -88,6 +90,7 @@ class DockerInspector(BaseInspector):
             id=self.id,
             name=self.name,
             category=self.category,
+            categories=self.categories,
             installed=True,
             version=version,
             binary_path=str(docker_bin),

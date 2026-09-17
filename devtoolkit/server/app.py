@@ -104,6 +104,7 @@ def get_tools():
             "id": i.id,
             "name": i.name,
             "category": i.category,
+            "categories": getattr(i, "categories", [i.category]),
             "description": i.description,
         }
         for i in inspectors
@@ -112,13 +113,17 @@ def get_tools():
 
 @app.post("/api/action/open-folder")
 def open_folder(req: OpenFolderRequest):
-    p = Path(req.path)
+    raw_path = req.path.strip().strip('"').strip("'")
+    p = Path(raw_path)
     if not p.exists():
-        raise HTTPException(status_code=404, detail="Path does not exist on disk.")
+        raise HTTPException(status_code=404, detail=f"Path '{raw_path}' does not exist on disk.")
 
     target = str(p if p.is_dir() else p.parent)
     if sys.platform == "win32":
-        subprocess.run(["explorer.exe", target])
+        try:
+            os.startfile(target)
+        except Exception:
+            subprocess.run(["explorer.exe", target])
     elif sys.platform == "darwin":
         subprocess.run(["open", target])
     else:
@@ -936,14 +941,19 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
     }
 
     async function openFolder(path) {
+      if (!path) return;
       try {
         const res = await fetch('/api/action/open-folder', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ path })
         });
-        if (res.ok) showToast('Opened folder in Explorer');
-        else showToast('Failed to open folder', true);
+        const data = await res.json();
+        if (res.ok) {
+          showToast('Opened folder in Explorer');
+        } else {
+          showToast(data.detail || 'Failed to open folder', true);
+        }
       } catch (err) {
         showToast('Error opening folder', true);
       }
@@ -1112,10 +1122,19 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
       renderTools();
     }
 
+    function toolMatchesCategory(r, cat) {
+      if (cat === 'all') return true;
+      const cats = (r.categories && r.categories.length > 0) ? r.categories.map(c => c.toLowerCase()) : [r.category.toLowerCase()];
+      if (cat === 'mobile') {
+        return cats.includes('mobile') || cats.includes('sdk');
+      }
+      return cats.includes(cat.toLowerCase());
+    }
+
     function updateCategoryCounts() {
       document.getElementById('cat-count-all').innerText = allReports.length;
       ['runtime', 'mobile', 'ide', 'vcs', 'container'].forEach(c => {
-        const count = allReports.filter(r => r.category.toLowerCase() === c).length;
+        const count = allReports.filter(r => toolMatchesCategory(r, c)).length;
         const el = document.getElementById(`cat-count-${c}`);
         if (el) el.innerText = count;
       });
@@ -1124,10 +1143,12 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
     function renderTools() {
       const query = document.getElementById('global-search-input').value.toLowerCase().trim();
       let filtered = allReports.filter(r => {
-        const matchesCat = (currentCategory === 'all' || r.category.toLowerCase() === currentCategory);
+        const matchesCat = toolMatchesCategory(r, currentCategory);
+        const cats = (r.categories && r.categories.length > 0) ? r.categories.map(c => c.toLowerCase()) : [r.category.toLowerCase()];
         const matchesQuery = !query ||
           r.name.toLowerCase().includes(query) ||
           r.id.toLowerCase().includes(query) ||
+          cats.some(c => c.includes(query)) ||
           (r.version && r.version.toLowerCase().includes(query)) ||
           (r.binary_path && r.binary_path.toLowerCase().includes(query)) ||
           (r.home_path && r.home_path.toLowerCase().includes(query));
@@ -1169,30 +1190,32 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
         const card = document.createElement('div');
         card.className = 'glass-card rounded-2xl p-5 sm:p-6 flex flex-col justify-between transition-all duration-200 border border-slate-800/80 hover:border-slate-700/90 shadow-xl';
 
-        // Paths block
+        // Paths block with Copy and Open Folder for both ROOT and BINARY (no run button)
         let pathsHtml = '';
         if (r.home_path) {
+          const cleanHome = r.home_path.replace(/"/g, '&quot;');
           pathsHtml += `
             <div class="bg-[#070b16] p-2.5 rounded-lg border border-slate-800/80 flex items-center justify-between gap-2 min-w-0">
-              <div class="truncate text-slate-300 font-mono text-[11px]" title="ROOT: ${r.home_path}">
+              <div class="truncate text-slate-300 font-mono text-[11px]" title="ROOT: ${cleanHome}">
                 <span class="text-blue-400 font-sans font-bold text-[10px] uppercase tracking-wider mr-1">ROOT:</span>${r.home_path}
               </div>
-              <div class="flex items-center gap-1 flex-shrink-0">
-                <button onclick="copyToClipboard('${r.home_path.replace(/\\\\/g, '\\\\\\\\')}', 'root path')" title="Copy path" class="p-1 hover:text-blue-400 text-slate-400 transition"><i class="fa-regular fa-copy text-xs"></i></button>
-                <button onclick="openFolder('${r.home_path.replace(/\\\\/g, '\\\\\\\\')}')" title="Open folder" class="p-1 hover:text-blue-400 text-slate-400 transition"><i class="fa-regular fa-folder-open text-xs"></i></button>
+              <div class="flex items-center gap-1.5 flex-shrink-0">
+                <button onclick="copyToClipboard(this.dataset.path, 'root path')" data-path="${cleanHome}" title="Copy path" class="p-1.5 hover:text-blue-400 text-slate-400 transition"><i class="fa-regular fa-copy text-xs"></i></button>
+                <button onclick="openFolder(this.dataset.path)" data-path="${cleanHome}" title="Open folder" class="p-1.5 hover:text-blue-400 text-slate-400 transition"><i class="fa-regular fa-folder-open text-xs"></i></button>
               </div>
             </div>
           `;
         }
         if (r.binary_path && r.binary_path !== r.home_path) {
+          const cleanBin = r.binary_path.replace(/"/g, '&quot;');
           pathsHtml += `
             <div class="bg-[#070b16] p-2.5 rounded-lg border border-slate-800/80 flex items-center justify-between gap-2 min-w-0">
-              <div class="truncate text-slate-300 font-mono text-[11px]" title="BINARY: ${r.binary_path}">
+              <div class="truncate text-slate-300 font-mono text-[11px]" title="BINARY: ${cleanBin}">
                 <span class="text-emerald-400 font-sans font-bold text-[10px] uppercase tracking-wider mr-1">BINARY:</span>${r.binary_path}
               </div>
-              <div class="flex items-center gap-1 flex-shrink-0">
-                <button onclick="copyToClipboard('${r.binary_path.replace(/\\\\/g, '\\\\\\\\')}', 'binary path')" title="Copy binary" class="p-1 hover:text-emerald-400 text-slate-400 transition"><i class="fa-regular fa-copy text-xs"></i></button>
-                <button onclick="openFolder('${r.binary_path.replace(/\\\\/g, '\\\\\\\\')}')" title="Open directory" class="p-1 hover:text-emerald-400 text-slate-400 transition"><i class="fa-solid fa-play text-xs"></i></button>
+              <div class="flex items-center gap-1.5 flex-shrink-0">
+                <button onclick="copyToClipboard(this.dataset.path, 'binary path')" data-path="${cleanBin}" title="Copy binary" class="p-1.5 hover:text-emerald-400 text-slate-400 transition"><i class="fa-regular fa-copy text-xs"></i></button>
+                <button onclick="openFolder(this.dataset.path)" data-path="${cleanBin}" title="Open folder" class="p-1.5 hover:text-emerald-400 text-slate-400 transition"><i class="fa-regular fa-folder-open text-xs"></i></button>
               </div>
             </div>
           `;
@@ -1208,7 +1231,9 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
         `).join('');
 
         // Diagnostics block
-        const diagnosticsHtml = (r.diagnostics || []).map(d => `
+        const diagnosticsHtml = (r.diagnostics || []).map(d => {
+          const cleanCmd = (d.suggested_fix || '').replace(/"/g, '&quot;');
+          return `
           <div class="mt-3.5 p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs space-y-2.5">
             <div class="font-medium flex items-start gap-2 leading-snug">
               <i class="fa-solid fa-triangle-exclamation text-amber-400 mt-0.5 flex-shrink-0"></i>
@@ -1218,10 +1243,10 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
               <div class="space-y-2 pt-1">
                 <div class="bg-slate-950 p-2.5 rounded-lg border border-amber-500/20 flex items-center justify-between gap-2 font-mono text-[11px] text-slate-200 min-w-0">
                   <code class="truncate">${d.suggested_fix}</code>
-                  <button onclick="copyToClipboard('${d.suggested_fix.replace(/\\\\/g, '\\\\\\\\')}', 'command')" class="px-2 py-0.5 rounded bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 text-[10px] font-bold flex-shrink-0 transition">Copy</button>
+                  <button onclick="copyToClipboard(this.dataset.cmd, 'command')" data-cmd="${cleanCmd}" class="px-2 py-0.5 rounded bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 text-[10px] font-bold flex-shrink-0 transition">Copy</button>
                 </div>
                 <div class="flex justify-end pt-1">
-                  <button onclick="applyFix('${d.suggested_fix.replace(/\\\\/g, '\\\\\\\\')}')" class="px-3.5 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 rounded-lg text-xs font-bold transition flex items-center gap-1.5 shadow-sm">
+                  <button onclick="applyFix(this.dataset.cmd)" data-cmd="${cleanCmd}" class="px-3.5 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 rounded-lg text-xs font-bold transition flex items-center gap-1.5 shadow-sm">
                     <i class="fa-solid fa-bolt text-[10px]"></i>
                     <span>Apply System Fix</span>
                   </button>
@@ -1229,26 +1254,13 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
               </div>
             ` : ''}
           </div>
-        `).join('');
+        `}).join('');
 
-        // Card footer action
-        let footerHtml = '';
-        if (r.status === 'healthy') {
-          footerHtml = `<div class="flex items-center justify-between text-[11px] text-slate-400">
-            <span class="flex items-center gap-1.5 text-emerald-400 font-medium"><span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> Ready to build</span>
-            ${r.home_path ? `<button onclick="openFolder('${r.home_path.replace(/\\\\/g, '\\\\\\\\')}')" class="text-blue-400 hover:text-blue-300 font-semibold transition">Explore &rarr;</button>` : ''}
-          </div>`;
-        } else if (r.status === 'not_found') {
-          footerHtml = `<div class="flex items-center justify-between text-[11px] text-slate-500">
-            <span>Not configured</span>
-            <button onclick="switchTab('settings')" class="text-blue-400 hover:text-blue-300 font-semibold transition">Detect Custom Path</button>
-          </div>`;
-        } else {
-          footerHtml = `<div class="flex items-center justify-between text-[11px] text-amber-400 font-medium">
-            <span>Action recommended</span>
-            <button onclick="switchTab('settings')" class="text-slate-400 hover:text-white transition">Settings</button>
-          </div>`;
-        }
+        // Multiple categories badges
+        const toolCats = (r.categories && r.categories.length > 0) ? r.categories : [r.category];
+        const categoriesHtml = toolCats.map(c => 
+          `<span class="text-[10px] text-slate-400 uppercase tracking-wider font-mono font-semibold px-2 py-0.5 bg-slate-800/90 rounded border border-slate-700/60">${c}</span>`
+        ).join('');
 
         card.innerHTML = `
           <div>
@@ -1267,7 +1279,9 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
                 </div>
               </div>
               <div class="flex flex-col items-end gap-1.5 flex-shrink-0">
-                <span class="text-[10px] text-slate-400 uppercase tracking-wider font-mono font-semibold px-2 py-0.5 bg-slate-800/90 rounded border border-slate-700/60">${r.category}</span>
+                <div class="flex flex-wrap gap-1 justify-end max-w-[150px]">
+                  ${categoriesHtml}
+                </div>
                 ${getBadge(r.status)}
               </div>
             </div>
@@ -1284,10 +1298,6 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
 
               ${diagnosticsHtml}
             </div>
-          </div>
-
-          <div class="mt-5 pt-3.5 border-t border-slate-800/80">
-            ${footerHtml}
           </div>
         `;
         grid.appendChild(card);
@@ -1306,19 +1316,24 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
       tools.forEach(r => {
         const tr = document.createElement('tr');
         tr.className = 'hover:bg-slate-800/40 transition text-slate-300';
+        const cleanHome = (r.home_path || '').replace(/"/g, '&quot;');
+        const cleanBin = (r.binary_path || '').replace(/"/g, '&quot;');
+        const toolCats = (r.categories && r.categories.length > 0) ? r.categories : [r.category];
+        const catsDisplay = toolCats.join(', ');
+
         tr.innerHTML = `
           <td class="py-3 px-4 font-bold text-white flex items-center gap-2">
             <span class="w-6 h-6 rounded bg-slate-800 flex items-center justify-center text-xs flex-shrink-0">${getToolIcon(r.id, r.category)}</span>
             <span class="truncate max-w-[150px]">${r.name}</span>
           </td>
-          <td class="py-3 px-4 uppercase text-[10px] font-mono text-slate-400">${r.category}</td>
+          <td class="py-3 px-4 uppercase text-[10px] font-mono text-slate-400">${catsDisplay}</td>
           <td class="py-3 px-4">${getBadge(r.status)}</td>
           <td class="py-3 px-4 font-mono text-blue-300">${r.version ? 'v' + r.version : '—'}</td>
-          <td class="py-3 px-4 font-mono text-slate-400 truncate max-w-[180px]" title="${r.home_path || ''}">${r.home_path || '<span class="text-slate-600">—</span>'}</td>
-          <td class="py-3 px-4 font-mono text-emerald-400 truncate max-w-[180px]" title="${r.binary_path || ''}">${r.binary_path || '<span class="text-slate-600">—</span>'}</td>
+          <td class="py-3 px-4 font-mono text-slate-400 truncate max-w-[180px]" title="${cleanHome}">${r.home_path || '<span class="text-slate-600">—</span>'}</td>
+          <td class="py-3 px-4 font-mono text-emerald-400 truncate max-w-[180px]" title="${cleanBin}">${r.binary_path || '<span class="text-slate-600">—</span>'}</td>
           <td class="py-3 px-4 text-right">
-            ${r.home_path ? `<button onclick="openFolder('${r.home_path.replace(/\\\\/g, '\\\\\\\\')}')" class="p-1.5 text-slate-400 hover:text-blue-400 transition" title="Open in Explorer"><i class="fa-regular fa-folder-open text-xs"></i></button>` : ''}
-            ${r.binary_path ? `<button onclick="copyToClipboard('${r.binary_path.replace(/\\\\/g, '\\\\\\\\')}', 'binary')" class="p-1.5 text-slate-400 hover:text-emerald-400 transition" title="Copy binary"><i class="fa-regular fa-copy text-xs"></i></button>` : ''}
+            ${r.home_path ? `<button onclick="openFolder(this.dataset.path)" data-path="${cleanHome}" class="p-1.5 text-slate-400 hover:text-blue-400 transition" title="Open in Explorer"><i class="fa-regular fa-folder-open text-xs"></i></button>` : ''}
+            ${r.binary_path ? `<button onclick="copyToClipboard(this.dataset.path, 'binary')" data-path="${cleanBin}" class="p-1.5 text-slate-400 hover:text-emerald-400 transition" title="Copy binary"><i class="fa-regular fa-copy text-xs"></i></button>` : ''}
           </td>
         `;
         tbody.appendChild(tr);

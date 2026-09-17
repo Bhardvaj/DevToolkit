@@ -13,6 +13,7 @@ class BaseInspector(ABC):
     id: str = "base"
     name: str = "Base Inspector"
     category: str = "general"
+    categories: list[str] = ["general"]
     description: str = ""
 
     @abstractmethod

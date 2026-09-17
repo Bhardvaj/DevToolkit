@@ -17,6 +17,7 @@ class FlutterInspector(BaseInspector):
     id = "flutter"
     name = "Flutter"
     category = "mobile"
+    categories = ["mobile", "sdk", "runtime"]
     description = "Flutter cross-platform UI framework and Dart SDK"
 
     def inspect(self, runner: SafeRunner) -> ToolReport:
@@ -26,6 +27,7 @@ class FlutterInspector(BaseInspector):
                 id=self.id,
                 name=self.name,
                 category=self.category,
+                categories=self.categories,
                 installed=False,
                 status=HealthStatus.NOT_FOUND,
             )
@@ -68,6 +70,7 @@ class FlutterInspector(BaseInspector):
             id=self.id,
             name=self.name,
             category=self.category,
+            categories=self.categories,
             installed=True,
             version=version,
             binary_path=str(flutter_bin),
