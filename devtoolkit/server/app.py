@@ -1240,17 +1240,9 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
               <span>${d.message}</span>
             </div>
             ${d.suggested_fix ? `
-              <div class="space-y-2 pt-1">
-                <div class="bg-slate-950 p-2.5 rounded-lg border border-amber-500/20 flex items-center justify-between gap-2 font-mono text-[11px] text-slate-200 min-w-0">
-                  <code class="truncate">${d.suggested_fix}</code>
-                  <button onclick="copyToClipboard(this.dataset.cmd, 'command')" data-cmd="${cleanCmd}" class="px-2 py-0.5 rounded bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 text-[10px] font-bold flex-shrink-0 transition">Copy</button>
-                </div>
-                <div class="flex justify-end pt-1">
-                  <button onclick="applyFix(this.dataset.cmd)" data-cmd="${cleanCmd}" class="px-3.5 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 rounded-lg text-xs font-bold transition flex items-center gap-1.5 shadow-sm">
-                    <i class="fa-solid fa-bolt text-[10px]"></i>
-                    <span>Apply System Fix</span>
-                  </button>
-                </div>
+              <div class="bg-slate-950 p-2.5 rounded-lg border border-amber-500/20 flex items-center justify-between gap-2 font-mono text-[11px] text-slate-200 min-w-0 mt-1">
+                <code class="truncate">${d.suggested_fix}</code>
+                <button onclick="copyToClipboard(this.dataset.cmd, 'command')" data-cmd="${cleanCmd}" class="px-2.5 py-1 rounded bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 text-[10px] font-bold flex-shrink-0 transition">Copy</button>
               </div>
             ` : ''}
           </div>
