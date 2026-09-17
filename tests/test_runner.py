@@ -31,3 +31,4 @@ def test_safe_runner_resolve_binary():
     py_path = runner.resolve_binary("python")
     assert py_path is not None
     assert py_path.exists()
+

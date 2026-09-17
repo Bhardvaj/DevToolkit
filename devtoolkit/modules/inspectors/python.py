@@ -88,3 +88,4 @@ class PythonInspector(BaseInspector):
             diagnostics=diagnostics,
             metadata={"base_prefix": sys.base_prefix, "prefix": sys.prefix},
         )
+

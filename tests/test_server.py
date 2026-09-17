@@ -37,3 +37,4 @@ def test_serve_dashboard():
     response = serve_dashboard()
     assert "DevToolkit" in response
     assert "glass-card" in response
+

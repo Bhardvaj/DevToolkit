@@ -32,3 +32,4 @@ class BaseUtility(ABC):
     def execute(self, runner: SafeRunner, **kwargs) -> dict:
         """Execute the utility action with parameters."""
         raise NotImplementedError
+

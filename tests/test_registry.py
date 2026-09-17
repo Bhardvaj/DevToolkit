@@ -30,3 +30,4 @@ def test_plugin_registry_audit_filtering():
     assert summary_tools.total_tools == 2
     tool_ids = {r.id for r in summary_tools.reports}
     assert tool_ids == {"node", "python"}
+

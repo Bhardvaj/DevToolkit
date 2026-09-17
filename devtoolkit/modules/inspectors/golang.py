@@ -62,3 +62,4 @@ class GoInspector(BaseInspector):
             diagnostics=diagnostics,
             metadata={"GOPATH": gopath, "GOROOT": goroot},
         )
+

@@ -40,6 +40,7 @@ DevToolkit/
 │   │       ├── rust.py                # Rustc, Cargo, rustup toolchain
 │   │       ├── java.py                # JVM, javac (JDK), JAVA_HOME, Windows Registry
 │   │       ├── android.py             # Android SDK, adb, emulator, ANDROID_HOME
+│   │       ├── android_studio.py      # Android Studio IDE, JBR (OpenJDK 21), build numbers
 │   │       └── flutter.py             # Flutter SDK, Dart SDK, release channel
 │   └── server/                        # UI and API layer
 │       └── app.py                     # FastAPI REST server & PyWebView desktop launcher
