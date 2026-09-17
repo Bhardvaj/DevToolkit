@@ -30,3 +30,15 @@ This file tracks major architectural choices, technical decisions, and trade-off
 - **Context**: DevToolkit needs to support third-party or future modules (cache cleaners, port killers, environment variable editors) without modifying the core discovery loop.
 - **Decision**: Implement a dynamic provider registry pattern. Modules placed in `devtoolkit/modules/` implementing `BaseInspector` or `BaseUtility` are registered dynamically via module scanning.
 - **Consequences**: Adding new tool support is isolated to single-file additions with zero merge conflicts on core files.
+
+---
+
+## ADR-0004: Python + React/Tailwind Hybrid Architecture (PyWebView & FastAPI)
+- **Date**: 2026-09-16
+- **Status**: Accepted
+- **Context**: The user requires a modern, beautiful UI with easy UX alongside maximum plugin authoring ergonomics ("Ultra-Extensible") and zero heavyweight runtime overhead.
+- **Decision**: Adopt the Python Desktop + Web Hybrid architecture. The Core Engine and plugin system run in Python 3.14. The UI is built using React + Tailwind CSS + Lucide Icons, served locally via FastAPI and rendered in a native desktop window via PyWebView (Edge WebView2). The engine also directly powers the CLI (`devtoolkit inspect`) and local browser dashboard (`devtoolkit ui`).
+- **Consequences**:
+  - Zero additional SDK installations required (Python 3.14 and Node 24 already present).
+  - Plugin creation remains as simple as writing a single ~15-line Python file.
+  - Desktop memory usage is kept light (~40MB vs Electron's 150MB+).

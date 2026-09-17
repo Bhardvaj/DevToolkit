@@ -4,75 +4,115 @@ This document maintains a living catalog of all modules, base classes, public in
 
 ---
 
-## 1. Directory Structure Overview
+## 1. Directory Structure
 
 ```
-devtoolkit/
-├── core/                  # Core engine kernel
-│   ├── base.py            # BaseInspector, BaseUtility, HealthStatus, ToolReport
-│   ├── runner.py          # SafeRunner: Subprocess execution with timeouts & path discovery
-│   ├── registry.py        # Dynamic plugin discovery and dependency resolution
-│   └── models.py          # Pydantic data schemas for inspection and audits
-├── cli/                   # Typer CLI application and commands
-│   ├── main.py            # Root CLI entrypoint
-│   └── commands/          # CLI command implementations (inspect, doctor, ui)
-├── formatters/            # Output presentation formats
-│   ├── table.py           # Rich terminal table formatter
-│   ├── json_fmt.py        # JSON serialization
-│   └── yaml_fmt.py        # YAML serialization
-├── modules/               # Pluggable feature modules
-│   └── inspectors/        # Individual environment inspector providers
-└── ui/                    # Front-end desktop interface (React / Tailwind)
+DevToolkit/
+├── pyproject.toml                     # Package metadata, dependencies, scripts
+├── README.md                          # Main developer & user documentation
+├── .gitignore                         # Tailored exclusions for Python, Node, OS, IDE
+├── agent/                             # Persistent AI agent knowledge base & session memory
+│   ├── map.md                         # Architecture blueprints, lifecycles, execution flows
+│   ├── codebase.md                    # Living registry of classes, interfaces, and modules
+│   ├── decisions.md                   # Architecture Decision Records (ADRs)
+│   └── state.md                       # Session memory, checklist, and roadmap
+├── devtoolkit/                        # Core Python package
+│   ├── __init__.py
+│   ├── __main__.py                    # Entrypoint for `python -m devtoolkit`
+│   ├── core/                          # Engine kernel
+│   │   ├── base.py                    # BaseInspector and BaseUtility abstractions
+│   │   ├── models.py                  # Pydantic schemas (ToolReport, HealthStatus, AuditSummary)
+│   │   ├── runner.py                  # SafeRunner: Subprocess execution with timeouts & path resolution
+│   │   └── registry.py                # PluginRegistry: Dynamic inspector auto-discovery & multithreading
+│   ├── cli/                           # Command-line interface (Typer)
+│   │   └── main.py                    # `devtoolkit inspect`, `devtoolkit doctor`, `devtoolkit ui`
+│   ├── formatters/                    # Output formatting layer
+│   │   ├── table.py                   # Rich console tables and health badge formatting
+│   │   ├── json_fmt.py                # Machine-readable JSON output
+│   │   └── yaml_fmt.py                # Machine-readable YAML output
+│   ├── modules/
+│   │   └── inspectors/                # Pluggable tool inspectors
+│   │       ├── node.py                # Node.js, npm, pnpm, yarn, corepack
+│   │       ├── python.py              # Python, pip, uv, poetry, conda, pipenv
+│   │       ├── git.py                 # Git, GitHub CLI (gh), global user config
+│   │       ├── docker.py              # Docker CLI, Docker Compose, engine daemon check
+│   │       ├── golang.py              # Go compiler, GOPATH, GOROOT
+│   │       ├── rust.py                # Rustc, Cargo, rustup toolchain
+│   │       ├── java.py                # JVM, javac (JDK), JAVA_HOME, Windows Registry
+│   │       ├── android.py             # Android SDK, adb, emulator, ANDROID_HOME
+│   │       └── flutter.py             # Flutter SDK, Dart SDK, release channel
+│   └── server/                        # UI and API layer
+│       └── app.py                     # FastAPI REST server & PyWebView desktop launcher
+└── tests/                             # Automated test suite
+    ├── test_runner.py                 # Tests for SafeRunner timeouts & path resolution
+    ├── test_registry.py               # Tests for dynamic plugin discovery & filtering
+    ├── test_inspectors.py             # Tests for tool inspection logic
+    └── test_server.py                 # Tests for FastAPI server endpoints and UI rendering
 ```
 
 ---
 
-## 2. Key Abstractions
+## 2. Core Abstractions & Models
 
-### `core.base.BaseInspector`
-Abstract base class that all tool and SDK detectors must implement:
-- `id: str`: Unique slug (e.g. `"nodejs"`, `"flutter"`).
-- `name: str`: Human-readable display label (e.g. `"Node.js"`).
-- `category: str`: Tool grouping (`"runtime"`, `"vcs"`, `"mobile"`, `"container"`, `"database"`).
-- `inspect(runner: SafeRunner) -> ToolReport`: Runs non-destructive probes and returns detected paths, versions, and companion status.
-- `diagnose_health(report: ToolReport) -> HealthReport`: Evaluates configuration status, missing variables, or environment conflicts.
+### `core.models.ToolReport`
+Standard data contract returned by all inspectors:
+```python
+class ToolReport(BaseModel):
+    id: str                                    # e.g., "node", "flutter"
+    name: str                                  # e.g., "Node.js", "Flutter SDK"
+    category: str                              # "runtime", "vcs", "mobile", "container"
+    installed: bool                            # True if binary or home folder resolved
+    version: Optional[str]                     # Normalized semantic version
+    binary_path: Optional[str]                 # Absolute executable path
+    home_path: Optional[str]                   # SDK home or root folder
+    status: HealthStatus                       # HEALTHY, WARNING, ERROR, NOT_FOUND
+    companions: List[CompanionTool]            # Companion tools (e.g., npm, cargo, dart)
+    diagnostics: List[DiagnosticIssue]         # Actionable issues and suggested fixes
+    metadata: Dict[str, Any]                   # Environment metadata (channel, prefix, etc.)
+```
 
 ### `core.runner.SafeRunner`
-Centralized helper for external process execution:
-- `resolve_binary(name: str, extra_paths: list[str] = None) -> Optional[Path]`: Cross-platform binary resolution (`PATH`, Windows extensions, registry).
-- `run_command(cmd: list[str], timeout: float = 3.0) -> CommandResult`: Executes read-only commands with strict timeout guarantees.
+Subprocess and path resolution kernel:
+- `run_command(cmd, timeout=3.0, env=None) -> CommandResult`: Enforces non-blocking execution and strict timeout.
+- `resolve_binary(name, extra_paths=None) -> Optional[Path]`: Resolves binaries across `PATH`, extra paths, and Windows extensions (`.exe`, `.cmd`, `.bat`).
+- `read_env(var_name) -> Optional[str]`: Safe retrieval of environment variables.
+- `query_winreg(key_path, value_name) -> Optional[str]`: Windows registry query (`HKLM` and `HKCU`).
+
+### `core.registry.PluginRegistry`
+Dynamic module discovery and concurrent auditor:
+- `discover_inspectors()`: Iterates `devtoolkit.modules.inspectors` and instantiates all `BaseInspector` subclasses.
+- `run_audit(categories=None, tool_ids=None, max_workers=8) -> AuditSummary`: Executes inspection probes concurrently in a thread pool.
 
 ---
 
-## 3. How to Add a New Inspector (Guide for Contributors & AI Agents)
+## 3. How to Add a New Inspector (< 20 Lines of Code)
 
-Creating a new environment inspector requires creating a single file in `devtoolkit/modules/inspectors/<tool_name>.py`:
-
+To add support for another tool (e.g., `bun`):
+1. Create `devtoolkit/modules/inspectors/bun.py`:
 ```python
-from devtoolkit.core.base import BaseInspector, HealthStatus
-from devtoolkit.core.models import ToolReport, DiagnosticIssue
+from devtoolkit.core.base import BaseInspector
+from devtoolkit.core.models import ToolReport, HealthStatus
+from devtoolkit.core.runner import SafeRunner
 
-class RustInspector(BaseInspector):
-    id = "rust"
-    name = "Rust / Cargo"
+class BunInspector(BaseInspector):
+    id = "bun"
+    name = "Bun"
     category = "runtime"
 
-    def inspect(self, runner) -> ToolReport:
-        rustc_path = runner.resolve_binary("rustc")
-        if not rustc_path:
-            return ToolReport(id=self.id, name=self.name, installed=False)
-            
-        version_result = runner.run_command([str(rustc_path), "--version"])
-        cargo_path = runner.resolve_binary("cargo")
+    def inspect(self, runner: SafeRunner) -> ToolReport:
+        binary = runner.resolve_binary("bun")
+        if not binary:
+            return ToolReport(id=self.id, name=self.name, category=self.category, installed=False)
         
+        res = runner.run_command([str(binary), "--version"])
         return ToolReport(
             id=self.id,
             name=self.name,
+            category=self.category,
             installed=True,
-            binary_path=str(rustc_path),
-            version=version_result.stdout.strip(),
-            companions={"cargo": str(cargo_path) if cargo_path else None},
-            status=HealthStatus.HEALTHY if cargo_path else HealthStatus.WARNING
+            version=res.stdout if res.ok else None,
+            binary_path=str(binary),
+            status=HealthStatus.HEALTHY if res.ok else HealthStatus.WARNING,
         )
 ```
-The plugin will be automatically discovered by `PluginRegistry` without touching any other files.
+2. The plugin will be automatically discovered by `PluginRegistry` without editing any registry or configuration files.
