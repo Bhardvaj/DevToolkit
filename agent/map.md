@@ -6,7 +6,7 @@ This document serves as the high-level technical map for `DevToolkit`. Any devel
 
 ## 1. High-Level Architecture
 
-DevToolkit decouples the **Core Auditing Engine** from the **Presentation Layer** (CLI and Modern Desktop UI).
+DevToolkit decouples the **Core Auditing Engine** from the **Presentation Layer** (CLI and Modern Desktop UI) and implements a **Generalized 4-Layer Discovery Pipeline** that avoids hardcoded machine paths.
 
 ```mermaid
 graph TD
@@ -16,11 +16,18 @@ graph TD
         LocalWeb[Local Web Dashboard - FastAPI / Starlette]
     end
 
-    subgraph Core_Engine [DevToolkit Engine]
+    subgraph Discovery_Engine [4-Layer Discovery Pipeline]
+        L1[Layer 1: Standard Environment & PATH]
+        L2[Layer 2: OS Application Inventory & Registry]
+        L3[Layer 3: Cross-Tool Ecosystem Metadata]
+        L4[Layer 4: User Search Roots & Content Signatures]
+        DiscoveryPipeline[DiscoveryPipeline Coordinator]
+    end
+
+    subgraph Core_Engine [DevToolkit Kernel]
         Registry[Plugin Registry]
-        SafeRunner[Safe Subprocess Runner]
-        PathResolver[Cross-Platform Path & Registry Resolver]
-        Normalizer[Semantic Version & Health Normalizer]
+        SafeRunner[Safe Subprocess Runner - 3s Timeout]
+        ConfigEngine[User Config Engine - ~/.devtoolkit/config.yaml]
     end
 
     subgraph Plugins [Pluggable Modules]
@@ -30,63 +37,59 @@ graph TD
         P_Docker[Docker Engine / Compose]
         P_Go[Go Runtime]
         P_Rust[Rustc / Cargo]
-        P_Java[JDK / JAVA_HOME / javac]
+        P_Java[Java / JDK / JVM]
         P_Android[Android SDK / adb]
+        P_Studio[Android Studio IDE]
         P_Flutter[Flutter / Dart]
-        P_Future[Future Utilities: Cache Cleaner, Port Killer]
     end
 
     CLI --> Registry
     DesktopUI --> LocalWeb
     LocalWeb --> Registry
 
-    Registry --> P_Node
-    Registry --> P_Py
-    Registry --> P_Git
-    Registry --> P_Docker
-    Registry --> P_Go
-    Registry --> P_Rust
-    Registry --> P_Java
-    Registry --> P_Android
-    Registry --> P_Flutter
-    Registry --> P_Future
-
+    Registry --> Plugins
     Plugins --> SafeRunner
-    Plugins --> PathResolver
-    SafeRunner --> Normalizer
+    SafeRunner --> DiscoveryPipeline
+    DiscoveryPipeline --> L1
+    DiscoveryPipeline --> L2
+    DiscoveryPipeline --> L3
+    DiscoveryPipeline --> L4
+    L4 --> ConfigEngine
 ```
 
 ---
 
-## 2. Core Execution Lifecycle
+## 2. The 4 Discovery Layers
 
-When an audit is requested (via CLI command `devtoolkit inspect` or through the desktop UI):
+1. **Layer 1: Standard OS & Environment**:
+   - Standard `PATH` resolution (`shutil.which`) with Windows extensions (`.exe`, `.cmd`, `.bat`).
+   - Official environment variables (`ANDROID_HOME`, `JAVA_HOME`, `GOROOT`, `CARGO_HOME`).
+   - Standard default OS folders (`%LOCALAPPDATA%\Android\Sdk`, `~/Android/Sdk`).
 
-1. **Discovery & Registration**:
-   - The `PluginRegistry` dynamically discovers and loads all inspector providers located in `devtoolkit/modules/inspectors/`.
-   - Providers register their metadata: unique identifier, human-friendly name, category (e.g., `runtime`, `vcs`, `mobile`, `container`), and priority.
+2. **Layer 2: OS Application Inventory**:
+   - Reads official Windows Registry `Uninstall` and `App Paths` hives (`HKLM` and `HKCU`).
+   - Dynamically resolves installation paths and versions directly from software installer metadata, regardless of which drive or folder the user chose during setup.
 
-2. **Concurrent Safe Inspection**:
-   - Providers execute concurrently via asynchronous workers or thread pools.
-   - Every provider invokes binary path searches and version probes through `SafeRunner`.
-   - `SafeRunner` enforces strict non-blocking timeouts (default 3 seconds) to guarantee the inspection never hangs due to a stalled CLI process or interactive prompt.
+3. **Layer 3: Cross-Tool Ecosystem Metadata**:
+   - Reads cross-tool configuration files maintained by developer tools:
+     - **Android Studio**: `%APPDATA%\Google\AndroidStudio*\options\android.sdk.path.xml` & `jdk.table.xml`.
+     - **Flutter**: `flutter config --machine` JSON configuration.
+     - **Gradle**: `~/.gradle/gradle.properties` (`org.gradle.java.home`).
 
-3. **Normalization & Health Assessment**:
-   - Raw probe output is cleaned and parsed into semantic versions.
-   - Health diagnostics evaluate:
-     - Is the binary reachable on the system `PATH`?
-     - Are companion tools installed (e.g. `npm` for `node`, `pip` for `python`)?
-     - Are required environment variables set (e.g. `ANDROID_HOME`, `JAVA_HOME`)?
-     - Are there path collisions or broken symlinks?
-
-4. **Output Rendering**:
-   - **CLI Mode**: Rendered via Rich formatted tables, trees, or exported as JSON/YAML.
-   - **Desktop UI Mode**: Streamed over local IPC or REST endpoint to the front-end interface.
+4. **Layer 4: User-Configured Search Roots & Content Signatures**:
+   - User config: `~/.devtoolkit/config.yaml` (`devtoolkit config add-path <dir>`).
+   - Structural Content Signatures (identifying SDKs by files, not folder names):
+     - **Android SDK**: `platform-tools/adb*` + `build-tools/` or `platforms/`.
+     - **JDK**: `bin/javac*` or `release` with `JAVA_VERSION`.
+     - **Android Studio**: `product-info.json` (`productCode == "AI"`) or `bin/studio64.exe`.
+     - **Flutter SDK**: `bin/flutter*` + `packages/flutter/`.
+     - **Rust**: `bin/rustc*` + `bin/cargo*`.
+     - **Go**: `bin/go*` + `pkg/tool/`.
 
 ---
 
-## 3. Module Boundaries & Principles
+## 3. Module Boundaries & Safety Guarantees
 
-- **Zero Core Mutation**: Adding a new inspector or utility tool requires *only* adding a standalone module under `devtoolkit/modules/`. The core engine and CLI dispatcher remain untouched.
-- **Read-Only Safety**: Inspector probes must never mutate system state. They execute strictly safe flags (`--version`, `-v`, version commands) or inspect filesystem/registry metadata.
-- **Cross-Platform Parity**: Path resolution accounts for Windows extensions (`.exe`, `.cmd`, `.bat`, registry keys in `HKLM`/`HKCU`), macOS paths (`/usr/local/bin`, Homebrew), and Linux standard hierarchies (`/usr/bin`, `/snap/bin`).
+- **Zero Hardcoded Paths**: No inspector or runner file may contain arbitrary drive or folder assumptions (e.g. `D:\Dev`). All discoveries must flow through the 4-layer pipeline.
+- **Read-Only Inspection**: All subprocess probes strictly execute non-destructive queries (`--version`, `-v`) with mandatory timeouts (default 3.0s).
+- **Extensible Plugins**: Adding a new inspector requires only adding a `BaseInspector` subclass into `devtoolkit/modules/inspectors/`.

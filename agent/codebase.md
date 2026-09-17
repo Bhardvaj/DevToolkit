@@ -19,100 +19,65 @@ DevToolkit/
 ├── devtoolkit/                        # Core Python package
 │   ├── __init__.py
 │   ├── __main__.py                    # Entrypoint for `python -m devtoolkit`
-│   ├── core/                          # Engine kernel
+│   ├── core/                          # Engine kernel & discovery pipeline
 │   │   ├── base.py                    # BaseInspector and BaseUtility abstractions
+│   │   ├── config.py                  # User configuration management (~/.devtoolkit/config.yaml)
+│   │   ├── discovery.py               # Unified 4-layer DiscoveryPipeline coordinator
+│   │   ├── ecosystem.py               # Layer 3: Cross-tool ecosystem config resolvers (Studio, Flutter, Gradle)
+│   │   ├── inventory.py               # Layer 2: OS Application Inventory & Windows Registry scanner
 │   │   ├── models.py                  # Pydantic schemas (ToolReport, HealthStatus, AuditSummary)
 │   │   ├── runner.py                  # SafeRunner: Subprocess execution with timeouts & path resolution
-│   │   └── registry.py                # PluginRegistry: Dynamic inspector auto-discovery & multithreading
+│   │   ├── registry.py                # PluginRegistry: Dynamic inspector auto-discovery & multithreading
+│   │   └── signatures.py              # Layer 4: Structural content signature matchers
 │   ├── cli/                           # Command-line interface (Typer)
-│   │   └── main.py                    # `devtoolkit inspect`, `devtoolkit doctor`, `devtoolkit ui`
+│   │   └── main.py                    # `devtoolkit inspect`, `devtoolkit doctor`, `devtoolkit ui`, `devtoolkit config`
 │   ├── formatters/                    # Output formatting layer
 │   │   ├── table.py                   # Rich console tables and health badge formatting
 │   │   ├── json_fmt.py                # Machine-readable JSON output
 │   │   └── yaml_fmt.py                # Machine-readable YAML output
 │   ├── modules/
 │   │   └── inspectors/                # Pluggable tool inspectors
+│   │       ├── android.py             # Android SDK, adb, emulator, build-tools, platforms
+│   │       ├── android_studio.py      # Android Studio IDE, launcher, and bundled JBR
+│   │       ├── docker.py              # Docker CLI, Docker Compose, engine daemon check
+│   │       ├── flutter.py             # Flutter SDK, Dart SDK, release channel
+│   │       ├── git.py                 # Git, GitHub CLI (gh), global user config
+│   │       ├── golang.py              # Go compiler, GOPATH, GOROOT
+│   │       ├── java.py                # Java JVM, javac (JDK), JAVA_HOME, bundled JBR
 │   │       ├── node.py                # Node.js, npm, pnpm, yarn, corepack
 │   │       ├── python.py              # Python, pip, uv, poetry, conda, pipenv
-│   │       ├── git.py                 # Git, GitHub CLI (gh), global user config
-│   │       ├── docker.py              # Docker CLI, Docker Compose, engine daemon check
-│   │       ├── golang.py              # Go compiler, GOPATH, GOROOT
-│   │       ├── rust.py                # Rustc, Cargo, rustup toolchain
-│   │       ├── java.py                # JVM, javac (JDK), JAVA_HOME, Windows Registry
-│   │       ├── android.py             # Android SDK, adb, emulator, ANDROID_HOME
-│   │       └── flutter.py             # Flutter SDK, Dart SDK, release channel
+│   │       └── rust.py                # Rustc, Cargo, rustup toolchain
 │   └── server/                        # UI and API layer
-│       └── app.py                     # FastAPI REST server & PyWebView desktop launcher
-└── tests/                             # Automated test suite
-    ├── test_runner.py                 # Tests for SafeRunner timeouts & path resolution
-    ├── test_registry.py               # Tests for dynamic plugin discovery & filtering
+│       └── app.py                     # FastAPI REST server, config API & PyWebView desktop launcher
+└── tests/                             # Automated test suite (19 passing unit tests)
+    ├── test_config.py                 # Tests for user configuration and custom search paths
+    ├── test_discovery.py              # Tests for unified DiscoveryPipeline
     ├── test_inspectors.py             # Tests for tool inspection logic
-    └── test_server.py                 # Tests for FastAPI server endpoints and UI rendering
+    ├── test_inventory.py              # Tests for OS application inventory
+    ├── test_registry.py               # Tests for dynamic plugin discovery & filtering
+    ├── test_runner.py                 # Tests for SafeRunner timeouts & path resolution
+    ├── test_server.py                 # Tests for FastAPI server endpoints and UI rendering
+    └── test_signatures.py              # Tests for content signature detection
 ```
 
 ---
 
-## 2. Core Abstractions & Models
+## 2. Discovery Pipeline Public API
 
-### `core.models.ToolReport`
-Standard data contract returned by all inspectors:
-```python
-class ToolReport(BaseModel):
-    id: str                                    # e.g., "node", "flutter"
-    name: str                                  # e.g., "Node.js", "Flutter SDK"
-    category: str                              # "runtime", "vcs", "mobile", "container"
-    installed: bool                            # True if binary or home folder resolved
-    version: Optional[str]                     # Normalized semantic version
-    binary_path: Optional[str]                 # Absolute executable path
-    home_path: Optional[str]                   # SDK home or root folder
-    status: HealthStatus                       # HEALTHY, WARNING, ERROR, NOT_FOUND
-    companions: List[CompanionTool]            # Companion tools (e.g., npm, cargo, dart)
-    diagnostics: List[DiagnosticIssue]         # Actionable issues and suggested fixes
-    metadata: Dict[str, Any]                   # Environment metadata (channel, prefix, etc.)
-```
+### `DiscoveryPipeline` ([`devtoolkit/core/discovery.py`](file:///d:/UtilitySoftware/devtoolkit/core/discovery.py))
+- `discover_android_sdk() -> Optional[Path]`: Resolves Android SDK via Env -> OS Default -> Studio XML -> Flutter config -> Signature scan.
+- `discover_android_studio() -> Optional[Path]`: Resolves Android Studio via Registry Uninstall -> Flutter config -> Signature scan.
+- `discover_java_home() -> Optional[Path]`: Resolves JDK via `JAVA_HOME` -> Registry -> OS Inventory -> Gradle -> Flutter -> Studio JBR -> Signature scan.
+- `discover_flutter_sdk() -> Optional[Path]`: Resolves Flutter SDK via `PATH` -> Signature scan.
 
-### `core.runner.SafeRunner`
-Subprocess and path resolution kernel:
-- `run_command(cmd, timeout=3.0, env=None) -> CommandResult`: Enforces non-blocking execution and strict timeout.
-- `resolve_binary(name, extra_paths=None) -> Optional[Path]`: Resolves binaries across `PATH`, extra paths, and Windows extensions (`.exe`, `.cmd`, `.bat`).
-- `read_env(var_name) -> Optional[str]`: Safe retrieval of environment variables.
-- `query_winreg(key_path, value_name) -> Optional[str]`: Windows registry query (`HKLM` and `HKCU`).
+### `OSInventory` ([`devtoolkit/core/inventory.py`](file:///d:/UtilitySoftware/devtoolkit/core/inventory.py))
+- `get_installed_apps() -> List[InstalledApp]`: Enumerates all installed software on Windows without hardcoded drive letters.
+- `find_app_locations(query: str) -> List[Path]`: Returns directory locations for any installed application.
 
-### `core.registry.PluginRegistry`
-Dynamic module discovery and concurrent auditor:
-- `discover_inspectors()`: Iterates `devtoolkit.modules.inspectors` and instantiates all `BaseInspector` subclasses.
-- `run_audit(categories=None, tool_ids=None, max_workers=8) -> AuditSummary`: Executes inspection probes concurrently in a thread pool.
+### `EcosystemResolvers` ([`devtoolkit/core/ecosystem.py`](file:///d:/UtilitySoftware/devtoolkit/core/ecosystem.py))
+- `resolve_android_sdk_from_studio() -> Optional[Path]`: Extracts SDK path from Android Studio's standard `%APPDATA%\Google\AndroidStudio*\options\android.sdk.path.xml`.
+- `resolve_from_flutter(runner) -> dict`: Queries Flutter machine config for companion paths.
+- `resolve_from_gradle() -> Optional[Path]`: Parses `~/.gradle/gradle.properties`.
 
----
-
-## 3. How to Add a New Inspector (< 20 Lines of Code)
-
-To add support for another tool (e.g., `bun`):
-1. Create `devtoolkit/modules/inspectors/bun.py`:
-```python
-from devtoolkit.core.base import BaseInspector
-from devtoolkit.core.models import ToolReport, HealthStatus
-from devtoolkit.core.runner import SafeRunner
-
-class BunInspector(BaseInspector):
-    id = "bun"
-    name = "Bun"
-    category = "runtime"
-
-    def inspect(self, runner: SafeRunner) -> ToolReport:
-        binary = runner.resolve_binary("bun")
-        if not binary:
-            return ToolReport(id=self.id, name=self.name, category=self.category, installed=False)
-        
-        res = runner.run_command([str(binary), "--version"])
-        return ToolReport(
-            id=self.id,
-            name=self.name,
-            category=self.category,
-            installed=True,
-            version=res.stdout if res.ok else None,
-            binary_path=str(binary),
-            status=HealthStatus.HEALTHY if res.ok else HealthStatus.WARNING,
-        )
-```
-2. The plugin will be automatically discovered by `PluginRegistry` without editing any registry or configuration files.
+### `Signatures` ([`devtoolkit/core/signatures.py`](file:///d:/UtilitySoftware/devtoolkit/core/signatures.py))
+- `scan_roots_for_tools(roots: List[Path], max_depth: int = 2) -> Dict[str, List[Path]]`: Content-based detection for arbitrary un-registered directories.

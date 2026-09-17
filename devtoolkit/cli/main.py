@@ -14,6 +14,7 @@ if sys.platform == "win32":
     except Exception:
         pass
 
+from devtoolkit.core.config import add_search_path, get_config_path, load_config
 from devtoolkit.core.registry import PluginRegistry
 from devtoolkit.formatters.json_fmt import render_json
 from devtoolkit.formatters.table import render_doctor, render_table
@@ -24,6 +25,12 @@ app = typer.Typer(
     help="Extensible developer environment auditor and workstation utility.",
     add_completion=False,
 )
+config_app = typer.Typer(
+    name="config",
+    help="Manage DevToolkit user preferences and custom search paths.",
+    add_completion=False,
+)
+app.add_typer(config_app, name="config")
 console = Console()
 
 
@@ -102,6 +109,35 @@ def ui_cmd(
     """Launch the DevToolkit graphical interface."""
     from devtoolkit.server.app import launch_ui
     launch_ui(port=port, web_only=web_only, dev=dev)
+
+
+@config_app.command(name="list", help="Display active configuration and custom search paths.")
+def config_list_cmd() -> None:
+    cfg = load_config()
+    cfg_file = get_config_path()
+    console.print(f"[bold cyan]DevToolkit Config File:[/] {cfg_file}")
+    if cfg.search_paths:
+        console.print("\n[bold]Custom Search Directories:[/]")
+        for sp in cfg.search_paths:
+            console.print(f"  • [green]{sp}[/green]")
+    else:
+        console.print("\n[dim]No custom search paths configured. Using standard OS & ecosystem discovery.[/dim]")
+
+
+@config_app.command(name="add-path", help="Add a custom search root directory to monitor for SDKs.")
+def config_add_path_cmd(
+    path: Path = typer.Argument(..., help="Path to custom directory containing SDKs or tools"),
+) -> None:
+    p = path.expanduser().resolve()
+    if not p.exists() or not p.is_dir():
+        console.print(f"[bold red]Error:[/] '{path}' is not an existing directory.")
+        raise typer.Exit(code=1)
+
+    added = add_search_path(str(p))
+    if added:
+        console.print(f"[bold green]✓ Added custom search path:[/] {p}")
+    else:
+        console.print(f"[yellow]Path is already configured:[/] {p}")
 
 
 if __name__ == "__main__":

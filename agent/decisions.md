@@ -42,3 +42,19 @@ This file tracks major architectural choices, technical decisions, and trade-off
   - Zero additional SDK installations required (Python 3.14 and Node 24 already present).
   - Plugin creation remains as simple as writing a single ~15-line Python file.
   - Desktop memory usage is kept light (~40MB vs Electron's 150MB+).
+
+---
+
+## ADR-0005: 4-Layer Generalized Discovery Pipeline
+- **Date**: 2026-09-17
+- **Status**: Accepted
+- **Context**: Hardcoding custom filesystem paths (like `D:\Dev\` or `C:\Dev\`) is an anti-pattern: it breaks portability, fails across different machines, and creates brittle assumptions.
+- **Decision**: Implement a 4-Layer Discovery Pipeline:
+  1. Standard OS Environment (PATH, official environment variables).
+  2. Dynamic OS Application Inventory (Windows Registry Uninstall & App Paths hives).
+  3. Cross-Tool Ecosystem Metadata (Flutter machine config, Android Studio APPDATA options XMLs, Gradle properties).
+  4. User-Configured Search Roots (`~/.devtoolkit/config.yaml`) with Structural Content Signatures (detecting tools by binary fingerprints, not folder names).
+- **Consequences**:
+  - Tool detection works automatically on any machine, partition, or drive layout.
+  - Zero hardcoded paths in core engine or inspector plugins.
+  - Users can easily monitor arbitrary custom directories via `devtoolkit config add-path <dir>` or the UI.

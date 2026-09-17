@@ -29,6 +29,14 @@ class SafeRunner:
 
     def __init__(self, default_timeout: float = 3.0):
         self.default_timeout = default_timeout
+        self._discovery = None
+
+    @property
+    def discovery(self):
+        if self._discovery is None:
+            from devtoolkit.core.discovery import DiscoveryPipeline
+            self._discovery = DiscoveryPipeline(self)
+        return self._discovery
 
     def run_command(
         self,

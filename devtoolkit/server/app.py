@@ -37,9 +37,29 @@ class OpenFolderRequest(BaseModel):
     path: str
 
 
+class AddSearchPathRequest(BaseModel):
+    path: str
+
+
 class AuditRequest(BaseModel):
     categories: Optional[List[str]] = None
     tool_ids: Optional[List[str]] = None
+
+
+@app.get("/api/config")
+def get_config():
+    from devtoolkit.core.config import load_config
+    return load_config()
+
+
+@app.post("/api/config/search-paths")
+def post_search_path(req: AddSearchPathRequest):
+    from devtoolkit.core.config import add_search_path, load_config
+    p = Path(req.path).expanduser().resolve()
+    if not p.exists() or not p.is_dir():
+        raise HTTPException(status_code=400, detail=f"Directory '{req.path}' does not exist.")
+    added = add_search_path(str(p))
+    return {"status": "ok", "added": added, "config": load_config()}
 
 
 @app.get("/api/system")
