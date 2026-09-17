@@ -314,10 +314,9 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
           <div class="space-y-1">
             <button onclick="switchTab('env')" id="nav-btn-env" class="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition border nav-active">
               <div class="flex items-center gap-2.5 truncate">
-                <i class="fa-solid fa-table-cells-large text-blue-400 flex-shrink-0"></i>
+                <i class="fa-solid fa-table-cells-large flex-shrink-0"></i>
                 <span class="truncate">Environment</span>
               </div>
-              <span class="w-2 h-2 rounded-full bg-blue-400 shadow-[0_0_8px_#60a5fa] flex-shrink-0" id="dot-env"></span>
             </button>
 
             <button onclick="switchTab('ports')" id="nav-btn-ports" class="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition border nav-inactive">
@@ -987,14 +986,11 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
       tabs.forEach(t => {
         const btn = document.getElementById(`nav-btn-${t}`);
         const view = document.getElementById(`view-${t}`);
-        const dot = document.getElementById(`dot-${t}`);
         if (t === tab) {
           btn.className = 'w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition border nav-active';
-          if (dot) dot.classList.remove('hidden');
           view.classList.remove('hidden');
         } else {
           btn.className = 'w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition border nav-inactive';
-          if (dot) dot.classList.add('hidden');
           view.classList.add('hidden');
         }
       });
