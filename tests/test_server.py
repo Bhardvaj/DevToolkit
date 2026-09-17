@@ -11,6 +11,11 @@ from devtoolkit.server.app import (
     delete_search_path,
     serve_dashboard,
     SearchPathRequest,
+    get_ports,
+    post_kill_port,
+    post_audit_project,
+    KillPortRequest,
+    ProjectAuditRequest,
 )
 
 
@@ -22,6 +27,9 @@ def test_server_routes_registered():
     assert "/api/config" in route_paths
     assert "/api/config/search-paths" in route_paths
     assert "/api/action/open-folder" in route_paths
+    assert "/api/ports" in route_paths
+    assert "/api/ports/kill" in route_paths
+    assert "/api/project/audit" in route_paths
     assert "/" in route_paths
 
 
@@ -44,6 +52,22 @@ def test_get_audit_handler():
     summary = get_audit()
     assert summary.total_tools >= 8
     assert len(summary.reports) == summary.total_tools
+
+
+def test_ports_handlers():
+    ports = get_ports(dev_only=False)
+    assert isinstance(ports, list)
+
+    # Test kill port handler on non-existent port
+    res = post_kill_port(KillPortRequest(port=99999, force=False))
+    assert res.success is False
+    assert "No active process" in res.message
+
+
+def test_project_audit_handler(tmp_path):
+    res = post_audit_project(ProjectAuditRequest(path=str(tmp_path)))
+    assert res.project_name == tmp_path.name
+    assert "Generic Workspace" in [c.name for c in res.checks]
 
 
 def test_config_handlers(tmp_path, monkeypatch):
@@ -71,4 +95,6 @@ def test_serve_dashboard():
     response = serve_dashboard()
     assert "DevToolkit" in response
     assert "glass-card" in response
-    assert "Settings & Search Paths" in response
+    assert "Port Manager" in response
+    assert "Project Auditor" in response
+

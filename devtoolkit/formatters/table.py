@@ -115,3 +115,86 @@ def render_doctor(summary: AuditSummary) -> None:
 
     if not issues_found:
         console.print("\n[bold green]+ All inspected tools and environment variables are in good health![/bold green]\n")
+
+
+def render_ports_table(ports: list, dev_only: bool = False) -> None:
+    """Render a clean Rich table of listening ports and occupying processes."""
+    dev_count = sum(1 for p in ports if p.is_dev_port)
+    header = (
+        f"[bold cyan]DevToolkit Port Manager[/bold cyan]  "
+        f"[dim]|[/dim]  Listening Sockets: [bold]{len(ports)}[/bold]  "
+        f"[dim]|[/dim]  Dev Ports: [bold green]{dev_count}[/bold green]"
+    )
+    console.print(Panel(header, border_style="cyan", padding=(0, 1)))
+
+    table = Table(
+        title="Active Listening Sockets",
+        title_style="bold white",
+        border_style="bright_black",
+        header_style="bold cyan",
+        show_lines=False,
+    )
+
+    table.add_column("Port", width=9, style="bold cyan")
+    table.add_column("Tag", width=12)
+    table.add_column("Process Name", style="bold white", overflow="ellipsis")
+    table.add_column("PID", width=8, justify="right", style="yellow")
+    table.add_column("Address", width=14, style="dim", overflow="ellipsis")
+    table.add_column("Status", width=18)
+
+    for p in ports:
+        tag = Text("[DEV PORT]", style="bold magenta") if p.is_dev_port else Text("[SERVICE]", style="dim")
+        if p.is_system_critical:
+            status = Text("[!] System Protected", style="bold red")
+        else:
+            status = Text("[OK] User Process", style="green")
+
+        port_str = f":{p.port}"
+        table.add_row(port_str, tag, p.process_name, str(p.pid), p.address, status)
+
+    console.print(table)
+    console.print(
+        "[dim]Tip: Terminate an occupying process safely with:[/] [bold cyan]devtoolkit ports kill <port>[/]\n"
+    )
+
+
+def render_project_audit(report) -> None:
+    """Render a comprehensive project audit report with readiness checklist."""
+    types_str = ", ".join(report.detected_types) if report.detected_types else "Generic Project"
+    status_text = "[bold green]READY TO BUILD[/]" if report.ready_to_build else "[bold red]ACTION REQUIRED[/]"
+    
+    header = (
+        f"[bold cyan]DevToolkit Project Auditor[/bold cyan]  "
+        f"[dim]|[/dim]  Project: [bold]{report.project_name}[/bold]  "
+        f"[dim]|[/dim]  Ecosystems: [bold yellow]{types_str}[/bold yellow]  "
+        f"[dim]|[/dim]  Status: {status_text}"
+    )
+    console.print(Panel(header, border_style="green" if report.ready_to_build else "red", padding=(0, 1)))
+
+    table = Table(
+        title="Workstation Prerequisites Checklist",
+        title_style="bold white",
+        border_style="bright_black",
+        header_style="bold cyan",
+        show_lines=True,
+    )
+
+    table.add_column("Status", width=14)
+    table.add_column("Requirement", width=24, style="bold")
+    table.add_column("Expected", width=18, style="dim")
+    table.add_column("Detected", width=18, style="cyan")
+    table.add_column("Details", min_width=30, overflow="fold")
+
+    for c in report.checks:
+        status = Text("[OK] Satisfied", style="bold green") if c.satisfied else Text("[X] Missing", style="bold red")
+        table.add_row(status, c.name, c.required, c.detected or "[dim]None[/dim]", c.message)
+
+    console.print(table)
+
+    if report.suggested_actions:
+        actions_panel = "\n".join(f"[bold cyan]•[/] {act}" for act in report.suggested_actions)
+        console.print(Panel(actions_panel, title="[bold yellow]Recommended Setup Commands[/bold yellow]", border_style="yellow"))
+    else:
+        if report.ready_to_build:
+            console.print("[bold green]+ Machine satisfies all detected project requirements![/bold green]\n")
+

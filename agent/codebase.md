@@ -36,27 +36,37 @@ DevToolkit/
 │   │   ├── json_fmt.py                # Machine-readable JSON output
 │   │   └── yaml_fmt.py                # Machine-readable YAML output
 │   ├── modules/
-│   │   └── inspectors/                # Pluggable tool inspectors
-│   │       ├── android.py             # Android SDK, adb, emulator, build-tools, platforms
-│   │       ├── android_studio.py      # Android Studio IDE, launcher, and bundled JBR
-│   │       ├── docker.py              # Docker CLI, Docker Compose, engine daemon check
-│   │       ├── flutter.py             # Flutter SDK, Dart SDK, release channel
-│   │       ├── git.py                 # Git, GitHub CLI (gh), global user config
-│   │       ├── golang.py              # Go compiler, GOPATH, GOROOT
-│   │       ├── java.py                # Java JVM, javac (JDK), JAVA_HOME, bundled JBR
-│   │       ├── node.py                # Node.js, npm, pnpm, yarn, corepack
-│   │       ├── python.py              # Python, pip, uv, poetry, conda, pipenv
-│   │       └── rust.py                # Rustc, Cargo, rustup toolchain
+│   │   ├── inspectors/                # Pluggable tool inspectors
+│   │   │   ├── android.py             # Android SDK, adb, emulator, build-tools, platforms
+│   │   │   ├── android_studio.py      # Android Studio IDE, launcher, and bundled JBR
+│   │   │   ├── docker.py              # Docker CLI, Docker Compose, engine daemon check
+│   │   │   ├── flutter.py             # Flutter SDK, Dart SDK, release channel
+│   │   │   ├── git.py                 # Git, GitHub CLI (gh), global user config
+│   │   │   ├── golang.py              # Go compiler, GOPATH, GOROOT
+│   │   │   ├── java.py                # Java JVM, javac (JDK), JAVA_HOME, bundled JBR
+│   │   │   ├── node.py                # Node.js, npm, pnpm, yarn, corepack
+│   │   │   ├── python.py              # Python, pip, uv, poetry, conda, pipenv
+│   │   │   └── rust.py                # Rustc, Cargo, rustup toolchain
+│   │   └── utilities/                 # Active developer workstation utilities
+│   │       ├── ports.py               # PortManager & PortKiller: socket scanner & safe process killer
+│   │       └── project_auditor.py     # ProjectAuditor: repository requirements vs machine readiness
 │   └── server/                        # UI and API layer
-│       └── app.py                     # FastAPI REST server, config API & PyWebView desktop launcher
-└── tests/                             # Automated test suite (19 passing unit tests)
+│       └── app.py                     # FastAPI REST server, 4-tab modern UI & PyWebView desktop launcher
+├── scripts/
+│   └── build_standalone.ps1           # Automated standalone PyInstaller .exe packaging
+├── .github/
+│   └── workflows/
+│       └── build.yml                  # GitHub Actions CI for test, packaging & release
+└── tests/                             # Automated test suite (29 passing unit tests)
     ├── test_config.py                 # Tests for user configuration and custom search paths
     ├── test_discovery.py              # Tests for unified DiscoveryPipeline
     ├── test_inspectors.py             # Tests for tool inspection logic
     ├── test_inventory.py              # Tests for OS application inventory
+    ├── test_ports.py                  # Tests for PortManager socket discovery and protection
+    ├── test_project_auditor.py        # Tests for ProjectAuditor multi-manifest verification
     ├── test_registry.py               # Tests for dynamic plugin discovery & filtering
     ├── test_runner.py                 # Tests for SafeRunner timeouts & path resolution
-    ├── test_server.py                 # Tests for FastAPI server endpoints and UI rendering
+    ├── test_server.py                 # Tests for FastAPI server endpoints and 4-tab UI rendering
     └── test_signatures.py              # Tests for content signature detection
 ```
 
@@ -81,3 +91,15 @@ DevToolkit/
 
 ### `Signatures` ([`devtoolkit/core/signatures.py`](file:///d:/UtilitySoftware/devtoolkit/core/signatures.py))
 - `scan_roots_for_tools(roots: List[Path], max_depth: int = 2) -> Dict[str, List[Path]]`: Content-based detection for arbitrary un-registered directories.
+
+---
+
+## 3. Utilities Public API
+
+### `PortManager` & `PortKiller` ([`devtoolkit/modules/utilities/ports.py`](file:///d:/UtilitySoftware/devtoolkit/modules/utilities/ports.py))
+- `list_ports(dev_only: bool = False) -> List[PortInfo]`: Lists active TCP listening ports with process names, PIDs, addresses, and dev-port tags (`3000`, `5173`, `8080`, etc.).
+- `kill_port(target_port: int, force: bool = False) -> PortKillResult`: Terminates occupying process via native OS `taskkill /PID <pid> /F` with hard-coded protection for critical system processes.
+
+### `ProjectAuditor` ([`devtoolkit/modules/utilities/project_auditor.py`](file:///d:/UtilitySoftware/devtoolkit/modules/utilities/project_auditor.py))
+- `audit_project(project_path: Path) -> ProjectAuditReport`: Scans repository manifests (`package.json`, `pyproject.toml`, `pubspec.yaml`, `build.gradle`, `Dockerfile`, `Cargo.toml`, `go.mod`), detects ecosystems, tests constraints against installed workstation runtimes, and outputs actionable setup commands.
+

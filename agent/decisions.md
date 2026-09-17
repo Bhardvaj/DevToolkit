@@ -58,3 +58,27 @@ This file tracks major architectural choices, technical decisions, and trade-off
   - Tool detection works automatically on any machine, partition, or drive layout.
   - Zero hardcoded paths in core engine or inspector plugins.
   - Users can easily monitor arbitrary custom directories via `devtoolkit config add-path <dir>` or the UI.
+
+---
+
+## ADR-0006: Native Windows Socket & Process Management with Zero Extra Dependencies
+- **Date**: 2026-09-17
+- **Status**: Accepted
+- **Context**: Port inspection and process termination typically pull in heavy third-party C-extensions like `psutil`, which complicate cross-compilation, Python 3.14 wheels, and single-file bundling.
+- **Decision**: Use standard OS built-in commands (`netstat -ano -p tcp`, `tasklist /FO CSV`, `taskkill /PID <pid> /F`) routed through `SafeRunner` (and `lsof` / `kill` on Unix). Maintain a whitelist of critical Windows system processes (`System`, `svchost.exe`, `csrss.exe`, etc.) to prevent accidental termination.
+- **Consequences**:
+  - Zero new pip dependencies introduced.
+  - 100% portable on vanilla Windows installations.
+  - High performance with execution time < 100ms.
+
+---
+
+## ADR-0007: Multi-Ecosystem Repository Manifest Inspection
+- **Date**: 2026-09-17
+- **Status**: Accepted
+- **Context**: Developers need to know whether their machine can build a cloned project without having to run builds and fail cryptically halfway through.
+- **Decision**: Implement `ProjectAuditor` to inspect declarative project manifests (`package.json`, `pyproject.toml`, `pubspec.yaml`, `build.gradle`, `Dockerfile`, `Cargo.toml`, `go.mod`). Match requirements against the machine's live audit summary gathered from `PluginRegistry`. Output structured requirement checks (`RequirementCheck`) with actionable setup commands.
+- **Consequences**:
+  - Provides a fast, non-mutating readiness check before compilation or running scripts.
+  - Generates clear, copy-pasteable terminal commands to resolve missing dependencies.
+

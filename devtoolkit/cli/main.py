@@ -17,8 +17,10 @@ if sys.platform == "win32":
 from devtoolkit.core.config import add_search_path, get_config_path, load_config
 from devtoolkit.core.registry import PluginRegistry
 from devtoolkit.formatters.json_fmt import render_json
-from devtoolkit.formatters.table import render_doctor, render_table
+from devtoolkit.formatters.table import render_doctor, render_ports_table, render_project_audit, render_table
 from devtoolkit.formatters.yaml_fmt import render_yaml
+from devtoolkit.modules.utilities.ports import PortManager
+from devtoolkit.modules.utilities.project_auditor import ProjectAuditor
 
 app = typer.Typer(
     name="devtoolkit",
@@ -138,6 +140,105 @@ def config_add_path_cmd(
         console.print(f"[bold green]✓ Added custom search path:[/] {p}")
     else:
         console.print(f"[yellow]Path is already configured:[/] {p}")
+
+
+# Ports Sub-Typer
+ports_app = typer.Typer(
+    name="ports",
+    help="Inspect active listening TCP sockets and safely terminate lingering processes.",
+    invoke_without_command=True,
+    add_completion=False,
+)
+app.add_typer(ports_app, name="ports")
+
+
+@ports_app.callback(invoke_without_command=True)
+def ports_default(
+    ctx: typer.Context,
+    dev_only: bool = typer.Option(
+        False,
+        "--dev-only",
+        "-d",
+        help="Filter to common developer ports (3000, 5173, 8080, 27017, etc.).",
+    ),
+    kill: Optional[int] = typer.Option(
+        None,
+        "--kill",
+        "-k",
+        help="Quick kill: terminate process on this port.",
+    ),
+    force: bool = typer.Option(
+        False,
+        "--force",
+        help="Force kill even if process is flagged system critical.",
+    ),
+) -> None:
+    """List active listening ports or terminate a process."""
+    if ctx.invoked_subcommand is None:
+        pm = PortManager()
+        if kill is not None:
+            with console.status(f"[bold red]Terminating process on port {kill}...[/bold red]"):
+                res = pm.kill_port(kill, force=force)
+            if res.success:
+                console.print(f"[bold green]✓[/] {res.message}")
+            else:
+                console.print(f"[bold red]✗[/] {res.message}")
+                raise typer.Exit(code=1)
+            return
+
+        with console.status("[bold cyan]Scanning listening sockets...[/bold cyan]"):
+            ports = pm.list_ports(dev_only=dev_only)
+
+        if not ports:
+            if dev_only:
+                console.print("[yellow]No active developer ports currently in use.[/yellow]")
+            else:
+                console.print("[dim]No active listening TCP ports detected.[/dim]")
+            return
+
+        render_ports_table(ports, dev_only=dev_only)
+
+
+@ports_app.command(name="kill", help="Safely kill the process occupying a specific port.")
+def ports_kill_cmd(
+    port: int = typer.Argument(..., help="Port number of the process to terminate"),
+    force: bool = typer.Option(False, "--force", "-f", help="Force kill system critical processes."),
+) -> None:
+    """Terminate the process listening on a port."""
+    pm = PortManager()
+    with console.status(f"[bold red]Terminating process on port {port}...[/bold red]"):
+        res = pm.kill_port(port, force=force)
+    if res.success:
+        console.print(f"[bold green]✓[/] {res.message}")
+    else:
+        console.print(f"[bold red]✗[/] {res.message}")
+        raise typer.Exit(code=1)
+
+
+@app.command(name="project", help="Audit local workspace or repository against workstation runtimes.")
+def project_cmd(
+    path: Path = typer.Argument(
+        Path("."),
+        help="Path to project directory to audit (defaults to current working directory).",
+    ),
+    format: str = typer.Option(
+        "table",
+        "--format",
+        "-f",
+        help="Output format: table (default), json.",
+    ),
+) -> None:
+    """Audit project dependencies and SDK requirements against workstation state."""
+    auditor = ProjectAuditor()
+    p = path.expanduser().resolve()
+
+    with console.status(f"[bold cyan]Auditing project requirements at '{p}'...[/bold cyan]"):
+        report = auditor.audit_project(p)
+
+    if format.lower() == "json":
+        print(report.model_dump_json(indent=2))
+    else:
+        render_project_audit(report)
 
 
 if __name__ == "__main__":
