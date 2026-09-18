@@ -4,9 +4,9 @@ This document is continuously updated to reflect current project status, complet
 
 ---
 
-## Current Status: Phase 5 Complete (UI & UX Overhaul, Inspector Drawer, Port Manager & Project Auditor Modernization)
-- **Active Task**: Phase 5 complete, tested (49 passing tests), and recompiled into standalone binary `dist/DevToolkit.exe` (20.87 MB).
-- **Architecture**: Decoupled Engine + 22 Tool Inspectors + 4-Layer Generalized Discovery + Uniform Compact Cards with Slide-Over Inspector Drawer + Interactive Metric Stat Filters + Process-Grouped Port Manager with Browser Launch + Visual Project Auditor Scorecard with 1-Click Fix Scripting + Dual-Mode Executable Entrypoint.
+## Current Status: Phase 5 Complete (UI & UX Overhaul, Inspector Drawer, Port Manager, Native Pickers & Progressive Async Architecture)
+- **Active Task**: Phase 5 officially marked complete, 100% verified with 52 passing tests, and recompiled into standalone binary `dist/DevToolkit.exe` (20.88 MB).
+- **Architecture**: Decoupled Engine + 22 Tool Inspectors + 4-Layer Generalized Discovery + Uniform Compact Cards with Slide-Over Inspector Drawer + Progressive SSE Streaming & Skeleton Shimmers + Interactive Metric Stat Filters + Process-Grouped Port Manager with Browser Launch & Spinning Refresh Feedback + Visual Project Auditor Scorecard with Native Folder Browser Picker + Dynamic Sidebar Telemetry & Software Info Footer + Dual-Mode Executable Entrypoint.
 - **Repository**: Synced on GitHub at [https://github.com/Bhardvaj/DevToolkit](https://github.com/Bhardvaj/DevToolkit).
 
 ---
@@ -47,21 +47,37 @@ This document is continuously updated to reflect current project status, complet
 - [x] **Uniform Compact Tool Cards & Slide-Over Inspector Drawer**:
   - Balanced uniform tool cards across all 22 tools preventing height disparity.
   - Smooth slide-over Inspector Drawer with backdrop blur displaying complete paths, native "Open in Explorer", copy actions, diagnostic warnings with 1-click remediation, companion subsystems status, and raw JSON export.
+- [x] **Progressive Async Tool Loading & Skeleton Cards**:
+  - Instant first paint (<50ms) rendering 22 skeleton cards with animated shimmer pulse.
+  - Server-Sent Events (SSE) streaming (`/api/audit/stream`) with thread pool executor concurrency up to 32 workers so fast tools resolve in 50–200ms and snap into place dynamically.
+  - Slower inspectors (Flutter, Java) display in-box scanning indicators until completion.
+  - Resilient automatic fallback to batch fetch if SSE is interrupted.
 - [x] **Interactive Metric Stat Filter Cards**:
   - 6 top metric cards (*Audited Tools*, *Installed*, *Healthy*, *Action Needed*, *Critical Errors*, *Not Found*) act as one-click toggles with active rings and an active status filter reset pill.
 - [x] **Export Environment Report**:
   - Top header dropdown offering 1-click Markdown table export (clipboard), JSON summary copy, and direct `.md` report download.
-- [x] **Port Manager Modernization**:
+- [x] **Port Manager Modernization & Background Pre-fetch**:
   - Automatic port categorization (*Web / HTTP*, *Database*, *Dev Debug*, *Service*).
   - 1-Click "Open in Browser" action (`http://localhost:<port>`) for active web and developer ports.
   - View mode toggle: Flat Sockets Table vs. Grouped by Process cards.
-- [x] **Project Auditor Modernization**:
+  - Background asynchronous pre-fetch on application load for instant zero-latency tab switching.
+  - Visual spinning refresh feedback with toast notification and double-click prevention.
+- [x] **Project Auditor Modernization & Native Folder Browser**:
+  - Clean unpopulated initial state on startup.
   - Visual Readiness Scorecard with percentage meter, breakdown counters, and manifest tags.
   - Recent Projects history chips preserved in `localStorage` for 1-click re-scanning.
+  - Native Windows Explorer folder selection dialog via `@app.post("/api/action/select-folder")` using background PowerShell `FolderBrowserDialog` (`creationflags=0x08000000`, no console window flashes; cross-platform fallbacks for macOS/Linux).
+  - Dedicated "Browse..." button right next to the project input bar and monitored search roots in Settings.
   - 1-Click "Copy All Fix Commands" combining suggested setup actions into a copyable terminal script.
+- [x] **Precision Flex Centering for Search & Input Bars**:
+  - Replaced hardcoded vertical offsets with container flex centering: `absolute inset-y-0 flex items-center` with `leading-none` on `<kbd>` shortcut tags across Environment search, Port search, Project Auditor path input, and Settings root directory input.
+  - Enhanced global `Ctrl+K` shortcut listener to focus the active search/input bar across all tabs.
+- [x] **Dynamic System Telemetry & Sidebar Software Info Footer**:
+  - Removed hardcoded version tag from top title; added a dedicated software info footer card in the sidebar displaying dynamic DevToolkit version (`v0.2.0`), active Python environment version, and runtime status heartbeat.
+  - Dynamically detects and displays host operating system, release, and machine architecture (`#side-os-info`) and hostname (`#side-host-name`) via `/api/system`.
 - [x] **Verification & Standalone Recompilation**:
-  - All 49 unit tests passing (`49 passed in 30.67s`).
-  - Standalone executable recompiled: `dist/DevToolkit.exe` (20.87 MB).
+  - All 52 unit tests passing (`52 passed in 32.19s`).
+  - Standalone executable recompiled: `dist/DevToolkit.exe` (20.88 MB).
   - Smoke tests verified.
 
 ---

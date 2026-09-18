@@ -262,24 +262,33 @@ The desktop interface (`EMBEDDED_UI_HTML` in `devtoolkit/server/app.py`) is styl
 
 ### Views & Navigation
 1. **Environment & Diagnostics (`view-env`)**:
+   - **Progressive Async Tool Loading & Skeleton Cards**: Instant first paint (<50ms) rendering 22 shimmer skeleton cards. Server-Sent Events (SSE) streaming (`/api/audit/stream`) audits concurrently across up to 32 worker threads, snapping tools into place as they complete (50–200ms for fast tools, live scanning spinner for slower tools).
    - **Interactive Stat Metric Filter Cards**: 6 top metric cards (*Audited Tools*, *Installed*, *Healthy*, *Action Needed*, *Critical Errors*, *Not Found*) double as one-click filters with active rings and reset pills.
    - **Slide-Over Detail Drawer (Inspector)**: Smooth right-side drawer displaying complete path locations with "Copy" and native "Open in Explorer" actions, full health diagnostics, companion matrix, and raw JSON export.
    - **Uniform Compact Cards**: Clean, balanced grid cards with branded icons, version tags, multi-category chips, primary path snippets, and mini companion counters.
    - **Export Report Menu**: Top toolbar dropdown offering 1-click Markdown table export (clipboard), JSON summary copy, and direct `.md` report download.
-   - **Category Pills & Sorting**: Dynamic domain category filtering combined seamlessly with status filtering and multi-attribute sorting.
+   - **Precision Centered Search Bar**: Centered search icon and `Ctrl+K` accelerator badge with mathematical flex alignment.
 2. **Port Manager (`view-ports`)**:
+   - **Background Asynchronous Pre-fetch**: Sockets are inspected immediately on application startup, keeping socket counts and the sidebar badge populated with zero navigation delay.
+   - **Visual Refresh Feedback**: Dedicated spinning animation feedback on the refresh icon with duplicate click prevention and confirmation toast.
    - **Socket Classification & Badging**: Automatic port categorization (*Web / HTTP*, *Database*, *Dev Debug*, *Service*) with distinctive color coding.
    - **1-Click Browser Launch**: "Open in Browser" button (`http://localhost:<port>`) for active web and developer ports.
    - **Process Grouping View Toggle**: Switch between flat sockets table and grouped process cards showing all ports held by each process PID.
    - **Process Safeguards**: Interactive kill process modal with OS-critical process warnings and force flags.
 3. **Project Workstation Auditor (`view-project`)**:
+   - **Clean Unpopulated Startup**: Input starts clean with helpful placeholder text awaiting explicit user scanning or preset selection.
+   - **Native Windows Explorer Picker**: Dedicated "Browse..." button invoking native `FolderBrowserDialog` via background PowerShell without console window flashing (`/api/action/select-folder`). Automatically populates input and triggers readiness check.
    - **Visual Readiness Scorecard**: Animated readiness gauge (0-100%) with satisfied vs. missing breakdown counters and detected manifest tags.
    - **Recent Projects History**: Preserves recently scanned workspace directories in browser `localStorage` for instant 1-click re-scanning.
    - **1-Click Fix Scripting**: Prominent "Copy All Fix Commands" button that generates a combined setup script for missing requirements.
    - **Prerequisites Checklist**: Clear requirement matrix showing detected versions vs expected constraints.
 4. **Settings & Preferences (`view-settings`)**:
-   - Layer-4 Monitored Search Directories management (add/remove custom search roots).
+   - Layer-4 Monitored Search Directories management with native "Browse..." folder selection.
    - System hardware specifications (OS, Architecture, Host Machine, Python runtime, PATH entry count).
+5. **Sidebar Brand Header & Software Info Footer**:
+   - Clean top header without hardcoded version tags.
+   - Dynamic OS, release, and machine architecture detection (`#side-os-info`) and host name (`#side-host-name`).
+   - Pinned glassmorphic software info footer displaying DevToolkit version (`v0.2.0`), Python environment version, runtime heartbeat, and quick diagnostics help modal trigger (`?`).
 
 ### Native Desktop Keyboard Accelerators
 - `Ctrl + K`: Focus global search input.
@@ -310,6 +319,7 @@ The local FastAPI server runs on `http://127.0.0.1:4321`.
 | `POST` | `/api/config/search-paths` | Add custom search root | `SearchPathRequest` (`path`) | Status & Updated Config |
 | `DELETE` | `/api/config/search-paths` | Remove custom search root | `SearchPathRequest` (`path`) | Status & Updated Config |
 | `POST` | `/api/action/open-folder` | Open path in Windows Explorer | `OpenFolderRequest` (`path`) | Status |
+| `POST` | `/api/action/select-folder` | Native OS folder browser picker dialog | `SelectFolderRequest` (`initial_path`) | Status & Selected path |
 | `POST` | `/api/action/apply-fix` | Apply safe environment fix | `ApplyFixRequest` (`command`) | Status & Output message |
 | `GET` | `/` | Serve embedded desktop dashboard | None | `HTMLResponse` |
 
