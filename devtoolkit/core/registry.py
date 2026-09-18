@@ -69,7 +69,7 @@ class PluginRegistry:
         self,
         categories: Optional[List[str]] = None,
         tool_ids: Optional[List[str]] = None,
-        max_workers: int = 8,
+        max_workers: Optional[int] = None,
     ) -> AuditSummary:
         """Run safe environment inspection across registered inspectors concurrently."""
         target_inspectors = list(self._inspectors.values())
@@ -88,8 +88,9 @@ class PluginRegistry:
             target_inspectors = [i for i in target_inspectors if i.id.lower() in norm_ids]
 
         reports: List[ToolReport] = []
+        worker_count = max_workers if max_workers is not None else min(32, max(len(target_inspectors), 1))
 
-        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        with ThreadPoolExecutor(max_workers=worker_count) as executor:
             future_to_inspector = {
                 executor.submit(inspector.inspect, self.runner): inspector
                 for inspector in target_inspectors
@@ -133,3 +134,80 @@ class PluginRegistry:
             not_found_count=not_found_count,
             reports=reports,
         )
+
+    def stream_audit(
+        self,
+        categories: Optional[List[str]] = None,
+        tool_ids: Optional[List[str]] = None,
+        max_workers: Optional[int] = None,
+    ):
+        """Yield audit results progressively as each tool inspection completes."""
+        target_inspectors = list(self._inspectors.values())
+
+        if categories:
+            norm_cats = {c.lower() for c in categories}
+            target_inspectors = [
+                i
+                for i in target_inspectors
+                if any(c.lower() in norm_cats for c in getattr(i, "categories", [i.category]))
+                or i.category.lower() in norm_cats
+            ]
+
+        if tool_ids:
+            norm_ids = {t.lower() for t in tool_ids}
+            target_inspectors = [i for i in target_inspectors if i.id.lower() in norm_ids]
+
+        worker_count = max_workers if max_workers is not None else min(32, max(len(target_inspectors), 1))
+        sys_info = self.runner.get_system_info()
+
+        yield {
+            "type": "init",
+            "total_tools": len(target_inspectors),
+            "system": sys_info.model_dump(mode="json"),
+        }
+
+        reports: List[ToolReport] = []
+        with ThreadPoolExecutor(max_workers=worker_count) as executor:
+            future_to_inspector = {
+                executor.submit(inspector.inspect, self.runner): inspector
+                for inspector in target_inspectors
+            }
+            for future in as_completed(future_to_inspector):
+                inspector = future_to_inspector[future]
+                try:
+                    report = future.result()
+                except Exception as e:
+                    report = ToolReport(
+                        id=inspector.id,
+                        name=inspector.name,
+                        category=inspector.category,
+                        categories=getattr(inspector, "categories", [inspector.category]),
+                        installed=False,
+                        status=HealthStatus.ERROR,
+                        metadata={"error": str(e)},
+                    )
+                reports.append(report)
+                yield {
+                    "type": "tool",
+                    "report": report.model_dump(mode="json"),
+                }
+
+        # Calculate final metrics
+        installed_count = sum(1 for r in reports if r.installed)
+        healthy_count = sum(1 for r in reports if r.status == HealthStatus.HEALTHY)
+        warning_count = sum(1 for r in reports if r.status == HealthStatus.WARNING)
+        error_count = sum(1 for r in reports if r.status == HealthStatus.ERROR)
+        not_found_count = sum(1 for r in reports if r.status == HealthStatus.NOT_FOUND)
+
+        yield {
+            "type": "done",
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "total_tools": len(reports),
+            "installed_count": installed_count,
+            "healthy_count": healthy_count,
+            "warning_count": warning_count,
+            "error_count": error_count,
+            "not_found_count": not_found_count,
+            "system": sys_info.model_dump(mode="json"),
+        }
+

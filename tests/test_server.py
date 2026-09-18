@@ -6,6 +6,7 @@ from devtoolkit.server.app import (
     get_system,
     get_tools,
     get_audit,
+    stream_audit,
     get_config,
     post_search_path,
     delete_search_path,
@@ -24,6 +25,7 @@ def test_server_routes_registered():
     assert "/api/system" in route_paths
     assert "/api/tools" in route_paths
     assert "/api/audit" in route_paths
+    assert "/api/audit/stream" in route_paths
     assert "/api/config" in route_paths
     assert "/api/config/search-paths" in route_paths
     assert "/api/action/open-folder" in route_paths
@@ -109,6 +111,13 @@ def test_serve_dashboard():
     assert "project-recent-chips" in response
     assert "openInspectorDrawer" in response
     assert "toggleStatusFilter" in response
+    assert "ports-refresh-icon" in response
+    assert "skeleton-shimmer" in response
+
+
+def test_stream_audit_handler():
+    response = stream_audit()
+    assert response.media_type == "text/event-stream"
 
 
 def test_apply_fix_handler():

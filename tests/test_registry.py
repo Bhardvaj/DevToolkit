@@ -46,3 +46,16 @@ def test_plugin_registry_audit_filtering():
     assert summary_tools.total_tools == 2
     tool_ids = {r.id for r in summary_tools.reports}
     assert tool_ids == {"node", "python"}
+
+
+def test_plugin_registry_stream_audit():
+    registry = PluginRegistry()
+    events = list(registry.stream_audit(tool_ids=["git", "python"]))
+    assert len(events) >= 3  # init + 2 tools + done
+    assert events[0]["type"] == "init"
+    assert events[0]["total_tools"] == 2
+    tool_events = [e for e in events if e["type"] == "tool"]
+    assert len(tool_events) == 2
+    assert {e["report"]["id"] for e in tool_events} == {"git", "python"}
+    assert events[-1]["type"] == "done"
+    assert events[-1]["total_tools"] == 2

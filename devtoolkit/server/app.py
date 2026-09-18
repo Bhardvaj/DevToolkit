@@ -11,7 +11,7 @@ from typing import List, Optional
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 import uvicorn
@@ -89,6 +89,25 @@ def get_system():
 @app.get("/api/audit", response_model=AuditSummary)
 def get_audit():
     return registry.run_audit()
+
+
+@app.get("/api/audit/stream")
+def stream_audit():
+    import json
+
+    def event_generator():
+        for item in registry.stream_audit():
+            yield f"data: {json.dumps(item)}\n\n"
+
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",
+        },
+    )
 
 
 @app.post("/api/audit", response_model=AuditSummary)
@@ -281,6 +300,15 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
     .stat-filter-active { border-color: #3b82f6 !important; background: rgba(30, 58, 138, 0.3) !important; box-shadow: 0 0 0 1px #3b82f6, 0 8px 24px rgba(59, 130, 246, 0.25) !important; }
     .drawer-panel { transform: translateX(100%); transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1); }
     .drawer-panel.open { transform: translateX(0); }
+    @keyframes shimmer {
+      0% { background-position: -200% 0; }
+      100% { background-position: 200% 0; }
+    }
+    .skeleton-shimmer {
+      background: linear-gradient(90deg, rgba(255,255,255,0.03) 25%, rgba(255,255,255,0.09) 50%, rgba(255,255,255,0.03) 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.8s infinite;
+    }
   </style>
 </head>
 <body class="h-full w-full bg-darkBg text-slate-100 font-sans select-none overflow-hidden flex flex-col">
@@ -616,7 +644,7 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
           <div class="flex flex-col sm:flex-row items-center justify-between gap-3 bg-[#0a0f1e]/70 p-3 rounded-xl border border-slate-800/80">
             <div class="flex items-center gap-2.5 w-full sm:w-auto flex-wrap">
               <label class="inline-flex items-center gap-2 cursor-pointer text-xs font-semibold text-slate-300 bg-slate-800/80 px-3 py-1.5 rounded-lg border border-slate-700 hover:bg-slate-700/80 transition">
-                <input type="checkbox" id="ports-dev-toggle" onchange="fetchPorts()" class="rounded border-slate-600 text-blue-600 focus:ring-blue-500" />
+                <input type="checkbox" id="ports-dev-toggle" onchange="fetchPorts(false)" class="rounded border-slate-600 text-blue-600 focus:ring-blue-500" />
                 <span>Developer Ports Only</span>
               </label>
 
@@ -632,8 +660,8 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
                 </button>
               </div>
 
-              <button onclick="fetchPorts()" class="px-3 py-1.5 bg-[#0e1526] hover:bg-[#131d36] text-slate-300 hover:text-white border border-slate-700/80 rounded-lg text-xs font-semibold transition flex items-center gap-1.5 shadow-sm">
-                <i class="fa-solid fa-rotate text-xs"></i>
+              <button onclick="fetchPorts(true)" id="btn-refresh-ports" class="px-3 py-1.5 bg-[#0e1526] hover:bg-[#131d36] text-slate-300 hover:text-white border border-slate-700/80 rounded-lg text-xs font-semibold transition flex items-center gap-1.5 shadow-sm active:scale-95">
+                <i id="ports-refresh-icon" class="fa-solid fa-rotate text-xs"></i>
                 <span>Refresh</span>
               </button>
             </div>
@@ -1255,6 +1283,20 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
         container.innerHTML = '<div class="p-6 text-slate-400">Tool details not found.</div>';
         return;
       }
+      if (r.scanning) {
+        container.innerHTML = `
+          <div class="p-8 text-center space-y-4">
+            <div class="w-12 h-12 mx-auto rounded-2xl bg-blue-500/15 border border-blue-500/30 flex items-center justify-center text-blue-400 text-xl">
+              <i class="fa-solid fa-circle-notch fa-spin"></i>
+            </div>
+            <div>
+              <h3 class="text-white font-bold text-base">Inspecting ${r.name}...</h3>
+              <p class="text-slate-400 text-xs mt-1">Environment inspection is currently running for this tool.</p>
+            </div>
+          </div>
+        `;
+        return;
+      }
 
       const toolCats = (r.categories && r.categories.length > 0) ? r.categories : [r.category];
       const categoriesHtml = toolCats.map(c => 
@@ -1498,6 +1540,9 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
     }
 
     function getBadge(status) {
+      if (status === 'scanning') {
+        return '<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-blue-500/15 text-blue-300 border border-blue-500/30 whitespace-nowrap animate-pulse"><i class="fa-solid fa-circle-notch fa-spin text-[10px]"></i> Scanning</span>';
+      }
       if (status === 'healthy') {
         return '<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 whitespace-nowrap"><span class="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_6px_#34d399]"></span> Healthy</span>';
       }
@@ -1708,6 +1753,192 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
       }
     }
 
+    let activeAuditSource = null;
+
+    function renderToolCardInner(r) {
+      const isScanning = Boolean(r.scanning);
+
+      if (isScanning) {
+        const toolCats = (r.categories && r.categories.length > 0) ? r.categories : [r.category || 'tool'];
+        const categoriesHtml = toolCats.slice(0, 2).map(c => 
+          `<span class="text-[9px] text-slate-500 uppercase tracking-wider font-mono font-semibold px-1.5 py-0.5 bg-slate-900 rounded border border-slate-800/80">${c}</span>`
+        ).join('') + (toolCats.length > 2 ? `<span class="text-[9px] text-slate-600 font-mono">+${toolCats.length - 2}</span>` : '');
+
+        return `
+          <div>
+            <!-- Header: Icon, Name, Scanning Badge -->
+            <div class="flex items-start justify-between gap-2.5 mb-3">
+              <div class="flex items-center gap-3 min-w-0">
+                <div class="w-10 h-10 rounded-xl bg-[#060a14] border border-slate-800 flex items-center justify-center text-lg flex-shrink-0 text-slate-400 shadow-inner">
+                  ${getToolIcon(r.id, r.category)}
+                </div>
+                <div class="min-w-0">
+                  <h3 class="font-bold text-white text-sm tracking-tight truncate" title="${r.name}">
+                    ${r.name}
+                  </h3>
+                  <div class="flex items-center gap-1.5 mt-1">
+                    <span class="relative flex h-2 w-2">
+                      <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                      <span class="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
+                    </span>
+                    <span class="text-[11px] font-mono text-blue-400 font-medium">Scanning...</span>
+                  </div>
+                </div>
+              </div>
+              <div class="flex-shrink-0">
+                <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-blue-500/15 text-blue-300 border border-blue-500/30 whitespace-nowrap animate-pulse">
+                  <i class="fa-solid fa-circle-notch fa-spin text-[10px]"></i> Scanning
+                </span>
+              </div>
+            </div>
+
+            <!-- Categories & Shimmer Path Skeleton -->
+            <div class="space-y-2 my-2.5 text-xs">
+              <div class="flex items-center gap-1 flex-wrap">
+                ${categoriesHtml}
+              </div>
+              <div class="bg-[#050812] px-2.5 py-2 rounded-lg border border-slate-800/80 flex items-center gap-2">
+                <i class="fa-solid fa-terminal text-slate-700 text-[10px]"></i>
+                <div class="h-3.5 bg-slate-800/90 rounded skeleton-shimmer w-3/4"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Bottom Footer Bar Skeleton -->
+          <div class="pt-2.5 mt-1 border-t border-slate-800/70 flex items-center justify-between text-xs">
+            <div class="flex items-center gap-1.5">
+              <div class="h-4 w-16 bg-slate-800/60 rounded skeleton-shimmer"></div>
+            </div>
+            <span class="text-[11px] font-mono text-slate-500 flex items-center gap-1">
+              <i class="fa-solid fa-spinner fa-spin text-[9px] text-blue-400"></i> running
+            </span>
+          </div>
+        `;
+      }
+
+      // Completed card
+      const toolCats = (r.categories && r.categories.length > 0) ? r.categories : [r.category];
+      const categoriesHtml = toolCats.slice(0, 2).map(c => 
+        `<span class="text-[9px] text-slate-400 uppercase tracking-wider font-mono font-semibold px-1.5 py-0.5 bg-slate-900 rounded border border-slate-800">${c}</span>`
+      ).join('') + (toolCats.length > 2 ? `<span class="text-[9px] text-slate-500 font-mono">+${toolCats.length - 2}</span>` : '');
+
+      const primaryPath = r.home_path || r.binary_path || '';
+      const cleanPath = primaryPath.replace(/"/g, '&quot;');
+
+      let companionPill = '';
+      if (r.companions && r.companions.length > 0) {
+        const installedComp = r.companions.filter(c => c.installed).length;
+        companionPill = `
+          <span class="inline-flex items-center gap-1 text-[10px] font-mono text-slate-400 bg-slate-900/80 px-2 py-0.5 rounded border border-slate-800">
+            <i class="fa-solid fa-layer-group text-[9px] text-indigo-400"></i> ${installedComp}/${r.companions.length}
+          </span>
+        `;
+      }
+
+      let diagStrip = '';
+      if (r.diagnostics && r.diagnostics.length > 0) {
+        diagStrip = `
+          <span class="inline-flex items-center gap-1 text-[10px] font-semibold text-amber-300 bg-amber-500/15 px-2 py-0.5 rounded border border-amber-500/30 truncate max-w-[140px]" title="${r.diagnostics[0].message}">
+            <i class="fa-solid fa-triangle-exclamation text-[9px]"></i> Action
+          </span>
+        `;
+      }
+
+      return `
+        <div>
+          <!-- Header: Icon, Name, Version, Status -->
+          <div class="flex items-start justify-between gap-2.5 mb-3">
+            <div class="flex items-center gap-3 min-w-0">
+              <div class="w-10 h-10 rounded-xl bg-[#060a14] border border-slate-800 flex items-center justify-center text-lg flex-shrink-0 group-hover:border-blue-500/40 group-hover:bg-[#0a1224] transition shadow-inner">
+                ${getToolIcon(r.id, r.category)}
+              </div>
+              <div class="min-w-0">
+                <h3 class="font-bold text-white text-sm tracking-tight truncate group-hover:text-blue-300 transition" title="${r.name}">
+                  ${r.name}
+                </h3>
+                <div class="text-[11px] font-mono font-semibold text-blue-400 mt-0.5 truncate">
+                  ${r.version ? 'v' + r.version : (r.installed ? '<span class="text-slate-400 font-normal">Installed</span>' : '<span class="text-slate-500 font-normal">Not detected</span>')}
+                </div>
+              </div>
+            </div>
+            <div class="flex-shrink-0">
+              ${getBadge(r.status)}
+            </div>
+          </div>
+
+          <!-- Categories & Primary Path -->
+          <div class="space-y-2 my-2.5 text-xs">
+            <div class="flex items-center gap-1 flex-wrap">
+              ${categoriesHtml}
+            </div>
+            <div class="bg-[#050812] px-2.5 py-1.5 rounded-lg border border-slate-800/80 flex items-center justify-between gap-1.5 min-w-0 text-[11px] font-mono text-slate-400" title="${cleanPath}">
+              <div class="truncate flex items-center gap-1.5">
+                <i class="fa-solid ${r.home_path ? 'fa-folder text-blue-400' : 'fa-terminal text-emerald-400'} text-[10px] flex-shrink-0"></i>
+                <span class="truncate">${primaryPath || '<span class="text-slate-600 italic">No path registered</span>'}</span>
+              </div>
+              ${primaryPath ? `
+                <button onclick="event.stopPropagation(); copyToClipboard('${cleanPath}', 'path')" class="p-1 text-slate-500 hover:text-white transition flex-shrink-0" title="Copy path">
+                  <i class="fa-regular fa-copy text-[10px]"></i>
+                </button>
+              ` : ''}
+            </div>
+          </div>
+        </div>
+
+        <!-- Bottom Footer Bar -->
+        <div class="pt-2.5 mt-1 border-t border-slate-800/70 flex items-center justify-between text-xs">
+          <div class="flex items-center gap-1.5 min-w-0">
+            ${companionPill}
+            ${diagStrip}
+          </div>
+          <span class="text-[11px] font-semibold text-blue-400 group-hover:text-blue-300 flex items-center gap-1 flex-shrink-0 transition">
+            Inspect <i class="fa-solid fa-chevron-right text-[9px] group-hover:translate-x-0.5 transition"></i>
+          </span>
+        </div>
+      `;
+    }
+
+    function renderToolRowInner(r) {
+      const cleanHome = (r.home_path || '').replace(/"/g, '&quot;');
+      const cleanBin = (r.binary_path || '').replace(/"/g, '&quot;');
+      const toolCats = (r.categories && r.categories.length > 0) ? r.categories : [r.category];
+      const catsDisplay = toolCats.join(', ');
+
+      if (r.scanning) {
+        return `
+          <td class="py-3 px-4 font-bold text-white flex items-center gap-2">
+            <span class="w-6 h-6 rounded bg-slate-800 flex items-center justify-center text-xs flex-shrink-0 text-slate-400">${getToolIcon(r.id, r.category)}</span>
+            <span class="truncate max-w-[150px]">${r.name}</span>
+          </td>
+          <td class="py-3 px-4 uppercase text-[10px] font-mono text-slate-400">${catsDisplay}</td>
+          <td class="py-3 px-4">
+            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] bg-blue-500/10 text-blue-300 border border-blue-500/20 font-mono animate-pulse">
+              <i class="fa-solid fa-circle-notch fa-spin text-[9px]"></i> Scanning
+            </span>
+          </td>
+          <td class="py-3 px-4"><div class="h-3 w-12 bg-slate-800 rounded skeleton-shimmer"></div></td>
+          <td class="py-3 px-4"><div class="h-3 w-28 bg-slate-800 rounded skeleton-shimmer"></div></td>
+          <td class="py-3 px-4"><div class="h-3 w-28 bg-slate-800 rounded skeleton-shimmer"></div></td>
+          <td class="py-3 px-4 text-right text-slate-600">—</td>
+        `;
+      }
+
+      return `
+        <td class="py-3 px-4 font-bold text-white flex items-center gap-2">
+          <span class="w-6 h-6 rounded bg-slate-800 flex items-center justify-center text-xs flex-shrink-0">${getToolIcon(r.id, r.category)}</span>
+          <span class="truncate max-w-[150px]">${r.name}</span>
+        </td>
+        <td class="py-3 px-4 uppercase text-[10px] font-mono text-slate-400">${catsDisplay}</td>
+        <td class="py-3 px-4">${getBadge(r.status)}</td>
+        <td class="py-3 px-4 font-mono text-blue-300">${r.version ? 'v' + r.version : '—'}</td>
+        <td class="py-3 px-4 font-mono text-slate-400 truncate max-w-[180px]" title="${cleanHome}">${r.home_path || '<span class="text-slate-600">—</span>'}</td>
+        <td class="py-3 px-4 font-mono text-emerald-400 truncate max-w-[180px]" title="${cleanBin}">${r.binary_path || '<span class="text-slate-600">—</span>'}</td>
+        <td class="py-3 px-4 text-right">
+          <button onclick="event.stopPropagation(); openInspectorDrawer('${r.id}')" class="px-2.5 py-1 bg-[#131d36] hover:bg-blue-600 text-blue-300 hover:text-white rounded text-[11px] font-semibold transition border border-blue-500/30">Inspect</button>
+        </td>
+      `;
+    }
+
     function renderGridView(tools) {
       const grid = document.getElementById('tools-grid');
       grid.innerHTML = '';
@@ -1730,91 +1961,10 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
 
       tools.forEach(r => {
         const card = document.createElement('div');
+        card.id = `tool-card-${r.id}`;
         card.className = 'glass-card rounded-2xl p-4 sm:p-5 flex flex-col justify-between transition-all duration-200 border border-slate-800/80 hover:border-blue-500/40 hover:bg-[#0e1628] shadow-xl cursor-pointer group';
-        card.onclick = () => openInspectorDrawer(r.id);
-
-        // Multiple categories badges (compact)
-        const toolCats = (r.categories && r.categories.length > 0) ? r.categories : [r.category];
-        const categoriesHtml = toolCats.slice(0, 2).map(c => 
-          `<span class="text-[9px] text-slate-400 uppercase tracking-wider font-mono font-semibold px-1.5 py-0.5 bg-slate-900 rounded border border-slate-800">${c}</span>`
-        ).join('') + (toolCats.length > 2 ? `<span class="text-[9px] text-slate-500 font-mono">+${toolCats.length - 2}</span>` : '');
-
-        const primaryPath = r.home_path || r.binary_path || '';
-        const cleanPath = primaryPath.replace(/"/g, '&quot;');
-
-        // Companion count pill
-        let companionPill = '';
-        if (r.companions && r.companions.length > 0) {
-          const installedComp = r.companions.filter(c => c.installed).length;
-          companionPill = `
-            <span class="inline-flex items-center gap-1 text-[10px] font-mono text-slate-400 bg-slate-900/80 px-2 py-0.5 rounded border border-slate-800">
-              <i class="fa-solid fa-layer-group text-[9px] text-indigo-400"></i> ${installedComp}/${r.companions.length}
-            </span>
-          `;
-        }
-
-        // Action needed alert strip if diagnostics exist
-        let diagStrip = '';
-        if (r.diagnostics && r.diagnostics.length > 0) {
-          diagStrip = `
-            <span class="inline-flex items-center gap-1 text-[10px] font-semibold text-amber-300 bg-amber-500/15 px-2 py-0.5 rounded border border-amber-500/30 truncate max-w-[140px]" title="${r.diagnostics[0].message}">
-              <i class="fa-solid fa-triangle-exclamation text-[9px]"></i> Action
-            </span>
-          `;
-        }
-
-        card.innerHTML = `
-          <div>
-            <!-- Header: Icon, Name, Version, Status -->
-            <div class="flex items-start justify-between gap-2.5 mb-3">
-              <div class="flex items-center gap-3 min-w-0">
-                <div class="w-10 h-10 rounded-xl bg-[#060a14] border border-slate-800 flex items-center justify-center text-lg flex-shrink-0 group-hover:border-blue-500/40 group-hover:bg-[#0a1224] transition shadow-inner">
-                  ${getToolIcon(r.id, r.category)}
-                </div>
-                <div class="min-w-0">
-                  <h3 class="font-bold text-white text-sm tracking-tight truncate group-hover:text-blue-300 transition" title="${r.name}">
-                    ${r.name}
-                  </h3>
-                  <div class="text-[11px] font-mono font-semibold text-blue-400 mt-0.5 truncate">
-                    ${r.version ? 'v' + r.version : (r.installed ? '<span class="text-slate-400 font-normal">Installed</span>' : '<span class="text-slate-500 font-normal">Not detected</span>')}
-                  </div>
-                </div>
-              </div>
-              <div class="flex-shrink-0">
-                ${getBadge(r.status)}
-              </div>
-            </div>
-
-            <!-- Categories & Primary Path -->
-            <div class="space-y-2 my-2.5 text-xs">
-              <div class="flex items-center gap-1 flex-wrap">
-                ${categoriesHtml}
-              </div>
-              <div class="bg-[#050812] px-2.5 py-1.5 rounded-lg border border-slate-800/80 flex items-center justify-between gap-1.5 min-w-0 text-[11px] font-mono text-slate-400" title="${cleanPath}">
-                <div class="truncate flex items-center gap-1.5">
-                  <i class="fa-solid ${r.home_path ? 'fa-folder text-blue-400' : 'fa-terminal text-emerald-400'} text-[10px] flex-shrink-0"></i>
-                  <span class="truncate">${primaryPath || '<span class="text-slate-600 italic">No path registered</span>'}</span>
-                </div>
-                ${primaryPath ? `
-                  <button onclick="event.stopPropagation(); copyToClipboard('${cleanPath}', 'path')" class="p-1 text-slate-500 hover:text-white transition flex-shrink-0" title="Copy path">
-                    <i class="fa-regular fa-copy text-[10px]"></i>
-                  </button>
-                ` : ''}
-              </div>
-            </div>
-          </div>
-
-          <!-- Bottom Footer Bar -->
-          <div class="pt-2.5 mt-1 border-t border-slate-800/70 flex items-center justify-between text-xs">
-            <div class="flex items-center gap-1.5 min-w-0">
-              ${companionPill}
-              ${diagStrip}
-            </div>
-            <span class="text-[11px] font-semibold text-blue-400 group-hover:text-blue-300 flex items-center gap-1 flex-shrink-0 transition">
-              Inspect <i class="fa-solid fa-chevron-right text-[9px] group-hover:translate-x-0.5 transition"></i>
-            </span>
-          </div>
-        `;
+        card.onclick = () => { if (!r.scanning) openInspectorDrawer(r.id); };
+        card.innerHTML = renderToolCardInner(r);
         grid.appendChild(card);
       });
     }
@@ -1830,75 +1980,174 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
 
       tools.forEach(r => {
         const tr = document.createElement('tr');
+        tr.id = `tool-row-${r.id}`;
         tr.className = 'hover:bg-slate-800/40 transition text-slate-300 cursor-pointer';
-        tr.onclick = () => openInspectorDrawer(r.id);
-        const cleanHome = (r.home_path || '').replace(/"/g, '&quot;');
-        const cleanBin = (r.binary_path || '').replace(/"/g, '&quot;');
-        const toolCats = (r.categories && r.categories.length > 0) ? r.categories : [r.category];
-        const catsDisplay = toolCats.join(', ');
-
-        tr.innerHTML = `
-          <td class="py-3 px-4 font-bold text-white flex items-center gap-2">
-            <span class="w-6 h-6 rounded bg-slate-800 flex items-center justify-center text-xs flex-shrink-0">${getToolIcon(r.id, r.category)}</span>
-            <span class="truncate max-w-[150px]">${r.name}</span>
-          </td>
-          <td class="py-3 px-4 uppercase text-[10px] font-mono text-slate-400">${catsDisplay}</td>
-          <td class="py-3 px-4">${getBadge(r.status)}</td>
-          <td class="py-3 px-4 font-mono text-blue-300">${r.version ? 'v' + r.version : '—'}</td>
-          <td class="py-3 px-4 font-mono text-slate-400 truncate max-w-[180px]" title="${cleanHome}">${r.home_path || '<span class="text-slate-600">—</span>'}</td>
-          <td class="py-3 px-4 font-mono text-emerald-400 truncate max-w-[180px]" title="${cleanBin}">${r.binary_path || '<span class="text-slate-600">—</span>'}</td>
-          <td class="py-3 px-4 text-right">
-            <button onclick="event.stopPropagation(); openInspectorDrawer('${r.id}')" class="px-2.5 py-1 bg-[#131d36] hover:bg-blue-600 text-blue-300 hover:text-white rounded text-[11px] font-semibold transition border border-blue-500/30">Inspect</button>
-          </td>
-        `;
+        tr.onclick = () => { if (!r.scanning) openInspectorDrawer(r.id); };
+        tr.innerHTML = renderToolRowInner(r);
         tbody.appendChild(tr);
       });
+    }
+
+    function updateSingleToolInDom(report) {
+      const card = document.getElementById(`tool-card-${report.id}`);
+      if (card) {
+        card.innerHTML = renderToolCardInner(report);
+        card.onclick = () => { if (!report.scanning) openInspectorDrawer(report.id); };
+      }
+      const row = document.getElementById(`tool-row-${report.id}`);
+      if (row) {
+        row.innerHTML = renderToolRowInner(report);
+        row.onclick = () => { if (!report.scanning) openInspectorDrawer(report.id); };
+      }
+    }
+
+    function updateAuditMetrics() {
+      const finished = allReports.filter(r => !r.scanning);
+      const total = allReports.length || 1;
+      const installed = finished.filter(r => r.installed).length;
+      const healthy = finished.filter(r => r.status === 'healthy').length;
+      const warning = finished.filter(r => r.status === 'warning').length;
+      const error = finished.filter(r => r.status === 'error').length;
+      const missing = finished.filter(r => r.status === 'not_found').length;
+
+      document.getElementById('stat-total').innerText = total;
+      document.getElementById('stat-installed').innerText = installed;
+      document.getElementById('stat-healthy').innerText = healthy;
+      document.getElementById('stat-warning').innerText = warning;
+      document.getElementById('stat-error').innerText = error;
+      document.getElementById('stat-missing').innerText = missing;
+
+      const cov = Math.round((installed / total) * 100);
+      document.getElementById('stat-coverage').innerText = `${cov}% coverage`;
+      document.getElementById('stat-installed-bar').style.width = `${cov}%`;
+      document.getElementById('stat-healthy-bar').style.width = `${Math.round((healthy / total) * 100)}%`;
+      document.getElementById('stat-warning-bar').style.width = `${Math.round((warning / total) * 100)}%`;
+      document.getElementById('stat-error-bar').style.width = `${Math.round((error / total) * 100)}%`;
+      document.getElementById('stat-missing-bar').style.width = `${Math.round((missing / total) * 100)}%`;
+    }
+
+    function applySystemInfo(sys) {
+      if (!sys) return;
+      const sideOs = document.getElementById('side-os-info');
+      if (sideOs) sideOs.innerText = `${sys.os_name} ${sys.os_release} (${sys.arch})`;
+      const sideHost = document.getElementById('side-host-name');
+      if (sideHost) sideHost.innerText = sys.hostname || 'LOCAL';
+      if (sys.path_count) {
+        const statusPath = document.getElementById('status-path-count');
+        if (statusPath) statusPath.innerText = sys.path_count;
+      }
+      if (sys.ram_footprint_mb) {
+        const statusRam = document.getElementById('status-ram-count');
+        if (statusRam) statusRam.innerText = `${sys.ram_footprint_mb} MB`;
+      }
     }
 
     async function fetchAudit() {
       const icon = document.getElementById('rescan-icon');
       if (icon) icon.classList.add('fa-spin');
+
+      if (activeAuditSource) {
+        activeAuditSource.close();
+        activeAuditSource = null;
+      }
+
       try {
-        const res = await fetch('/api/audit');
-        const data = await res.json();
-        allReports = data.reports || [];
-
-        document.getElementById('stat-total').innerText = data.total_tools;
-        document.getElementById('stat-installed').innerText = data.installed_count;
-        document.getElementById('stat-healthy').innerText = data.healthy_count;
-        document.getElementById('stat-warning').innerText = data.warning_count;
-        document.getElementById('stat-error').innerText = data.error_count;
-        document.getElementById('stat-missing').innerText = data.not_found_count;
-
-        const total = data.total_tools || 1;
-        const coveragePct = Math.round((data.installed_count / total) * 100);
-        document.getElementById('stat-coverage').innerText = `${coveragePct}% coverage`;
-        document.getElementById('stat-installed-bar').style.width = `${coveragePct}%`;
-        document.getElementById('stat-healthy-bar').style.width = `${Math.round((data.healthy_count / total) * 100)}%`;
-        document.getElementById('stat-warning-bar').style.width = `${Math.round((data.warning_count / total) * 100)}%`;
-        document.getElementById('stat-error-bar').style.width = `${Math.round((data.error_count / total) * 100)}%`;
-        document.getElementById('stat-missing-bar').style.width = `${Math.round((data.not_found_count / total) * 100)}%`;
-
-        // Update system info
-        const sys = data.system;
-        if (sys) {
-          const sideOs = document.getElementById('side-os-info');
-          if (sideOs) sideOs.innerText = `${sys.os_name} ${sys.os_release} (${sys.arch})`;
-          const sideHost = document.getElementById('side-host-name');
-          if (sideHost) sideHost.innerText = sys.hostname || 'LOCAL';
-          if (sys.path_count) {
-            const statusPath = document.getElementById('status-path-count');
-            if (statusPath) statusPath.innerText = sys.path_count;
+        // Step 1: Pre-populate or mark tools as scanning immediately
+        if (!allReports || allReports.length === 0) {
+          const toolsRes = await fetch('/api/tools');
+          if (toolsRes.ok) {
+            const initialTools = await toolsRes.json();
+            allReports = initialTools.map(t => ({
+              ...t,
+              scanning: true,
+              status: 'scanning',
+              version: null,
+              home_path: null,
+              binary_path: null,
+              companions: [],
+              diagnostics: []
+            }));
           }
-          if (sys.ram_footprint_mb) {
-            const statusRam = document.getElementById('status-ram-count');
-            if (statusRam) statusRam.innerText = `${sys.ram_footprint_mb} MB`;
-          }
+        } else {
+          allReports.forEach(r => { r.scanning = true; });
         }
 
         renderCategoryPills();
         updateStatusFilterUI();
         renderTools();
+        updateAuditMetrics();
+
+        // Step 2: Stream results asynchronously using EventSource
+        if (window.EventSource) {
+          await new Promise((resolve) => {
+            const es = new EventSource('/api/audit/stream');
+            activeAuditSource = es;
+
+            es.onmessage = (event) => {
+              try {
+                const msg = JSON.parse(event.data);
+                if (msg.type === 'init') {
+                  if (msg.system) applySystemInfo(msg.system);
+                } else if (msg.type === 'tool') {
+                  const rep = msg.report;
+                  const idx = allReports.findIndex(r => r.id === rep.id);
+                  if (idx !== -1) {
+                    allReports[idx] = rep;
+                  } else {
+                    allReports.push(rep);
+                  }
+                  updateSingleToolInDom(rep);
+                  updateAuditMetrics();
+                  if (activeDrawerToolId === rep.id) {
+                    renderInspectorDrawer(activeDrawerToolId);
+                  }
+                } else if (msg.type === 'done') {
+                  allReports.forEach(r => { delete r.scanning; });
+                  if (msg.system) applySystemInfo(msg.system);
+                  updateAuditMetrics();
+                  renderCategoryPills();
+                  if (searchQuery || activeStatusFilter || activeCategory !== 'all') {
+                    renderTools();
+                  }
+                  es.close();
+                  activeAuditSource = null;
+                  resolve();
+                }
+              } catch (parseErr) {
+                console.error('Error parsing SSE event', parseErr);
+              }
+            };
+
+            es.onerror = async () => {
+              es.close();
+              activeAuditSource = null;
+              // Fallback to standard fetch
+              try {
+                const res = await fetch('/api/audit');
+                const data = await res.json();
+                allReports = data.reports || [];
+                if (data.system) applySystemInfo(data.system);
+                renderCategoryPills();
+                updateStatusFilterUI();
+                renderTools();
+                updateAuditMetrics();
+              } catch (fallbackErr) {
+                showToast('Error auditing environment', true);
+              }
+              resolve();
+            };
+          });
+        } else {
+          // Standard fetch fallback for environments without EventSource
+          const res = await fetch('/api/audit');
+          const data = await res.json();
+          allReports = data.reports || [];
+          if (data.system) applySystemInfo(data.system);
+          renderCategoryPills();
+          updateStatusFilterUI();
+          renderTools();
+          updateAuditMetrics();
+        }
       } catch (err) {
         showToast('Error auditing environment', true);
       } finally {
@@ -1951,24 +2200,38 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
       return webPorts.includes(p) || isDevPort;
     }
 
-    async function fetchPorts() {
+    async function fetchPorts(isUserClick = false) {
+      const icon = document.getElementById('ports-refresh-icon');
+      const btn = document.getElementById('btn-refresh-ports');
+      if (icon) icon.classList.add('fa-spin');
+      if (btn) btn.disabled = true;
       try {
-        const devOnly = document.getElementById('ports-dev-toggle').checked;
+        const devToggle = document.getElementById('ports-dev-toggle');
+        const devOnly = devToggle ? devToggle.checked : false;
         const res = await fetch(`/api/ports?dev_only=${devOnly}`);
         allPorts = await res.json();
 
         const devCount = allPorts.filter(p => p.is_dev_port).length;
         const critCount = allPorts.filter(p => p.is_system_critical).length;
-        document.getElementById('stat-ports-total').innerText = allPorts.length;
-        document.getElementById('stat-ports-dev').innerText = devCount;
-        document.getElementById('stat-ports-crit').innerText = critCount;
+        const statTotal = document.getElementById('stat-ports-total');
+        const statDev = document.getElementById('stat-ports-dev');
+        const statCrit = document.getElementById('stat-ports-crit');
+        if (statTotal) statTotal.innerText = allPorts.length;
+        if (statDev) statDev.innerText = devCount;
+        if (statCrit) statCrit.innerText = critCount;
 
         const sideBadge = document.getElementById('side-ports-badge');
-        sideBadge.innerText = devCount > 0 ? devCount : allPorts.length;
+        if (sideBadge) sideBadge.innerText = devCount > 0 ? devCount : allPorts.length;
 
         renderPorts();
+        if (isUserClick) {
+          showToast(`Sockets updated (${allPorts.length} listening)`);
+        }
       } catch (err) {
         showToast('Error loading sockets', true);
+      } finally {
+        if (icon) icon.classList.remove('fa-spin');
+        if (btn) btn.disabled = false;
       }
     }
 
@@ -2497,8 +2760,11 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
 
     // Initialize Default View
     loadConfig();
+    fetchPorts(false);
     fetchAudit();
-    setAndAuditProject('.');
+    const projInput = document.getElementById('project-path-input');
+    if (projInput) projInput.value = '.';
+    renderRecentProjects();
   </script>
 </body>
 </html>

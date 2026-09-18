@@ -299,6 +299,7 @@ The local FastAPI server runs on `http://127.0.0.1:4321`.
 | Method | Route | Description | Request Body | Response Schema |
 | :--- | :--- | :--- | :--- | :--- |
 | `GET` | `/api/audit` | Run full workstation audit | None | `AuditSummary` |
+| `GET` | `/api/audit/stream` | Stream progressive audit results (SSE) | None | `text/event-stream` (`init`, `tool`, `done`) |
 | `POST` | `/api/audit` | Run filtered audit | `AuditRequest` (`categories`, `tool_ids`) | `AuditSummary` |
 | `GET` | `/api/system` | Get host OS and telemetry | None | `SystemInfo` |
 | `GET` | `/api/tools` | List registered inspectors | None | `List[ToolInfo]` |
