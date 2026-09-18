@@ -390,3 +390,36 @@ class ZigInspector(BaseInspector):
 ```
 
 The new inspector is automatically discovered and loaded by `PluginRegistry` without requiring manual registration.
+
+---
+
+## 10. Precision Design System (Google Stitch)
+
+DevToolkit implements the Google Stitch workstation design system specified in `design/DESIGN.md`.
+
+### A. Tonal Hierarchy & Palette Tokens
+- **Canvas Base**: `#08090C` (Obsidian Canvas)
+- **Surface Elevation 1**: `#0E1015` (Sidebar & Inspector Drawer)
+- **Surface Elevation 2**: `#141721` (Cards, Modals, Table Rows)
+- **Subtle Micro-border**: `#1F2430` (1px structure)
+- **Strong Micro-border**: `#2E3446` (Modal/active strokes)
+- **Primary Emerald**: `#10B981` (hover `#059669`, with `#08090C` dark typography on primary buttons)
+- **Semantic Accents**:
+  - Cyan: `#06B6D4` (Developer sockets, inspection links, tool detected versions)
+  - Violet: `#8B5CF6` (Dev Debug categories, companion subsystems)
+  - Amber: `#F59E0B` (Action needed warnings, process PIDs)
+  - Crimson: `#EF4444` (Critical errors, missing requirements, kill actions)
+
+### B. Typography
+- **UI Font**: `Geist` (400, 500, 600, 700) for structural interfaces, dialogs, titles, and buttons.
+- **Data & Monospace Font**: `JetBrains Mono` (400, 500, 600) with `font-feature-settings: "tnum" 1` for paths, versions, PIDs, ports, counters, and keyboard shortcut chips.
+
+### C. Geometry & Radii Rules
+- **No Pill Shapes**: Zero `rounded-full` classes on buttons, tags, badges, chips, or table rows.
+- **Radii Specifications**:
+  - `rounded` (4px / 0.25rem): Buttons, inputs, chips, badges, and tags.
+  - `rounded-md` (6px / 0.375rem): Cards and container panels.
+  - `rounded-lg` (8px / 0.5rem): Modals.
+- **Floating Depth**:
+  `box-shadow: 0 12px 32px -4px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.04) inset;`
+

@@ -82,9 +82,38 @@ This document is continuously updated to reflect current project status, complet
 
 ---
 
+## Milestone Checklist: Phase 6 (Completed - Google Stitch Design Shift)
+- [x] **Design Tokens & Tonal Palette**:
+  - Implemented Obsidian Canvas `#08090C`, Surface Elevation 1 `#0E1015`, Surface Elevation 2 `#141721`, Micro-borders Subtle `#1F2430`, Strong `#2E3446`.
+  - Added primary Emerald accent `#10B981` (hover `#059669` with dark `#08090C` typography on primary buttons) and semantic accents (Cyan `#06B6D4`, Violet `#8B5CF6`, Amber `#F59E0B`, Crimson `#EF4444`).
+- [x] **Typography Overhaul**:
+  - Integrated `Geist` (400, 500, 600, 700) for structural UI and headers.
+  - Integrated `JetBrains Mono` (400, 500, 600) with tabular lining numbers (`font-feature-settings: "tnum" 1`) for all monospace data: paths, hashes, PIDs, ports, versions, counters, and shortcut chips.
+- [x] **Geometry & Radii Rules**:
+  - Completely purged `rounded-full` (9999px pills) across buttons, tags, chips, and table rows.
+  - Standardized on 4px `rounded` for buttons, inputs, tags, badges, and chips; 6px `rounded-md` for cards; 8px `rounded-lg` for modals.
+  - Preserved circular 1.5–2px indicator status dots.
+- [x] **HTML Markup & Component Modernization**:
+  - Sidebar: `#0E1015`, `#1F2430` micro-border, 4px rounded navigation items with emerald indicators, workstation host card, and `#141721` footer card.
+  - Top Header: `#08090C`, breadcrumb with emerald dot, `.input-pro` search bar, `.btn-secondary-pro` Rescan and Export dropdown.
+  - View 1 (Environment): 6 stat filter cards with 2px progress tracks, category bar with monospace counts, skeleton shimmer cards, and compact tool cards.
+  - View 2 (Port Manager): 3 stat cards, filter bar with 3px radius custom checkbox, flat sockets table, and grouped process cards.
+  - View 3 (Project Auditor): `.input-pro` path bar, `.btn-secondary-pro` Browse button, emerald "Scan Project" button, scorecard meter, and checklist table.
+  - View 4 (Settings): Monitored search roots card, root inputs, and workstation overview metric boxes.
+  - Modals & Drawers: `.modal-pro` with 32px depth and 1px inset highlight for Shortcuts/Help modal and Kill modal; Inspector Drawer slide-over with `#0E1015` surface.
+- [x] **Client-Side JavaScript Renderers**:
+  - Updated `showToast`, `switchTab`, `renderInspectorDrawer`, `getBadge`, `renderCategoryPills`, `renderToolCardInner`, `renderToolRowInner`, `renderGridView`, `renderListView`, `setPortViewMode`, `getPortCategory`, `renderPortsTable`, `renderPortsGrouped`, `renderRecentProjects`, `runProjectAudit`, and `renderSettingsList`.
+- [x] **Automated Testing & Compilation**:
+  - All 52/52 pytest tests passing in 31.91s.
+  - Standalone binary recompiled: `dist/DevToolkit.exe` (20.88 MB).
+  - High-resolution screenshots captured across all 6 views and mirrored to artifacts.
+
+---
+
 ## Future Horizons & Candidate Roadmap
 
 1. **Build Cache & Disk Cleaner (`devtoolkit clean`)**:
    - Audit and prune build caches across Node (`npm`, `pnpm`, `yarn`), Python (`pip`), Gradle (`.gradle/caches`), Docker (`docker system prune`), Flutter (`.pub-cache`).
 2. **Multi-Platform CI Matrix**:
    - Expand `.github/workflows/build.yml` to compile standalone binaries for macOS (`DevToolkit-macOS-arm64`) and Linux (`DevToolkit-linux-x86_64`).
+

@@ -323,6 +323,9 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>DevToolkit ⚡ Workstation Suite</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
@@ -330,12 +333,23 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
       theme: {
         extend: {
           colors: {
-            brand: { 50: '#f5f3ff', 500: '#3b82f6', 600: '#2563eb', 700: '#1d4ed8' },
-            darkBg: '#070a13',
-            sidebarBg: '#0a0f1d',
-            headerBg: '#090d19',
-            cardBg: '#0c1322',
-            borderDark: '#1e293b'
+            canvas: '#08090C',
+            surface1: '#0E1015',
+            surface2: '#141721',
+            borderSubtle: '#1F2430',
+            borderStrong: '#2E3446',
+            emeraldAccent: '#10B981',
+            cyanAccent: '#06B6D4',
+            violetAccent: '#8B5CF6',
+            amberAccent: '#F59E0B',
+            crimsonAccent: '#EF4444',
+            textMain: '#F3F4F6',
+            textMuted: '#94A3B8',
+            textDim: '#475569'
+          },
+          fontFamily: {
+            sans: ['Geist', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace']
           }
         }
       }
@@ -343,85 +357,220 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
   </script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
   <style>
-    body { background-color: #070a13; color: #f1f5f9; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-    .glass-card { background: rgba(12, 19, 34, 0.85); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.07); }
-    .glass-card:hover { border-color: rgba(96, 165, 250, 0.35); }
-    .modal-backdrop { background: rgba(3, 7, 18, 0.85); backdrop-filter: blur(8px); }
-    .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+    body {
+      background-color: #08090C;
+      color: #F3F4F6;
+      font-family: 'Geist', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+    code, kbd, .font-mono {
+      font-family: 'JetBrains Mono', monospace;
+      font-feature-settings: "tnum" 1;
+    }
+    .card-pro, .glass-card {
+      background-color: #0E1015;
+      border: 1px solid #1F2430;
+      border-radius: 6px;
+      transition: all 0.18s ease-in-out;
+    }
+    .card-pro:hover, .glass-card:hover {
+      border-color: #2E3446;
+    }
+    .btn-primary-pro {
+      background-color: #10B981;
+      color: #08090C;
+      font-weight: 600;
+      border-radius: 4px;
+      transition: all 0.15s ease-in-out;
+    }
+    .btn-primary-pro:hover {
+      background-color: #059669;
+      color: #08090C;
+    }
+    .btn-primary-pro:active {
+      transform: scale(0.98);
+    }
+    .btn-secondary-pro {
+      background-color: #141721;
+      border: 1px solid #1F2430;
+      color: #F3F4F6;
+      font-weight: 500;
+      border-radius: 4px;
+      transition: all 0.15s ease-in-out;
+    }
+    .btn-secondary-pro:hover {
+      border-color: #2E3446;
+      background-color: #1A1E2B;
+      color: #FFFFFF;
+    }
+    .btn-secondary-pro:active {
+      transform: scale(0.98);
+    }
+    .btn-destructive {
+      background-color: rgba(239, 68, 68, 0.12);
+      border: 1px solid rgba(239, 68, 68, 0.35);
+      color: #EF4444;
+      border-radius: 4px;
+      font-weight: 600;
+      transition: all 0.15s ease-in-out;
+    }
+    .btn-destructive:hover {
+      background-color: #EF4444;
+      border-color: #EF4444;
+      color: #FFFFFF;
+    }
+    .input-pro {
+      background-color: #0E1015;
+      border: 1px solid #1F2430;
+      color: #F3F4F6;
+      border-radius: 4px;
+      transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+    }
+    .input-pro:focus {
+      outline: none;
+      border-color: #10B981;
+      box-shadow: 0 0 0 1px #10B981;
+    }
+    .kbd-pro {
+      background-color: #141721;
+      border: 1px solid #1F2430;
+      color: #94A3B8;
+      font-family: 'JetBrains Mono', monospace;
+      font-feature-settings: "tnum" 1;
+      border-radius: 4px;
+      padding: 1px 5px;
+      font-size: 10px;
+      line-height: 1.2;
+    }
+    .modal-pro {
+      background-color: #141721;
+      border: 1px solid #2E3446;
+      border-radius: 8px;
+      box-shadow: 0 12px 32px -4px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.04) inset;
+    }
+    .modal-backdrop {
+      background: rgba(8, 9, 12, 0.82);
+      backdrop-filter: blur(8px);
+    }
+    .custom-scrollbar::-webkit-scrollbar { width: 5px; height: 5px; }
     .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-    .custom-scrollbar::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 9999px; }
-    .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #334155; }
-    .nav-active { background-color: #131d36; color: #ffffff; border-color: rgba(59, 130, 246, 0.45); box-shadow: 0 4px 14px rgba(37, 99, 235, 0.15); }
-    .nav-inactive { color: #94a3b8; border-color: transparent; }
-    .nav-inactive:hover { color: #f1f5f9; background-color: rgba(30, 41, 59, 0.45); }
-    .cat-active { background-color: #1e293b; color: #ffffff; border-color: #3b82f6; }
-    .cat-inactive { color: #94a3b8; border-color: #1e293b; }
-    .cat-inactive:hover { color: #ffffff; background-color: rgba(30, 41, 59, 0.4); }
-    .stat-filter-card { cursor: pointer; transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1); border: 1px solid rgba(255,255,255,0.07); }
-    .stat-filter-card:hover { border-color: rgba(96, 165, 250, 0.45); transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35); }
-    .stat-filter-active { border-color: #3b82f6 !important; background: rgba(30, 58, 138, 0.3) !important; box-shadow: 0 0 0 1px #3b82f6, 0 8px 24px rgba(59, 130, 246, 0.25) !important; }
-    .drawer-panel { transform: translateX(100%); transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1); }
-    .drawer-panel.open { transform: translateX(0); }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: #1F2430; border-radius: 4px; }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #2E3446; }
+    .nav-active {
+      background-color: #141721;
+      color: #FFFFFF;
+      border: 1px solid rgba(16, 185, 129, 0.35);
+      box-shadow: inset 2px 0 0 #10B981;
+    }
+    .nav-inactive {
+      color: #94A3B8;
+      border: 1px solid transparent;
+    }
+    .nav-inactive:hover {
+      color: #F3F4F6;
+      background-color: #141721;
+      border-color: #1F2430;
+    }
+    .cat-active {
+      background-color: #141721;
+      color: #FFFFFF;
+      border-color: rgba(16, 185, 129, 0.6);
+      box-shadow: inset 0 -1px 0 #10B981;
+    }
+    .cat-inactive {
+      color: #94A3B8;
+      border-color: #1F2430;
+      background-color: #0E1015;
+    }
+    .cat-inactive:hover {
+      color: #F3F4F6;
+      background-color: #141721;
+      border-color: #2E3446;
+    }
+    .stat-filter-card {
+      cursor: pointer;
+      transition: all 0.18s ease-in-out;
+      border: 1px solid #1F2430;
+      background-color: #0E1015;
+      border-radius: 6px;
+    }
+    .stat-filter-card:hover {
+      border-color: #2E3446;
+      background-color: #141721;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.45);
+    }
+    .stat-filter-active {
+      border-color: #10B981 !important;
+      background: #141721 !important;
+      box-shadow: 0 0 0 1px #10B981, 0 4px 16px rgba(16, 185, 129, 0.18) !important;
+    }
+    .drawer-panel {
+      transform: translateX(100%);
+      transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .drawer-panel.open {
+      transform: translateX(0);
+    }
     @keyframes shimmer {
       0% { background-position: -200% 0; }
       100% { background-position: 200% 0; }
     }
     .skeleton-shimmer {
-      background: linear-gradient(90deg, rgba(255,255,255,0.03) 25%, rgba(255,255,255,0.09) 50%, rgba(255,255,255,0.03) 75%);
+      background: linear-gradient(90deg, rgba(255,255,255,0.02) 25%, rgba(255,255,255,0.07) 50%, rgba(255,255,255,0.02) 75%);
       background-size: 200% 100%;
       animation: shimmer 1.8s infinite;
     }
   </style>
 </head>
-<body class="h-full w-full bg-darkBg text-slate-100 font-sans select-none overflow-hidden flex flex-col">
+<body class="h-full w-full bg-[#08090C] text-[#F3F4F6] font-sans select-none overflow-hidden flex flex-col">
 
   <!-- Main Viewport Layout: Sidebar + Main Area -->
   <div class="flex flex-1 overflow-hidden">
 
     <!-- LEFT FIXED VERTICAL SIDEBAR -->
-    <aside class="w-56 sm:w-64 bg-sidebarBg border-r border-slate-800/80 flex flex-col justify-between p-3 sm:p-3.5 select-none flex-shrink-0 z-20">
+    <aside class="w-56 sm:w-64 bg-[#0E1015] border-r border-[#1F2430] flex flex-col justify-between p-3 sm:p-3.5 select-none flex-shrink-0 z-20">
       <div class="space-y-4 flex-1 overflow-y-auto custom-scrollbar pr-0.5">
         <!-- Brand Header -->
-        <div class="flex items-center gap-3 px-1.5 pt-1">
-          <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white shadow-lg shadow-blue-500/25 flex-shrink-0">
-            <i class="fa-solid fa-bolt text-lg"></i>
+        <div class="flex items-center gap-3 px-1 pt-1">
+          <div class="w-8 h-8 rounded bg-[#141721] border border-[#1F2430] flex items-center justify-center text-[#10B981] shadow flex-shrink-0">
+            <i class="fa-solid fa-bolt text-sm"></i>
           </div>
           <div class="min-w-0">
-            <h1 class="text-base font-black tracking-tight text-white truncate">DevToolkit</h1>
-            <div class="text-[11px] text-slate-400 font-medium truncate" id="side-os-info">Detecting OS...</div>
+            <h1 class="text-sm font-semibold tracking-tight text-[#F3F4F6] truncate">DevToolkit</h1>
+            <div class="text-[11px] text-[#94A3B8] font-mono truncate" id="side-os-info">Detecting OS...</div>
           </div>
         </div>
 
-        <!-- Host Pill -->
-        <div class="bg-[#0e1526] border border-slate-800/90 rounded-lg px-3 py-1.5 flex items-center text-xs min-w-0">
-          <span class="flex items-center gap-2 text-slate-300 font-medium text-[11px] truncate">
-            <span class="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_6px_#34d399] flex-shrink-0"></span>
-            Host: <span id="side-host-name" class="text-white font-semibold truncate">Detecting...</span>
+        <!-- Host Card -->
+        <div class="bg-[#141721] border border-[#1F2430] rounded px-2.5 py-1.5 flex items-center text-xs min-w-0">
+          <span class="flex items-center gap-2 text-[#94A3B8] font-medium text-[11px] truncate">
+            <span class="w-1.5 h-1.5 rounded-full bg-[#10B981] shadow-[0_0_6px_#10B981] flex-shrink-0"></span>
+            Host: <span id="side-host-name" class="text-[#F3F4F6] font-mono font-semibold truncate">Detecting...</span>
           </span>
         </div>
 
         <!-- Navigation Group: WORKSPACE HUB -->
         <div>
-          <div class="text-[10px] font-bold text-slate-500 tracking-wider uppercase px-2 mb-1.5 mt-3">WORKSPACE HUB</div>
+          <div class="text-[10px] font-mono font-semibold text-[#475569] tracking-wider uppercase px-2 mb-1.5 mt-3">WORKSPACE HUB</div>
           <div class="space-y-1">
-            <button onclick="switchTab('env')" id="nav-btn-env" class="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition border nav-active">
+            <button onclick="switchTab('env')" id="nav-btn-env" class="w-full flex items-center justify-between px-2.5 py-2 rounded text-xs font-medium transition nav-active">
               <div class="flex items-center gap-2.5 truncate">
-                <i class="fa-solid fa-table-cells-large flex-shrink-0"></i>
+                <i class="fa-solid fa-table-cells-large text-xs flex-shrink-0 text-[#10B981]"></i>
                 <span class="truncate">Environment</span>
               </div>
             </button>
 
-            <button onclick="switchTab('ports')" id="nav-btn-ports" class="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition border nav-inactive">
+            <button onclick="switchTab('ports')" id="nav-btn-ports" class="w-full flex items-center justify-between px-2.5 py-2 rounded text-xs font-medium transition nav-inactive">
               <div class="flex items-center gap-2.5 truncate">
-                <i class="fa-solid fa-network-wired flex-shrink-0"></i>
+                <i class="fa-solid fa-network-wired text-xs flex-shrink-0"></i>
                 <span class="truncate">Port Manager</span>
               </div>
-              <span id="side-ports-badge" class="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-blue-500/20 text-blue-300 border border-blue-500/30 flex-shrink-0">0</span>
+              <span id="side-ports-badge" class="px-1.5 py-0.2 rounded text-[10px] font-mono font-semibold bg-[#06B6D41A] text-[#06B6D4] border border-[#06B6D440] flex-shrink-0">0</span>
             </button>
 
-            <button onclick="switchTab('project')" id="nav-btn-project" class="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition border nav-inactive">
+            <button onclick="switchTab('project')" id="nav-btn-project" class="w-full flex items-center justify-between px-2.5 py-2 rounded text-xs font-medium transition nav-inactive">
               <div class="flex items-center gap-2.5 truncate">
-                <i class="fa-solid fa-code-branch flex-shrink-0"></i>
+                <i class="fa-solid fa-code-branch text-xs flex-shrink-0"></i>
                 <span class="truncate">Project Auditor</span>
               </div>
             </button>
@@ -430,11 +579,11 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
 
         <!-- Navigation Group: PREFERENCES -->
         <div>
-          <div class="text-[10px] font-bold text-slate-500 tracking-wider uppercase px-2 mb-1.5 mt-4">PREFERENCES</div>
+          <div class="text-[10px] font-mono font-semibold text-[#475569] tracking-wider uppercase px-2 mb-1.5 mt-4">PREFERENCES</div>
           <div class="space-y-1">
-            <button onclick="switchTab('settings')" id="nav-btn-settings" class="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition border nav-inactive">
+            <button onclick="switchTab('settings')" id="nav-btn-settings" class="w-full flex items-center justify-between px-2.5 py-2 rounded text-xs font-medium transition nav-inactive">
               <div class="flex items-center gap-2.5 truncate">
-                <i class="fa-solid fa-gear flex-shrink-0"></i>
+                <i class="fa-solid fa-gear text-xs flex-shrink-0"></i>
                 <span class="truncate">Settings</span>
               </div>
             </button>
@@ -443,27 +592,27 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
       </div>
 
       <!-- SIDEBAR FOOTER: Software & Runtime Info -->
-      <div class="pt-3 border-t border-slate-800/80 mt-auto flex-shrink-0">
-        <div class="p-2.5 rounded-xl bg-[#070a13]/80 border border-slate-800/80 space-y-2">
+      <div class="pt-3 border-t border-[#1F2430] mt-auto flex-shrink-0">
+        <div class="p-2.5 rounded-md bg-[#141721] border border-[#1F2430] space-y-2">
           <div class="flex items-center justify-between text-xs">
-            <span class="text-slate-300 font-semibold flex items-center gap-1.5 truncate">
-              <i class="fa-solid fa-cube text-blue-400 text-xs flex-shrink-0"></i>
+            <span class="text-[#F3F4F6] font-medium flex items-center gap-1.5 truncate">
+              <i class="fa-solid fa-cube text-[#06B6D4] text-xs flex-shrink-0"></i>
               <span class="truncate">DevToolkit</span>
             </span>
-            <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 font-semibold border border-indigo-500/30 flex-shrink-0" id="side-app-version">v0.2.0</span>
+            <span class="text-[10px] font-mono px-1.5 py-0.2 rounded bg-[#8B5CF61A] text-[#8B5CF6] font-semibold border border-[#8B5CF640] flex-shrink-0" id="side-app-version">v0.2.0</span>
           </div>
-          <div class="flex items-center justify-between text-[11px] text-slate-400 font-mono">
-            <span class="text-slate-500 flex items-center gap-1">
-              <i class="fa-brands fa-python text-amber-400 text-[10px]"></i> Python
+          <div class="flex items-center justify-between text-[11px] text-[#94A3B8] font-mono">
+            <span class="text-[#475569] flex items-center gap-1">
+              <i class="fa-brands fa-python text-[#F59E0B] text-[10px]"></i> Python
             </span>
-            <span id="side-python-version" class="text-slate-300">...</span>
+            <span id="side-python-version" class="text-[#F3F4F6]">...</span>
           </div>
-          <div class="flex items-center justify-between text-[10px] text-slate-500 pt-1 border-t border-slate-800/60 font-sans">
-            <span class="flex items-center gap-1 text-emerald-400 font-medium">
-              <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+          <div class="flex items-center justify-between text-[10px] text-[#94A3B8] pt-1.5 border-t border-[#1F2430] font-sans">
+            <span class="flex items-center gap-1.5 text-[#10B981] font-medium">
+              <span class="w-1.5 h-1.5 rounded-full bg-[#10B981] animate-pulse"></span>
               Runtime Active
             </span>
-            <button onclick="toggleHelpModal()" class="text-slate-400 hover:text-white transition flex items-center gap-1" title="View Diagnostics & Shortcuts (?)">
+            <button onclick="toggleHelpModal()" class="text-[#94A3B8] hover:text-[#F3F4F6] transition flex items-center gap-1" title="View Diagnostics & Shortcuts (?)">
               <i class="fa-solid fa-circle-question text-[10px]"></i> Help
             </button>
           </div>
@@ -472,59 +621,59 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
     </aside>
 
     <!-- RIGHT MAIN CONTENT PANEL -->
-    <div class="flex-1 flex flex-col overflow-hidden bg-darkBg min-w-0">
+    <div class="flex-1 flex flex-col overflow-hidden bg-[#08090C] min-w-0">
 
       <!-- Top Header: Breadcrumbs + Global Search + Actions -->
-      <header class="h-14 px-4 sm:px-6 border-b border-slate-800/80 flex items-center justify-between bg-[#090d19]/90 backdrop-blur-md flex-shrink-0 z-10 gap-3">
+      <header class="h-12 px-4 sm:px-5 border-b border-[#1F2430] flex items-center justify-between bg-[#08090C]/95 backdrop-blur-md flex-shrink-0 z-10 gap-3">
         <!-- Breadcrumbs -->
-        <div class="flex items-center gap-2 text-xs text-slate-400 font-medium select-none min-w-0 truncate">
-          <span class="text-slate-500 font-mono flex-shrink-0">toolkit</span>
-          <span class="text-slate-600 flex-shrink-0">/</span>
-          <span class="flex items-center gap-1.5 text-white font-semibold truncate" id="top-breadcrumb">
-            <span class="w-1.5 h-1.5 rounded-full bg-blue-400 shadow-[0_0_6px_#60a5fa] flex-shrink-0"></span>
+        <div class="flex items-center gap-2 text-xs text-[#94A3B8] font-medium select-none min-w-0 truncate">
+          <span class="text-[#475569] font-mono flex-shrink-0">toolkit</span>
+          <span class="text-[#2E3446] flex-shrink-0">/</span>
+          <span class="flex items-center gap-1.5 text-[#F3F4F6] font-semibold truncate" id="top-breadcrumb">
+            <span class="w-1.5 h-1.5 rounded-full bg-[#10B981] shadow-[0_0_6px_#10B981] flex-shrink-0"></span>
             Environment & Diagnostics
           </span>
         </div>
 
         <!-- Global Search Bar & Actions -->
-        <div class="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+        <div class="flex items-center gap-2 sm:gap-2.5 flex-shrink-0">
           <div class="relative w-36 sm:w-64 md:w-80 lg:w-96 flex items-center" id="top-search-wrapper">
-            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400 text-xs">
+            <div class="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none text-[#94A3B8] text-xs">
               <i class="fa-solid fa-search"></i>
             </div>
-            <input type="text" id="global-search-input" oninput="onSearchChange()" placeholder="Search SDK, runtime, path..." class="w-full pl-9 pr-16 py-1.5 bg-[#070a13] border border-slate-800/90 rounded-lg text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 transition font-sans" />
+            <input type="text" id="global-search-input" oninput="onSearchChange()" placeholder="Search SDK, runtime, path..." class="input-pro w-full pl-8 pr-16 py-1 text-xs text-[#F3F4F6] placeholder-[#475569] font-sans" />
             <div class="absolute inset-y-0 right-0 pr-2 flex items-center pointer-events-none">
-              <kbd class="px-1.5 py-0.5 rounded bg-slate-800/90 border border-slate-700/80 text-[10px] font-mono text-slate-400 hidden sm:inline leading-none shadow-sm">Ctrl+K</kbd>
+              <kbd class="kbd-pro hidden sm:inline">Ctrl+K</kbd>
             </div>
           </div>
 
-          <button onclick="refreshActiveTab()" id="rescan-btn" class="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3.5 py-1.5 bg-[#0e1526] hover:bg-[#131d36] text-slate-200 border border-slate-700/80 rounded-lg text-xs font-semibold transition shadow-sm flex-shrink-0">
+          <button onclick="refreshActiveTab()" id="rescan-btn" class="btn-secondary-pro flex items-center gap-1.5 px-2.5 sm:px-3 py-1 text-xs font-medium flex-shrink-0">
             <i class="fa-solid fa-rotate text-xs" id="rescan-icon"></i>
             <span class="hidden sm:inline">Rescan</span>
-            <span class="text-[10px] font-mono text-slate-400" id="rescan-timer">(now)</span>
+            <span class="text-[10px] font-mono text-[#94A3B8]" id="rescan-timer">(now)</span>
           </button>
 
           <!-- Export Dropdown -->
           <div class="relative inline-block text-left" id="export-dropdown-wrapper">
-            <button onclick="toggleExportMenu()" id="export-btn" class="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 bg-[#0e1526] hover:bg-[#131d36] text-slate-200 border border-slate-700/80 rounded-lg text-xs font-semibold transition shadow-sm flex-shrink-0" title="Export Environment Audit Report">
-              <i class="fa-solid fa-file-export text-xs text-blue-400"></i>
+            <button onclick="toggleExportMenu()" id="export-btn" class="btn-secondary-pro flex items-center gap-1.5 px-2.5 sm:px-3 py-1 text-xs font-medium flex-shrink-0" title="Export Environment Audit Report">
+              <i class="fa-solid fa-file-export text-xs text-[#06B6D4]"></i>
               <span class="hidden md:inline">Export</span>
-              <i class="fa-solid fa-chevron-down text-[9px] text-slate-400"></i>
+              <i class="fa-solid fa-chevron-down text-[9px] text-[#94A3B8]"></i>
             </button>
-            <div id="export-menu" class="hidden absolute right-0 mt-1 w-48 rounded-xl bg-slate-900 border border-slate-700 shadow-2xl z-50 py-1.5 text-xs text-slate-300">
-              <button onclick="exportReport('md')" class="w-full text-left px-3 py-2 hover:bg-slate-800 hover:text-white flex items-center gap-2 transition">
-                <i class="fa-solid fa-clipboard text-blue-400"></i> Copy Markdown Table
+            <div id="export-menu" class="hidden absolute right-0 mt-1 w-48 rounded-md bg-[#141721] border border-[#2E3446] shadow-2xl z-50 py-1 text-xs text-[#94A3B8]">
+              <button onclick="exportReport('md')" class="w-full text-left px-3 py-1.5 hover:bg-[#1A1E2B] hover:text-[#F3F4F6] flex items-center gap-2 transition">
+                <i class="fa-solid fa-clipboard text-[#06B6D4]"></i> Copy Markdown Table
               </button>
-              <button onclick="exportReport('json')" class="w-full text-left px-3 py-2 hover:bg-slate-800 hover:text-white flex items-center gap-2 transition">
-                <i class="fa-solid fa-code text-indigo-400"></i> Copy JSON Summary
+              <button onclick="exportReport('json')" class="w-full text-left px-3 py-1.5 hover:bg-[#1A1E2B] hover:text-[#F3F4F6] flex items-center gap-2 transition">
+                <i class="fa-solid fa-code text-[#8B5CF6]"></i> Copy JSON Summary
               </button>
-              <button onclick="exportReport('download')" class="w-full text-left px-3 py-2 hover:bg-slate-800 hover:text-white flex items-center gap-2 transition border-t border-slate-800 mt-1 pt-1.5">
-                <i class="fa-solid fa-download text-emerald-400"></i> Download Report (.md)
+              <button onclick="exportReport('download')" class="w-full text-left px-3 py-1.5 hover:bg-[#1A1E2B] hover:text-[#F3F4F6] flex items-center gap-2 transition border-t border-[#1F2430] mt-0.5 pt-1.5">
+                <i class="fa-solid fa-download text-[#10B981]"></i> Download Report (.md)
               </button>
             </div>
           </div>
 
-          <button onclick="toggleHelpModal()" class="p-2 hover:bg-slate-800/60 text-slate-400 hover:text-white rounded-lg transition flex-shrink-0" title="Shortcuts & Help (?)">
+          <button onclick="toggleHelpModal()" class="p-1.5 hover:bg-[#141721] text-[#94A3B8] hover:text-[#F3F4F6] rounded transition flex-shrink-0" title="Shortcuts & Help (?)">
             <i class="fa-regular fa-circle-question text-sm"></i>
           </button>
         </div>
@@ -534,103 +683,103 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
       <main class="flex-1 overflow-y-auto p-4 sm:p-6 space-y-5 sm:space-y-6 custom-scrollbar">
 
         <!-- ==================== VIEW 1: ENVIRONMENT AUDITOR ==================== -->
-        <div id="view-env" class="space-y-6">
+        <div id="view-env" class="space-y-5">
 
           <!-- 6 Horizontal Interactive Stat Filter Cards -->
-          <div class="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-3 sm:gap-4" id="stats-container">
+          <div class="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-3" id="stats-container">
             <!-- 1. Audited Tools -->
-            <div onclick="toggleStatusFilter('all')" id="stat-card-all" class="glass-card stat-filter-card rounded-xl p-3.5 sm:p-4 flex flex-col justify-between relative overflow-hidden min-w-0" title="Click to show all tools">
-              <div class="flex items-center justify-between gap-1 text-xs text-slate-400 font-medium min-w-0">
+            <div onclick="toggleStatusFilter('all')" id="stat-card-all" class="card-pro stat-filter-card p-3 sm:p-3.5 flex flex-col justify-between relative overflow-hidden min-w-0" title="Click to show all tools">
+              <div class="flex items-center justify-between gap-1 text-xs text-[#94A3B8] font-medium min-w-0">
                 <span class="truncate">Audited Tools</span>
-                <i class="fa-regular fa-pen-to-square text-[11px] text-slate-500 flex-shrink-0"></i>
+                <i class="fa-regular fa-pen-to-square text-[10px] text-[#475569] flex-shrink-0"></i>
               </div>
               <div class="flex items-baseline justify-between gap-2 my-2 min-w-0">
-                <div class="text-xl sm:text-2xl font-black text-white tracking-tight leading-none flex-shrink-0" id="stat-total">10</div>
-                <div class="text-[10px] sm:text-[11px] text-slate-400 font-mono truncate text-right">100% total</div>
+                <div class="text-xl sm:text-2xl font-bold font-mono text-[#F3F4F6] tracking-tight leading-none flex-shrink-0" id="stat-total">10</div>
+                <div class="text-[10px] text-[#94A3B8] font-mono truncate text-right">100% total</div>
               </div>
-              <div class="w-full h-1 rounded-full bg-slate-800 overflow-hidden">
-                <div class="h-full bg-slate-500 rounded-full w-full"></div>
+              <div class="w-full h-0.5 rounded-full bg-[#1F2430] overflow-hidden">
+                <div class="h-full bg-[#94A3B8] rounded-full w-full"></div>
               </div>
             </div>
 
             <!-- 2. Installed -->
-            <div onclick="toggleStatusFilter('installed')" id="stat-card-installed" class="glass-card stat-filter-card rounded-xl p-3.5 sm:p-4 flex flex-col justify-between relative overflow-hidden min-w-0" title="Click to filter installed tools">
-              <div class="flex items-center justify-between gap-1 text-xs text-slate-400 font-medium min-w-0">
+            <div onclick="toggleStatusFilter('installed')" id="stat-card-installed" class="card-pro stat-filter-card p-3 sm:p-3.5 flex flex-col justify-between relative overflow-hidden min-w-0" title="Click to filter installed tools">
+              <div class="flex items-center justify-between gap-1 text-xs text-[#94A3B8] font-medium min-w-0">
                 <span class="truncate">Installed</span>
-                <span class="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_6px_#34d399] flex-shrink-0"></span>
+                <span class="w-1.5 h-1.5 rounded-full bg-[#10B981] shadow-[0_0_6px_#10B981] flex-shrink-0"></span>
               </div>
               <div class="flex items-baseline justify-between gap-2 my-2 min-w-0">
-                <div class="text-xl sm:text-2xl font-black text-white tracking-tight leading-none flex-shrink-0" id="stat-installed">—</div>
-                <div class="text-[10px] sm:text-[11px] text-emerald-400 font-mono truncate text-right" id="stat-coverage">— coverage</div>
+                <div class="text-xl sm:text-2xl font-bold font-mono text-[#F3F4F6] tracking-tight leading-none flex-shrink-0" id="stat-installed">—</div>
+                <div class="text-[10px] text-[#10B981] font-mono truncate text-right" id="stat-coverage">— coverage</div>
               </div>
-              <div class="w-full h-1 rounded-full bg-slate-800 overflow-hidden">
-                <div class="h-full bg-emerald-500 rounded-full transition-all duration-500" id="stat-installed-bar" style="width: 70%"></div>
+              <div class="w-full h-0.5 rounded-full bg-[#1F2430] overflow-hidden">
+                <div class="h-full bg-[#10B981] rounded-full transition-all duration-500" id="stat-installed-bar" style="width: 70%"></div>
               </div>
             </div>
 
             <!-- 3. Healthy -->
-            <div onclick="toggleStatusFilter('healthy')" id="stat-card-healthy" class="glass-card stat-filter-card rounded-xl p-3.5 sm:p-4 flex flex-col justify-between relative overflow-hidden min-w-0" title="Click to filter healthy tools">
-              <div class="flex items-center justify-between gap-1 text-xs text-slate-400 font-medium min-w-0">
+            <div onclick="toggleStatusFilter('healthy')" id="stat-card-healthy" class="card-pro stat-filter-card p-3 sm:p-3.5 flex flex-col justify-between relative overflow-hidden min-w-0" title="Click to filter healthy tools">
+              <div class="flex items-center justify-between gap-1 text-xs text-[#94A3B8] font-medium min-w-0">
                 <span class="truncate">Healthy</span>
-                <span class="text-[10px] px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-300 font-semibold border border-emerald-500/30 flex-shrink-0">Optimal</span>
+                <span class="text-[9px] font-mono px-1 py-0.2 rounded bg-[#10B9811A] text-[#10B981] font-semibold border border-[#10B98140] flex-shrink-0">Optimal</span>
               </div>
               <div class="flex items-baseline justify-between gap-2 my-2 min-w-0">
-                <div class="text-xl sm:text-2xl font-black text-white tracking-tight leading-none flex-shrink-0" id="stat-healthy">—</div>
-                <div class="text-[10px] sm:text-[11px] text-emerald-400 font-mono truncate text-right">Ready to build</div>
+                <div class="text-xl sm:text-2xl font-bold font-mono text-[#F3F4F6] tracking-tight leading-none flex-shrink-0" id="stat-healthy">—</div>
+                <div class="text-[10px] text-[#10B981] font-mono truncate text-right">Ready to build</div>
               </div>
-              <div class="w-full h-1 rounded-full bg-slate-800 overflow-hidden">
-                <div class="h-full bg-emerald-400 rounded-full transition-all duration-500" id="stat-healthy-bar" style="width: 60%"></div>
+              <div class="w-full h-0.5 rounded-full bg-[#1F2430] overflow-hidden">
+                <div class="h-full bg-[#10B981] rounded-full transition-all duration-500" id="stat-healthy-bar" style="width: 60%"></div>
               </div>
             </div>
 
             <!-- 4. Action Needed -->
-            <div onclick="toggleStatusFilter('warning')" id="stat-card-warning" class="glass-card stat-filter-card rounded-xl p-3.5 sm:p-4 flex flex-col justify-between relative overflow-hidden min-w-0" title="Click to filter tools with action needed">
-              <div class="flex items-center justify-between gap-1 text-xs text-slate-400 font-medium min-w-0">
+            <div onclick="toggleStatusFilter('warning')" id="stat-card-warning" class="card-pro stat-filter-card p-3 sm:p-3.5 flex flex-col justify-between relative overflow-hidden min-w-0" title="Click to filter tools with action needed">
+              <div class="flex items-center justify-between gap-1 text-xs text-[#94A3B8] font-medium min-w-0">
                 <span class="truncate">Action Needed</span>
-                <span class="w-2 h-2 rounded-full bg-amber-400 shadow-[0_0_6px_#fbbf24] flex-shrink-0"></span>
+                <span class="w-1.5 h-1.5 rounded-full bg-[#F59E0B] shadow-[0_0_6px_#F59E0B] flex-shrink-0"></span>
               </div>
               <div class="flex items-baseline justify-between gap-2 my-2 min-w-0">
-                <div class="text-xl sm:text-2xl font-black text-white tracking-tight leading-none flex-shrink-0" id="stat-warning">—</div>
-                <div class="text-[10px] sm:text-[11px] text-amber-400 font-mono truncate text-right">Path & Var</div>
+                <div class="text-xl sm:text-2xl font-bold font-mono text-[#F3F4F6] tracking-tight leading-none flex-shrink-0" id="stat-warning">—</div>
+                <div class="text-[10px] text-[#F59E0B] font-mono truncate text-right">Path & Var</div>
               </div>
-              <div class="w-full h-1 rounded-full bg-slate-800 overflow-hidden">
-                <div class="h-full bg-amber-400 rounded-full transition-all duration-500" id="stat-warning-bar" style="width: 20%"></div>
+              <div class="w-full h-0.5 rounded-full bg-[#1F2430] overflow-hidden">
+                <div class="h-full bg-[#F59E0B] rounded-full transition-all duration-500" id="stat-warning-bar" style="width: 20%"></div>
               </div>
             </div>
 
             <!-- 5. Critical Errors -->
-            <div onclick="toggleStatusFilter('error')" id="stat-card-error" class="glass-card stat-filter-card rounded-xl p-3.5 sm:p-4 flex flex-col justify-between relative overflow-hidden min-w-0" title="Click to filter tools with errors">
-              <div class="flex items-center justify-between gap-1 text-xs text-slate-400 font-medium min-w-0">
+            <div onclick="toggleStatusFilter('error')" id="stat-card-error" class="card-pro stat-filter-card p-3 sm:p-3.5 flex flex-col justify-between relative overflow-hidden min-w-0" title="Click to filter tools with errors">
+              <div class="flex items-center justify-between gap-1 text-xs text-[#94A3B8] font-medium min-w-0">
                 <span class="truncate">Critical Errors</span>
-                <span class="w-2 h-2 rounded-full bg-rose-500 flex-shrink-0"></span>
+                <span class="w-1.5 h-1.5 rounded-full bg-[#EF4444] flex-shrink-0"></span>
               </div>
               <div class="flex items-baseline justify-between gap-2 my-2 min-w-0">
-                <div class="text-xl sm:text-2xl font-black text-white tracking-tight leading-none flex-shrink-0" id="stat-error">—</div>
-                <div class="text-[10px] sm:text-[11px] text-slate-400 font-mono truncate text-right">No crash flags</div>
+                <div class="text-xl sm:text-2xl font-bold font-mono text-[#F3F4F6] tracking-tight leading-none flex-shrink-0" id="stat-error">—</div>
+                <div class="text-[10px] text-[#94A3B8] font-mono truncate text-right">No crash flags</div>
               </div>
-              <div class="w-full h-1 rounded-full bg-slate-800 overflow-hidden">
-                <div class="h-full bg-rose-500 rounded-full transition-all duration-500" id="stat-error-bar" style="width: 0%"></div>
+              <div class="w-full h-0.5 rounded-full bg-[#1F2430] overflow-hidden">
+                <div class="h-full bg-[#EF4444] rounded-full transition-all duration-500" id="stat-error-bar" style="width: 0%"></div>
               </div>
             </div>
 
             <!-- 6. Not Found -->
-            <div onclick="toggleStatusFilter('not_found')" id="stat-card-not_found" class="glass-card stat-filter-card rounded-xl p-3.5 sm:p-4 flex flex-col justify-between relative overflow-hidden min-w-0" title="Click to filter undetected tools">
-              <div class="flex items-center justify-between gap-1 text-xs text-slate-400 font-medium min-w-0">
+            <div onclick="toggleStatusFilter('not_found')" id="stat-card-not_found" class="card-pro stat-filter-card p-3 sm:p-3.5 flex flex-col justify-between relative overflow-hidden min-w-0" title="Click to filter undetected tools">
+              <div class="flex items-center justify-between gap-1 text-xs text-[#94A3B8] font-medium min-w-0">
                 <span class="truncate">Not Found</span>
-                <span class="w-2 h-2 rounded-full bg-slate-600 flex-shrink-0"></span>
+                <span class="w-1.5 h-1.5 rounded-full bg-[#475569] flex-shrink-0"></span>
               </div>
               <div class="flex items-baseline justify-between gap-2 my-2 min-w-0">
-                <div class="text-xl sm:text-2xl font-black text-white tracking-tight leading-none flex-shrink-0" id="stat-missing">—</div>
-                <div class="text-[10px] sm:text-[11px] text-slate-400 font-mono truncate text-right">Unconfigured</div>
+                <div class="text-xl sm:text-2xl font-bold font-mono text-[#F3F4F6] tracking-tight leading-none flex-shrink-0" id="stat-missing">—</div>
+                <div class="text-[10px] text-[#475569] font-mono truncate text-right">Unconfigured</div>
               </div>
-              <div class="w-full h-1 rounded-full bg-slate-800 overflow-hidden">
-                <div class="h-full bg-slate-700 rounded-full transition-all duration-500" id="stat-missing-bar" style="width: 30%"></div>
+              <div class="w-full h-0.5 rounded-full bg-[#1F2430] overflow-hidden">
+                <div class="h-full bg-[#475569] rounded-full transition-all duration-500" id="stat-missing-bar" style="width: 30%"></div>
               </div>
             </div>
           </div>
 
           <!-- Category Filter Pills + Status Pill + Layout Toggle & Sort Bar -->
-          <div class="flex flex-col sm:flex-row items-center justify-between gap-3 bg-[#0a0f1e]/70 p-2.5 rounded-xl border border-slate-800/80">
+          <div class="flex flex-col sm:flex-row items-center justify-between gap-2.5 bg-[#0E1015] p-2 rounded-md border border-[#1F2430]">
             <!-- Left: Filter Pills with Counts & Active Status Pill -->
             <div class="flex items-center gap-2 overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0 custom-scrollbar">
               <div class="flex items-center gap-1.5" id="category-filters">
@@ -638,30 +787,30 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
               </div>
 
               <!-- Active Status Filter Indicator Pill -->
-              <div id="active-status-pill-container" class="hidden items-center gap-1.5 pl-2 border-l border-slate-800">
-                <span id="active-status-pill" class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-blue-500/20 text-blue-300 border border-blue-500/30 flex items-center gap-1.5">
+              <div id="active-status-pill-container" class="hidden items-center gap-1.5 pl-2 border-l border-[#1F2430]">
+                <span id="active-status-pill" class="px-2 py-0.5 rounded text-xs font-mono font-semibold bg-[#10B9811A] text-[#10B981] border border-[#10B98140] flex items-center gap-1.5">
                   <span id="active-status-pill-label">Filter: Action Needed</span>
                   <button onclick="clearStatusFilter()" class="hover:text-white p-0.5" title="Clear status filter"><i class="fa-solid fa-xmark text-[10px]"></i></button>
                 </span>
               </div>
 
-              <button id="reset-filters-btn" onclick="resetAllFilters()" class="hidden px-2 py-1 text-[11px] font-semibold text-rose-300 hover:text-rose-200 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/25 rounded-lg transition flex items-center gap-1 flex-shrink-0">
+              <button id="reset-filters-btn" onclick="resetAllFilters()" class="hidden px-2 py-0.5 text-[11px] font-mono font-semibold text-[#EF4444] hover:text-white bg-[#EF444415] hover:bg-[#EF4444] border border-[#EF444440] rounded transition flex items-center gap-1 flex-shrink-0">
                 <i class="fa-solid fa-filter-circle-xmark text-[10px]"></i> Reset
               </button>
             </div>
 
             <!-- Right: Layout Switcher & Sort Selector -->
-            <div class="flex items-center gap-2.5 w-full sm:w-auto justify-end flex-shrink-0">
-              <div class="flex items-center bg-slate-900 border border-slate-800 rounded-lg p-0.5">
-                <button onclick="setLayout('grid')" id="layout-grid-btn" class="p-1.5 rounded-md text-xs bg-blue-600/30 text-blue-400 hover:text-white transition" title="Grid Layout">
+            <div class="flex items-center gap-2 w-full sm:w-auto justify-end flex-shrink-0">
+              <div class="flex items-center bg-[#08090C] border border-[#1F2430] rounded p-0.5">
+                <button onclick="setLayout('grid')" id="layout-grid-btn" class="p-1 rounded text-xs bg-[#141721] text-[#10B981] border border-[#10B98140] transition" title="Grid Layout">
                   <i class="fa-solid fa-table-cells-large"></i>
                 </button>
-                <button onclick="setLayout('list')" id="layout-list-btn" class="p-1.5 rounded-md text-xs text-slate-400 hover:text-white transition" title="List Layout">
+                <button onclick="setLayout('list')" id="layout-list-btn" class="p-1 rounded text-xs text-[#94A3B8] hover:text-[#F3F4F6] transition" title="List Layout">
                   <i class="fa-solid fa-list-ul"></i>
                 </button>
               </div>
 
-              <select id="sort-select" onchange="onSortChange()" class="bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-300 focus:outline-none focus:border-blue-500 cursor-pointer">
+              <select id="sort-select" onchange="onSortChange()" class="bg-[#08090C] border border-[#1F2430] rounded px-2.5 py-1 text-xs text-[#94A3B8] focus:outline-none focus:border-[#10B981] cursor-pointer font-sans">
                 <option value="severity">Sort: Severity</option>
                 <option value="name">Sort: Name</option>
                 <option value="category">Sort: Category</option>
@@ -671,169 +820,175 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
           </div>
 
           <!-- Active Custom Search Paths Banner -->
-          <div id="search-paths-banner" class="hidden text-xs bg-[#0c1322] border border-blue-500/30 rounded-xl px-4 py-2.5 flex items-center justify-between">
+          <div id="search-paths-banner" class="hidden text-xs bg-[#0E1015] border border-[#06B6D440] rounded-md px-3.5 py-2 flex items-center justify-between">
             <div class="flex items-center gap-2 truncate mr-3">
-              <i class="fa-solid fa-folder-tree text-blue-400 flex-shrink-0"></i>
-              <span class="text-slate-400 flex-shrink-0">Custom Monitored Directories:</span>
-              <span id="banner-paths-list" class="font-mono text-blue-300 truncate"></span>
+              <i class="fa-solid fa-folder-tree text-[#06B6D4] flex-shrink-0"></i>
+              <span class="text-[#94A3B8] flex-shrink-0">Custom Monitored Directories:</span>
+              <span id="banner-paths-list" class="font-mono text-[#06B6D4] truncate"></span>
             </div>
-            <button onclick="switchTab('settings')" class="text-blue-400 hover:text-blue-300 font-semibold text-xs flex-shrink-0">Manage Paths &rarr;</button>
+            <button onclick="switchTab('settings')" class="text-[#06B6D4] hover:text-white font-medium text-xs flex-shrink-0">Manage Paths &rarr;</button>
           </div>
 
-          <!-- Tools Container: Grid View with standard gap-5 lg:gap-6 -->
-          <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5 lg:gap-6" id="tools-grid"></div>
+          <!-- Tools Container: Grid View with standard gap-4 -->
+          <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4" id="tools-grid"></div>
 
           <!-- Tools Container: List View -->
-          <div id="tools-list-container" class="hidden glass-card rounded-xl border border-slate-800 overflow-hidden shadow-xl">
+          <div id="tools-list-container" class="hidden card-pro overflow-hidden shadow-xl">
             <div class="overflow-x-auto">
               <table class="w-full text-left text-xs">
-                <thead class="bg-slate-950/90 text-slate-400 uppercase tracking-wider text-[10px] border-b border-slate-800 font-semibold">
+                <thead class="bg-[#08090C] text-[#94A3B8] uppercase tracking-wider text-[10px] border-b border-[#1F2430] font-mono font-semibold">
                   <tr>
-                    <th class="py-3 px-4">Tool</th>
-                    <th class="py-3 px-4">Category</th>
-                    <th class="py-3 px-4">Status</th>
-                    <th class="py-3 px-4">Version</th>
-                    <th class="py-3 px-4">Home / Root Path</th>
-                    <th class="py-3 px-4">Binary Path</th>
-                    <th class="py-3 px-4 text-right">Actions</th>
+                    <th class="py-2.5 px-3.5">Tool</th>
+                    <th class="py-2.5 px-3.5">Category</th>
+                    <th class="py-2.5 px-3.5">Status</th>
+                    <th class="py-2.5 px-3.5">Version</th>
+                    <th class="py-2.5 px-3.5">Home / Root Path</th>
+                    <th class="py-2.5 px-3.5">Binary Path</th>
+                    <th class="py-2.5 px-3.5 text-right">Actions</th>
                   </tr>
                 </thead>
-                <tbody id="tools-list-tbody" class="divide-y divide-slate-800/60 font-sans"></tbody>
+                <tbody id="tools-list-tbody" class="divide-y divide-[#1F2430] font-sans"></tbody>
               </table>
             </div>
           </div>
         </div>
 
         <!-- ==================== VIEW 2: PORT MANAGER ==================== -->
-        <div id="view-ports" class="space-y-6 hidden">
+        <div id="view-ports" class="space-y-5 hidden">
           <!-- Port Stats -->
-          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
-            <div class="glass-card rounded-xl p-4 flex items-center gap-3">
-              <div class="w-10 h-10 rounded-lg bg-blue-500/20 text-blue-400 flex items-center justify-center font-bold text-lg"><i class="fa-solid fa-satellite-dish"></i></div>
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div class="card-pro p-3.5 flex items-center gap-3">
+              <div class="w-9 h-9 rounded bg-[#06B6D41A] text-[#06B6D4] border border-[#06B6D440] flex items-center justify-center font-bold text-base flex-shrink-0">
+                <i class="fa-solid fa-satellite-dish"></i>
+              </div>
               <div>
-                <div class="text-xs text-slate-400 font-medium">Listening Sockets</div>
-                <div class="text-xl font-bold text-white mt-0.5" id="stat-ports-total">—</div>
+                <div class="text-xs text-[#94A3B8] font-medium">Listening Sockets</div>
+                <div class="text-xl font-bold font-mono text-[#F3F4F6] mt-0.5" id="stat-ports-total">—</div>
               </div>
             </div>
-            <div class="glass-card rounded-xl p-4 flex items-center gap-3">
-              <div class="w-10 h-10 rounded-lg bg-indigo-500/20 text-indigo-400 flex items-center justify-center font-bold text-lg"><i class="fa-solid fa-code"></i></div>
+            <div class="card-pro p-3.5 flex items-center gap-3">
+              <div class="w-9 h-9 rounded bg-[#10B9811A] text-[#10B981] border border-[#10B98140] flex items-center justify-center font-bold text-base flex-shrink-0">
+                <i class="fa-solid fa-code"></i>
+              </div>
               <div>
-                <div class="text-xs text-slate-400 font-medium">Developer Ports Active</div>
-                <div class="text-xl font-bold text-indigo-400 mt-0.5" id="stat-ports-dev">—</div>
+                <div class="text-xs text-[#94A3B8] font-medium">Developer Ports Active</div>
+                <div class="text-xl font-bold font-mono text-[#10B981] mt-0.5" id="stat-ports-dev">—</div>
               </div>
             </div>
-            <div class="glass-card rounded-xl p-4 flex items-center gap-3">
-              <div class="w-10 h-10 rounded-lg bg-slate-500/20 text-slate-400 flex items-center justify-center font-bold text-lg"><i class="fa-solid fa-shield-halved"></i></div>
+            <div class="card-pro p-3.5 flex items-center gap-3">
+              <div class="w-9 h-9 rounded bg-[#141721] text-[#94A3B8] border border-[#1F2430] flex items-center justify-center font-bold text-base flex-shrink-0">
+                <i class="fa-solid fa-shield-halved"></i>
+              </div>
               <div>
-                <div class="text-xs text-slate-400 font-medium">System Protected</div>
-                <div class="text-xl font-bold text-slate-300 mt-0.5" id="stat-ports-crit">—</div>
+                <div class="text-xs text-[#94A3B8] font-medium">System Protected</div>
+                <div class="text-xl font-bold font-mono text-[#94A3B8] mt-0.5" id="stat-ports-crit">—</div>
               </div>
             </div>
           </div>
 
           <!-- Ports Filter Bar -->
-          <div class="flex flex-col sm:flex-row items-center justify-between gap-3 bg-[#0a0f1e]/70 p-3 rounded-xl border border-slate-800/80">
+          <div class="flex flex-col sm:flex-row items-center justify-between gap-2.5 bg-[#0E1015] p-2.5 rounded-md border border-[#1F2430]">
             <div class="flex items-center gap-2.5 w-full sm:w-auto flex-wrap">
-              <label class="inline-flex items-center gap-2 cursor-pointer text-xs font-semibold text-slate-300 bg-slate-800/80 px-3 py-1.5 rounded-lg border border-slate-700 hover:bg-slate-700/80 transition">
-                <input type="checkbox" id="ports-dev-toggle" onchange="fetchPorts(false)" class="rounded border-slate-600 text-blue-600 focus:ring-blue-500" />
+              <label class="inline-flex items-center gap-2 cursor-pointer text-xs font-medium text-[#F3F4F6] bg-[#141721] px-2.5 py-1 rounded border border-[#1F2430] hover:border-[#2E3446] transition">
+                <input type="checkbox" id="ports-dev-toggle" onchange="fetchPorts(false)" class="rounded-[3px] border-[#2E3446] bg-[#0E1015] text-[#10B981] focus:ring-0 focus:ring-offset-0 w-3.5 h-3.5" />
                 <span>Developer Ports Only</span>
               </label>
 
               <!-- View Mode Toggle: Flat Table vs Grouped by Process -->
-              <div class="flex items-center bg-slate-900 border border-slate-800 rounded-lg p-0.5">
-                <button onclick="setPortViewMode('flat')" id="port-view-flat-btn" class="px-2.5 py-1 rounded-md text-xs bg-blue-600/30 text-blue-400 font-semibold transition flex items-center gap-1.5" title="Flat Sockets Table">
+              <div class="flex items-center bg-[#08090C] border border-[#1F2430] rounded p-0.5">
+                <button onclick="setPortViewMode('flat')" id="port-view-flat-btn" class="px-2.5 py-1 rounded text-xs bg-[#141721] text-[#10B981] border border-[#10B98140] font-medium transition flex items-center gap-1.5" title="Flat Sockets Table">
                   <i class="fa-solid fa-list"></i>
                   <span class="hidden sm:inline">Flat View</span>
                 </button>
-                <button onclick="setPortViewMode('grouped')" id="port-view-grouped-btn" class="px-2.5 py-1 rounded-md text-xs text-slate-400 hover:text-white font-semibold transition flex items-center gap-1.5" title="Group by Process">
+                <button onclick="setPortViewMode('grouped')" id="port-view-grouped-btn" class="px-2.5 py-1 rounded text-xs text-[#94A3B8] hover:text-[#F3F4F6] font-medium transition flex items-center gap-1.5" title="Group by Process">
                   <i class="fa-solid fa-layer-group"></i>
                   <span class="hidden sm:inline">By Process</span>
                 </button>
               </div>
 
-              <button onclick="fetchPorts(true)" id="btn-refresh-ports" class="px-3 py-1.5 bg-[#0e1526] hover:bg-[#131d36] text-slate-300 hover:text-white border border-slate-700/80 rounded-lg text-xs font-semibold transition flex items-center gap-1.5 shadow-sm active:scale-95">
+              <button onclick="fetchPorts(true)" id="btn-refresh-ports" class="btn-secondary-pro px-3 py-1 text-xs font-medium transition flex items-center gap-1.5">
                 <i id="ports-refresh-icon" class="fa-solid fa-rotate text-xs"></i>
                 <span>Refresh</span>
               </button>
             </div>
 
             <div class="relative w-full sm:w-72 flex items-center">
-              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400 text-xs">
+              <div class="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none text-[#94A3B8] text-xs">
                 <i class="fa-solid fa-search"></i>
               </div>
-              <input type="text" id="ports-search-input" oninput="renderPorts()" placeholder="Filter port, process, PID..." class="w-full pl-9 pr-16 py-1.5 bg-[#070a13] border border-slate-800/90 rounded-lg text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 transition font-sans" />
+              <input type="text" id="ports-search-input" oninput="renderPorts()" placeholder="Filter port, process, PID..." class="input-pro w-full pl-8 pr-16 py-1 text-xs text-[#F3F4F6] placeholder-[#475569] font-sans" />
               <div class="absolute inset-y-0 right-0 pr-2 flex items-center pointer-events-none">
-                <kbd class="px-1.5 py-0.5 rounded bg-slate-800/90 border border-slate-700/80 text-[10px] font-mono text-slate-400 hidden sm:inline leading-none shadow-sm">Ctrl+K</kbd>
+                <kbd class="kbd-pro hidden sm:inline">Ctrl+K</kbd>
               </div>
             </div>
           </div>
 
           <!-- Mode 1: Flat Ports Table -->
-          <div id="ports-flat-container" class="glass-card rounded-xl border border-slate-800 overflow-hidden shadow-xl">
+          <div id="ports-flat-container" class="card-pro overflow-hidden shadow-xl">
             <div class="overflow-x-auto">
               <table class="w-full text-left text-xs">
-                <thead class="bg-slate-950/90 text-slate-400 uppercase tracking-wider text-[10px] border-b border-slate-800 font-semibold">
+                <thead class="bg-[#08090C] text-[#94A3B8] uppercase tracking-wider text-[10px] border-b border-[#1F2430] font-mono font-semibold">
                   <tr>
-                    <th class="py-3 px-4">Port</th>
-                    <th class="py-3 px-4">Classification</th>
-                    <th class="py-3 px-4">Process Name</th>
-                    <th class="py-3 px-4">PID</th>
-                    <th class="py-3 px-4">Address</th>
-                    <th class="py-3 px-4">Status</th>
-                    <th class="py-3 px-4 text-right">Actions</th>
+                    <th class="py-2.5 px-3.5">Port</th>
+                    <th class="py-2.5 px-3.5">Classification</th>
+                    <th class="py-2.5 px-3.5">Process Name</th>
+                    <th class="py-2.5 px-3.5">PID</th>
+                    <th class="py-2.5 px-3.5">Address</th>
+                    <th class="py-2.5 px-3.5">Status</th>
+                    <th class="py-2.5 px-3.5 text-right">Actions</th>
                   </tr>
                 </thead>
-                <tbody id="ports-table-body" class="divide-y divide-slate-800/60 font-sans"></tbody>
+                <tbody id="ports-table-body" class="divide-y divide-[#1F2430] font-sans"></tbody>
               </table>
             </div>
           </div>
 
           <!-- Mode 2: Grouped by Process Cards -->
-          <div id="ports-grouped-container" class="space-y-4 hidden">
+          <div id="ports-grouped-container" class="space-y-3.5 hidden">
             <!-- Dynamically populated by renderPortsGrouped() -->
           </div>
         </div>
 
         <!-- ==================== VIEW 3: PROJECT AUDITOR ==================== -->
-        <div id="view-project" class="space-y-6 hidden">
+        <div id="view-project" class="space-y-5 hidden">
           <!-- Selection Card -->
-          <div class="glass-card rounded-xl p-6 border border-slate-800 space-y-4">
+          <div class="card-pro p-5 sm:p-6 space-y-4">
             <div class="flex items-start justify-between gap-4">
               <div>
-                <h2 class="text-lg font-bold text-white flex items-center gap-2">
-                  <i class="fa-solid fa-folder-tree text-blue-400"></i>
+                <h2 class="text-base font-semibold text-[#F3F4F6] flex items-center gap-2">
+                  <i class="fa-solid fa-folder-tree text-[#10B981]"></i>
                   Project Workstation Readiness Auditor
                 </h2>
-                <p class="text-xs text-slate-400 mt-1">
+                <p class="text-xs text-[#94A3B8] mt-1">
                   Select any workspace directory or project repository to verify if your workstation satisfies its SDK, runtime, compiler, and manifest requirements.
                 </p>
               </div>
             </div>
 
-            <div class="flex flex-col sm:flex-row items-center gap-2 pt-2">
+            <div class="flex flex-col sm:flex-row items-center gap-2 pt-1">
               <div class="relative flex-1 w-full flex items-center">
-                <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 text-xs">
+                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-[#94A3B8] text-xs">
                   <i class="fa-regular fa-folder"></i>
                 </div>
-                <input type="text" id="project-path-input" onkeydown="if(event.key==='Enter') runProjectAudit()" placeholder="e.g. D:\\UtilitySoftware or D:\\Dev\\my-app" class="w-full pl-9 pr-20 py-2 bg-[#070a13] border border-slate-700/80 rounded-lg text-xs font-mono text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 transition" />
-                <div class="absolute inset-y-0 right-0 pr-2.5 flex items-center pointer-events-none">
-                  <kbd class="px-1.5 py-0.5 rounded bg-slate-800/90 border border-slate-700/80 text-[10px] font-mono text-slate-400 hidden sm:inline leading-none shadow-sm">Enter ↵</kbd>
+                <input type="text" id="project-path-input" onkeydown="if(event.key==='Enter') runProjectAudit()" placeholder="e.g. D:\\UtilitySoftware or D:\\Dev\\my-app" class="input-pro w-full pl-8 pr-20 py-2 text-xs font-mono text-[#F3F4F6] placeholder-[#475569]" />
+                <div class="absolute inset-y-0 right-0 pr-2 flex items-center pointer-events-none">
+                  <kbd class="kbd-pro hidden sm:inline">Enter ↵</kbd>
                 </div>
               </div>
-              <button onclick="browseProjectFolder()" id="btn-browse-project" class="w-full sm:w-auto px-3.5 py-2 bg-[#0e1526] hover:bg-[#131d36] text-slate-200 hover:text-white border border-slate-700/80 rounded-lg text-xs font-semibold transition flex items-center justify-center gap-2 shadow-sm flex-shrink-0 active:scale-95" title="Open Explorer to select project folder">
-                <i class="fa-regular fa-folder-open text-blue-400 text-xs" id="browse-folder-icon"></i>
+              <button onclick="browseProjectFolder()" id="btn-browse-project" class="btn-secondary-pro w-full sm:w-auto px-3.5 py-2 text-xs font-medium flex items-center justify-center gap-2 flex-shrink-0" title="Open Explorer to select project folder">
+                <i class="fa-regular fa-folder-open text-[#06B6D4] text-xs" id="browse-folder-icon"></i>
                 <span>Browse...</span>
               </button>
-              <button onclick="runProjectAudit()" id="btn-audit-project" class="w-full sm:w-auto px-5 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-xs font-bold transition flex items-center justify-center gap-2 shadow-sm flex-shrink-0 active:scale-95">
+              <button onclick="runProjectAudit()" id="btn-audit-project" class="btn-primary-pro w-full sm:w-auto px-5 py-2 text-xs font-semibold flex items-center justify-center gap-2 shadow-sm flex-shrink-0">
                 <i class="fa-solid fa-wand-magic-sparkles" id="audit-project-icon"></i>
                 <span>Scan Project</span>
               </button>
             </div>
 
             <!-- Quick Presets & Recent History -->
-            <div class="flex flex-wrap items-center gap-2 text-[11px] text-slate-400 pt-1">
-              <span class="text-slate-500">Quick Presets:</span>
-              <button onclick="setAndAuditProject('.')" class="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 font-mono transition border border-slate-700/70">Current Workspace (.)</button>
+            <div class="flex flex-wrap items-center gap-2 text-[11px] text-[#94A3B8] pt-1">
+              <span class="text-[#475569] font-mono">Quick Presets:</span>
+              <button onclick="setAndAuditProject('.')" class="btn-secondary-pro text-[11px] font-mono px-2 py-0.5 rounded">Current Workspace (.)</button>
               <div id="project-recent-chips" class="flex flex-wrap items-center gap-1.5"></div>
             </div>
           </div>
@@ -841,26 +996,26 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
           <!-- Audit Results Container -->
           <div id="project-results-container" class="space-y-4 hidden">
             <!-- Header Card & Visual Readiness Scorecard -->
-            <div id="project-header-card" class="glass-card rounded-2xl p-5 sm:p-6 flex flex-col lg:flex-row lg:items-center justify-between gap-5 border border-slate-800">
-              <div class="space-y-2 min-w-0">
-                <div class="flex flex-wrap items-center gap-2.5">
-                  <h3 class="text-xl font-black text-white tracking-tight" id="rep-project-name">—</h3>
+            <div id="project-header-card" class="card-pro p-5 sm:p-6 flex flex-col lg:flex-row lg:items-center justify-between gap-5">
+              <div class="space-y-1.5 min-w-0">
+                <div class="flex flex-wrap items-center gap-2">
+                  <h3 class="text-lg font-bold text-[#F3F4F6] tracking-tight" id="rep-project-name">—</h3>
                   <div id="rep-detected-types" class="flex flex-wrap gap-1.5"></div>
                 </div>
-                <p class="text-xs font-mono text-slate-400 truncate max-w-xl" id="rep-project-path">—</p>
+                <p class="text-xs font-mono text-[#94A3B8] truncate max-w-xl" id="rep-project-path">—</p>
               </div>
 
               <!-- Readiness Scorecard Gauge -->
-              <div class="flex items-center gap-4 bg-[#070b16] p-4 rounded-xl border border-slate-800 flex-shrink-0">
-                <div class="text-center min-w-[70px]">
-                  <div class="text-2xl font-black" id="rep-score-pct">100%</div>
-                  <div class="text-[10px] uppercase tracking-wider font-bold text-slate-500">Readiness</div>
+              <div class="flex items-center gap-4 bg-[#08090C] p-3.5 rounded border border-[#1F2430] flex-shrink-0">
+                <div class="text-center min-w-[65px]">
+                  <div class="text-2xl font-bold font-mono" id="rep-score-pct">100%</div>
+                  <div class="text-[9px] uppercase tracking-wider font-mono font-semibold text-[#475569]">Readiness</div>
                 </div>
                 <div class="w-32 hidden sm:block">
-                  <div class="h-2 rounded-full bg-slate-800 overflow-hidden">
-                    <div id="rep-score-bar" class="h-full bg-emerald-500 rounded-full transition-all duration-500" style="width: 100%"></div>
+                  <div class="h-1.5 rounded-full bg-[#1F2430] overflow-hidden">
+                    <div id="rep-score-bar" class="h-full bg-[#10B981] rounded-full transition-all duration-500" style="width: 100%"></div>
                   </div>
-                  <div class="flex justify-between text-[10px] font-mono text-slate-400 mt-1">
+                  <div class="flex justify-between text-[10px] font-mono text-[#94A3B8] mt-1">
                     <span id="rep-satisfied-count">0 satisfied</span>
                     <span id="rep-missing-count">0 missing</span>
                   </div>
@@ -870,37 +1025,37 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
             </div>
 
             <!-- Requirements Checklist Table -->
-            <div class="glass-card rounded-xl border border-slate-800 overflow-hidden shadow-xl">
-              <div class="px-5 py-3.5 bg-slate-950/80 border-b border-slate-800 flex items-center justify-between">
-                <h4 class="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
-                  <i class="fa-solid fa-list-check text-blue-400"></i>
+            <div class="card-pro overflow-hidden shadow-xl">
+              <div class="px-4 py-2.5 bg-[#08090C] border-b border-[#1F2430] flex items-center justify-between">
+                <h4 class="text-xs font-mono font-semibold text-[#F3F4F6] uppercase tracking-wider flex items-center gap-2">
+                  <i class="fa-solid fa-list-check text-[#10B981]"></i>
                   Prerequisites Checklist
                 </h4>
               </div>
               <div class="overflow-x-auto">
                 <table class="w-full text-left text-xs">
-                  <thead class="bg-slate-950/50 text-slate-400 uppercase tracking-wider text-[10px] border-b border-slate-800 font-semibold">
+                  <thead class="bg-[#08090C]/60 text-[#94A3B8] uppercase tracking-wider text-[10px] border-b border-[#1F2430] font-mono font-semibold">
                     <tr>
-                      <th class="py-2.5 px-4">Status</th>
-                      <th class="py-2.5 px-4">Requirement</th>
-                      <th class="py-2.5 px-4">Expected</th>
-                      <th class="py-2.5 px-4">Detected</th>
-                      <th class="py-2.5 px-4">Diagnostic Details</th>
+                      <th class="py-2 px-3.5">Status</th>
+                      <th class="py-2 px-3.5">Requirement</th>
+                      <th class="py-2 px-3.5">Expected</th>
+                      <th class="py-2 px-3.5">Detected</th>
+                      <th class="py-2 px-3.5">Diagnostic Details</th>
                     </tr>
                   </thead>
-                  <tbody id="project-checks-tbody" class="divide-y divide-slate-800/60 font-sans"></tbody>
+                  <tbody id="project-checks-tbody" class="divide-y divide-[#1F2430] font-sans"></tbody>
                 </table>
               </div>
             </div>
 
             <!-- Recommended Setup Actions -->
-            <div id="project-actions-card" class="glass-card rounded-xl p-5 space-y-3.5 hidden border-amber-500/30 bg-amber-500/5">
+            <div id="project-actions-card" class="rounded-md p-4 space-y-3 hidden border border-[#F59E0B40] bg-[#F59E0B0A]">
               <div class="flex items-center justify-between gap-2 flex-wrap">
-                <h4 class="text-xs font-bold text-amber-400 uppercase tracking-wider flex items-center gap-2">
+                <h4 class="text-xs font-semibold text-[#F59E0B] uppercase tracking-wider flex items-center gap-2 font-mono">
                   <i class="fa-solid fa-lightbulb"></i>
                   Recommended Setup Commands
                 </h4>
-                <button onclick="copyAllProjectActions()" class="px-3 py-1.5 bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 border border-amber-500/30 rounded-lg text-xs font-bold transition flex items-center gap-1.5 shadow-sm">
+                <button onclick="copyAllProjectActions()" class="btn-secondary-pro text-[#F59E0B] border-[#F59E0B40] px-2.5 py-1 text-xs font-medium flex items-center gap-1.5">
                   <i class="fa-regular fa-copy"></i>
                   <span>Copy All Fix Commands</span>
                 </button>
@@ -911,77 +1066,77 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
         </div>
 
         <!-- ==================== VIEW 4: SETTINGS & SEARCH ROOTS ==================== -->
-        <div id="view-settings" class="space-y-6 hidden">
+        <div id="view-settings" class="space-y-5 hidden">
           <!-- Monitored Search Roots Card -->
-          <div class="glass-card rounded-xl p-6 border border-slate-800 space-y-5">
+          <div class="card-pro p-5 sm:p-6 space-y-4">
             <div class="flex items-center gap-3">
-              <div class="w-9 h-9 rounded-lg bg-blue-600/20 text-blue-400 flex items-center justify-center font-bold">
+              <div class="w-8 h-8 rounded bg-[#10B9811A] text-[#10B981] border border-[#10B98140] flex items-center justify-center font-bold flex-shrink-0">
                 <i class="fa-solid fa-folder-tree"></i>
               </div>
               <div>
-                <h2 class="text-base font-bold text-white">Monitored Search Directories (Layer 4)</h2>
-                <p class="text-xs text-slate-400">Configure root directories where DevToolkit recursively probes for SDKs by structural signature.</p>
+                <h2 class="text-sm font-semibold text-[#F3F4F6]">Monitored Search Directories (Layer 4)</h2>
+                <p class="text-xs text-[#94A3B8]">Configure root directories where DevToolkit recursively probes for SDKs by structural signature.</p>
               </div>
             </div>
 
             <div>
-              <label class="block text-xs font-semibold text-slate-300 mb-1.5">Add Custom Root Directory</label>
+              <label class="block text-xs font-medium text-[#94A3B8] mb-1.5">Add Custom Root Directory</label>
               <div class="flex items-center gap-2">
                 <div class="relative flex-1 flex items-center">
-                  <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 text-xs">
+                  <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-[#94A3B8] text-xs">
                     <i class="fa-regular fa-folder"></i>
                   </div>
-                  <input type="text" id="settings-path-input" onkeydown="if(event.key==='Enter') submitSearchPath()" placeholder="e.g. D:\\Dev or /opt/custom_sdks" class="w-full pl-9 pr-3 py-2 bg-[#070a13] border border-slate-700/80 rounded-lg text-xs text-white placeholder-slate-500 font-mono focus:outline-none focus:border-blue-500 transition" />
+                  <input type="text" id="settings-path-input" onkeydown="if(event.key==='Enter') submitSearchPath()" placeholder="e.g. D:\\Dev or /opt/custom_sdks" class="input-pro w-full pl-8 pr-3 py-1.5 text-xs text-[#F3F4F6] placeholder-[#475569] font-mono" />
                 </div>
-                <button onclick="browseSettingsFolder()" id="btn-browse-settings" class="px-3.5 py-2 bg-[#0e1526] hover:bg-[#131d36] text-slate-200 hover:text-white border border-slate-700/80 rounded-lg text-xs font-semibold transition flex items-center gap-1.5 shadow-sm active:scale-95 flex-shrink-0" title="Open Explorer to select folder">
-                  <i class="fa-regular fa-folder-open text-blue-400 text-xs"></i>
+                <button onclick="browseSettingsFolder()" id="btn-browse-settings" class="btn-secondary-pro px-3.5 py-1.5 text-xs font-medium flex items-center gap-1.5 flex-shrink-0" title="Open Explorer to select folder">
+                  <i class="fa-regular fa-folder-open text-[#06B6D4] text-xs"></i>
                   <span>Browse...</span>
                 </button>
-                <button onclick="submitSearchPath()" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-xs font-bold transition flex items-center gap-1.5 shadow-sm flex-shrink-0 active:scale-95">
+                <button onclick="submitSearchPath()" class="btn-primary-pro px-4 py-1.5 text-xs font-semibold flex items-center gap-1.5 flex-shrink-0">
                   <i class="fa-solid fa-plus"></i>
                   <span>Add Path</span>
                 </button>
               </div>
               <div class="mt-2 flex items-center gap-2">
-                <span class="text-[11px] text-slate-500">Quick Suggestions:</span>
-                <button onclick="fillSettingsPath('D:\\\\Dev')" class="text-[11px] px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 font-mono transition">+ D:\Dev</button>
-                <button onclick="fillSettingsPath('C:\\\\Dev')" class="text-[11px] px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 font-mono transition">+ C:\Dev</button>
+                <span class="text-[11px] text-[#475569] font-mono">Quick Suggestions:</span>
+                <button onclick="fillSettingsPath('D:\\\\Dev')" class="btn-secondary-pro text-[11px] font-mono px-2 py-0.5 rounded">+ D:\Dev</button>
+                <button onclick="fillSettingsPath('C:\\\\Dev')" class="btn-secondary-pro text-[11px] font-mono px-2 py-0.5 rounded">+ C:\Dev</button>
               </div>
             </div>
 
             <div>
-              <h3 class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Active Monitored Directories</h3>
-              <div id="settings-paths-list" class="space-y-2 max-h-48 overflow-y-auto custom-scrollbar"></div>
+              <h3 class="text-[10px] font-mono font-semibold text-[#475569] uppercase tracking-wider mb-2">Active Monitored Directories</h3>
+              <div id="settings-paths-list" class="space-y-1.5 max-h-48 overflow-y-auto custom-scrollbar"></div>
             </div>
 
-            <div class="p-4 rounded-xl bg-blue-500/10 border border-blue-500/20 text-xs text-blue-300 space-y-1">
-              <div class="font-bold flex items-center gap-1.5"><i class="fa-solid fa-shield-halved"></i> Generalized Content Signature Discovery</div>
-              <p class="text-slate-300 text-[11px]">DevToolkit avoids hardcoded paths. When you add a root folder, it recursively detects binary signatures (e.g. <code>platform-tools/adb.exe</code> or <code>bin/javac.exe</code>) regardless of naming conventions.</p>
+            <div class="p-3.5 rounded bg-[#06B6D410] border border-[#06B6D430] text-xs text-[#06B6D4] space-y-1">
+              <div class="font-semibold flex items-center gap-1.5"><i class="fa-solid fa-shield-halved"></i> Generalized Content Signature Discovery</div>
+              <p class="text-[#94A3B8] text-[11px]">DevToolkit avoids hardcoded paths. When you add a root folder, it recursively detects binary signatures (e.g. <code>platform-tools/adb.exe</code> or <code>bin/javac.exe</code>) regardless of naming conventions.</p>
             </div>
           </div>
 
           <!-- Workstation System Specs Card -->
-          <div class="glass-card rounded-xl p-6 border border-slate-800 space-y-4">
-            <h3 class="text-sm font-bold text-white flex items-center gap-2">
-              <i class="fa-solid fa-microchip text-slate-400"></i>
+          <div class="card-pro p-5 sm:p-6 space-y-3">
+            <h3 class="text-sm font-semibold text-[#F3F4F6] flex items-center gap-2">
+              <i class="fa-solid fa-microchip text-[#94A3B8]"></i>
               Workstation System Overview
             </h3>
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
-              <div class="p-3 rounded-lg bg-[#070a13] border border-slate-800">
-                <div class="text-slate-500 font-medium">Operating System</div>
-                <div class="font-bold text-white mt-1" id="sys-os">—</div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 text-xs">
+              <div class="p-3 rounded bg-[#08090C] border border-[#1F2430]">
+                <div class="text-[#475569] font-mono text-[10px] uppercase">Operating System</div>
+                <div class="font-medium text-[#F3F4F6] mt-1" id="sys-os">—</div>
               </div>
-              <div class="p-3 rounded-lg bg-[#070a13] border border-slate-800">
-                <div class="text-slate-500 font-medium">Architecture</div>
-                <div class="font-bold text-white mt-1" id="sys-arch">—</div>
+              <div class="p-3 rounded bg-[#08090C] border border-[#1F2430]">
+                <div class="text-[#475569] font-mono text-[10px] uppercase">Architecture</div>
+                <div class="font-medium text-[#F3F4F6] mt-1" id="sys-arch">—</div>
               </div>
-              <div class="p-3 rounded-lg bg-[#070a13] border border-slate-800">
-                <div class="text-slate-500 font-medium">Host Machine</div>
-                <div class="font-bold text-white mt-1" id="sys-host">—</div>
+              <div class="p-3 rounded bg-[#08090C] border border-[#1F2430]">
+                <div class="text-[#475569] font-mono text-[10px] uppercase">Host Machine</div>
+                <div class="font-mono text-[#F3F4F6] mt-1 truncate" id="sys-host">—</div>
               </div>
-              <div class="p-3 rounded-lg bg-[#070a13] border border-slate-800">
-                <div class="text-slate-500 font-medium">Python Runtime</div>
-                <div class="font-bold text-emerald-400 mt-1" id="sys-python">—</div>
+              <div class="p-3 rounded bg-[#08090C] border border-[#1F2430]">
+                <div class="text-[#475569] font-mono text-[10px] uppercase">Python Runtime</div>
+                <div class="font-mono text-[#10B981] mt-1 truncate" id="sys-python">—</div>
               </div>
             </div>
           </div>
@@ -990,26 +1145,26 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
       </main>
 
       <!-- PERSISTENT BOTTOM STATUS BAR -->
-      <footer class="h-9 px-4 sm:px-5 bg-[#080d18] border-t border-slate-800/80 text-[11px] text-slate-400 flex items-center justify-between flex-shrink-0 z-20 select-none">
+      <footer class="h-8 px-4 sm:px-5 bg-[#08090C] border-t border-[#1F2430] text-[11px] text-[#94A3B8] flex items-center justify-between flex-shrink-0 z-20 select-none font-mono">
         <div class="flex items-center gap-2 sm:gap-2.5 truncate">
           <span class="flex items-center gap-1.5 truncate">
-            <span class="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_6px_#34d399] flex-shrink-0"></span>
-            Environment Watcher: <strong class="text-slate-200 font-semibold truncate">Active</strong>
+            <span class="w-1.5 h-1.5 rounded-full bg-[#10B981] shadow-[0_0_6px_#10B981] flex-shrink-0"></span>
+            Environment Watcher: <strong class="text-[#F3F4F6] font-medium truncate">Active</strong>
           </span>
-          <span class="text-slate-700 hidden sm:inline">|</span>
-          <span class="font-mono hidden sm:inline">PATH Entries: <strong class="text-slate-200" id="status-path-count">25</strong></span>
-          <span class="text-slate-700 hidden md:inline">|</span>
-          <span class="font-mono hidden md:inline">RAM Footprint: <strong class="text-slate-200" id="status-ram-count">114 MB</strong></span>
+          <span class="text-[#2E3446] hidden sm:inline">|</span>
+          <span class="hidden sm:inline">PATH Entries: <strong class="text-[#F3F4F6]" id="status-path-count">25</strong></span>
+          <span class="text-[#2E3446] hidden md:inline">|</span>
+          <span class="hidden md:inline">RAM Footprint: <strong class="text-[#F3F4F6]" id="status-ram-count">114 MB</strong></span>
         </div>
 
-        <div class="flex items-center gap-2 sm:gap-3 flex-shrink-0">
-          <button onclick="refreshActiveTab()" class="hover:text-white transition flex items-center gap-1">
-            <kbd class="px-1.5 py-0.2 rounded bg-slate-800 border border-slate-700 text-[10px] font-mono text-slate-300">R</kbd>
-            <span class="hidden sm:inline">Rescan</span>
+        <div class="flex items-center gap-2 sm:gap-3 flex-shrink-0 font-sans">
+          <button onclick="refreshActiveTab()" class="hover:text-[#F3F4F6] transition flex items-center gap-1 text-[#94A3B8]">
+            <kbd class="kbd-pro">R</kbd>
+            <span class="hidden sm:inline text-[11px]">Rescan</span>
           </button>
-          <button onclick="toggleHelpModal()" class="hover:text-white transition flex items-center gap-1">
-            <kbd class="px-1.5 py-0.2 rounded bg-slate-800 border border-slate-700 text-[10px] font-mono text-slate-300">?</kbd>
-            <span>Help</span>
+          <button onclick="toggleHelpModal()" class="hover:text-[#F3F4F6] transition flex items-center gap-1 text-[#94A3B8]">
+            <kbd class="kbd-pro">?</kbd>
+            <span class="text-[11px]">Help</span>
           </button>
         </div>
       </footer>
@@ -1019,9 +1174,9 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
 
   <!-- SLIDE-OVER DETAIL DRAWER (INSPECTOR) -->
   <div id="inspector-drawer" class="fixed inset-0 z-50 overflow-hidden hidden" aria-labelledby="slide-over-title" role="dialog" aria-modal="true">
-    <div id="inspector-backdrop" onclick="closeInspectorDrawer()" class="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity duration-300 opacity-0"></div>
+    <div id="inspector-backdrop" onclick="closeInspectorDrawer()" class="fixed inset-0 modal-backdrop transition-opacity duration-300 opacity-0"></div>
     <div class="fixed inset-y-0 right-0 max-w-full flex pl-6 sm:pl-10 pointer-events-none">
-      <div id="inspector-panel" class="w-screen max-w-xl bg-[#090e1a] border-l border-slate-800 shadow-2xl flex flex-col drawer-panel pointer-events-auto z-10">
+      <div id="inspector-panel" class="w-screen max-w-xl bg-[#0E1015] border-l border-[#1F2430] shadow-2xl flex flex-col drawer-panel pointer-events-auto z-10">
         <!-- Content dynamically rendered by renderInspectorDrawer() -->
         <div id="inspector-content" class="flex-1 flex flex-col overflow-hidden"></div>
       </div>
@@ -1030,36 +1185,36 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
 
   <!-- MODAL 1: TERMINATE PROCESS ON PORT -->
   <div id="kill-modal" class="fixed inset-0 modal-backdrop z-50 flex items-center justify-center p-4 hidden">
-    <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
-      <div class="flex items-center gap-3 text-rose-400">
-        <div class="w-10 h-10 rounded-xl bg-rose-500/20 flex items-center justify-center font-bold text-lg flex-shrink-0">
+    <div class="modal-pro max-w-md w-full p-5 space-y-4">
+      <div class="flex items-center gap-3 text-[#EF4444]">
+        <div class="w-9 h-9 rounded bg-[#EF44441A] border border-[#EF444440] flex items-center justify-center font-bold text-base flex-shrink-0">
           <i class="fa-solid fa-triangle-exclamation"></i>
         </div>
         <div>
-          <h3 class="text-base font-bold text-white">Terminate Process on Port</h3>
-          <p class="text-xs text-slate-400">This action will immediately stop the occupying process.</p>
+          <h3 class="text-sm font-semibold text-[#F3F4F6]">Terminate Process on Port</h3>
+          <p class="text-xs text-[#94A3B8]">This action will immediately stop the occupying process.</p>
         </div>
       </div>
 
-      <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 text-xs space-y-1.5 font-mono">
-        <div class="flex justify-between"><span class="text-slate-500">Port:</span> <span class="text-blue-300 font-bold" id="modal-kill-port">:—</span></div>
-        <div class="flex justify-between"><span class="text-slate-500">Process:</span> <span class="text-white" id="modal-kill-name">—</span></div>
-        <div class="flex justify-between"><span class="text-slate-500">PID:</span> <span class="text-yellow-400" id="modal-kill-pid">—</span></div>
+      <div class="bg-[#08090C] p-3 rounded border border-[#1F2430] text-xs space-y-1.5 font-mono">
+        <div class="flex justify-between"><span class="text-[#475569]">Port:</span> <span class="text-[#06B6D4] font-bold" id="modal-kill-port">:—</span></div>
+        <div class="flex justify-between"><span class="text-[#475569]">Process:</span> <span class="text-[#F3F4F6]" id="modal-kill-name">—</span></div>
+        <div class="flex justify-between"><span class="text-[#475569]">PID:</span> <span class="text-[#F59E0B]" id="modal-kill-pid">—</span></div>
       </div>
 
-      <div id="modal-kill-warning" class="hidden p-3 rounded-xl bg-rose-500/10 border border-rose-500/25 text-rose-300 text-xs space-y-2">
-        <div class="font-bold flex items-center gap-1.5"><i class="fa-solid fa-triangle-exclamation"></i> Operating System Warning</div>
-        <p class="text-[11px] text-slate-300">This process is classified as system-critical. Force terminating it may disrupt system services or cause a reboot.</p>
+      <div id="modal-kill-warning" class="hidden p-3 rounded bg-[#EF444410] border border-[#EF444430] text-[#EF4444] text-xs space-y-1.5">
+        <div class="font-semibold flex items-center gap-1.5"><i class="fa-solid fa-triangle-exclamation"></i> Operating System Warning</div>
+        <p class="text-[11px] text-[#94A3B8]">This process is classified as system-critical. Force terminating it may disrupt system services or cause a reboot.</p>
         <label class="flex items-center gap-2 cursor-pointer pt-1">
-          <input type="checkbox" id="modal-force-checkbox" class="rounded border-rose-500 text-rose-600 focus:ring-rose-500" />
-          <span class="text-[11px] font-bold text-rose-400">I understand the risk, force terminate</span>
+          <input type="checkbox" id="modal-force-checkbox" class="rounded-[3px] border-[#EF4444] text-[#EF4444] focus:ring-0 w-3.5 h-3.5 bg-[#08090C]" />
+          <span class="text-[11px] font-semibold text-[#EF4444]">I understand the risk, force terminate</span>
         </label>
       </div>
 
-      <div class="flex justify-end gap-2 pt-2 border-t border-slate-800">
-        <button onclick="closeKillModal()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs font-semibold transition">Cancel</button>
-        <button onclick="submitKillPort()" id="btn-confirm-kill" class="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white rounded-lg text-xs font-bold transition flex items-center gap-1.5 shadow-sm">
-          <i class="fa-solid fa-power-off"></i>
+      <div class="flex justify-end gap-2 pt-2 border-t border-[#1F2430]">
+        <button onclick="closeKillModal()" class="btn-secondary-pro px-3.5 py-1.5 text-xs font-medium">Cancel</button>
+        <button onclick="submitKillPort()" id="btn-confirm-kill" class="btn-destructive px-3.5 py-1.5 text-xs flex items-center gap-1.5">
+          <i class="fa-solid fa-power-off text-xs"></i>
           <span>Kill Process</span>
         </button>
       </div>
@@ -1068,72 +1223,72 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
 
   <!-- MODAL 2: KEYBOARD SHORTCUTS & HELP -->
   <div id="help-modal" class="fixed inset-0 modal-backdrop z-50 flex items-center justify-center p-4 hidden">
-    <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4">
-      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+    <div class="modal-pro max-w-lg w-full p-5 space-y-4">
+      <div class="flex items-center justify-between border-b border-[#1F2430] pb-3">
         <div class="flex items-center gap-2.5">
-          <div class="w-8 h-8 rounded-lg bg-blue-600/20 text-blue-400 flex items-center justify-center font-bold">
+          <div class="w-8 h-8 rounded bg-[#10B9811A] text-[#10B981] border border-[#10B98140] flex items-center justify-center font-bold">
             <i class="fa-solid fa-keyboard"></i>
           </div>
           <div>
-            <h3 class="text-sm font-bold text-white">DevToolkit Shortcuts & Navigation</h3>
-            <p class="text-[11px] text-slate-400">Native desktop keyboard accelerators</p>
+            <h3 class="text-sm font-semibold text-[#F3F4F6]">DevToolkit Shortcuts & Navigation</h3>
+            <p class="text-[11px] text-[#94A3B8]">Native desktop keyboard accelerators</p>
           </div>
         </div>
-        <button onclick="toggleHelpModal()" class="text-slate-400 hover:text-white transition p-1"><i class="fa-solid fa-xmark text-sm"></i></button>
+        <button onclick="toggleHelpModal()" class="text-[#94A3B8] hover:text-[#F3F4F6] transition p-1"><i class="fa-solid fa-xmark text-sm"></i></button>
       </div>
 
-      <div class="space-y-2 text-xs">
-        <div class="flex items-center justify-between p-2 rounded-lg bg-slate-950/70 border border-slate-800">
-          <span class="text-slate-300">Focus Global Search</span>
-          <kbd class="px-2 py-0.5 rounded bg-slate-800 text-blue-300 font-mono text-[11px] border border-slate-700">Ctrl + K</kbd>
+      <div class="space-y-1.5 text-xs">
+        <div class="flex items-center justify-between p-2 rounded bg-[#08090C] border border-[#1F2430]">
+          <span class="text-[#F3F4F6]">Focus Global Search</span>
+          <kbd class="kbd-pro">Ctrl + K</kbd>
         </div>
-        <div class="flex items-center justify-between p-2 rounded-lg bg-slate-950/70 border border-slate-800">
-          <span class="text-slate-300">Rescan Environment & Sockets</span>
-          <kbd class="px-2 py-0.5 rounded bg-slate-800 text-blue-300 font-mono text-[11px] border border-slate-700">R</kbd>
+        <div class="flex items-center justify-between p-2 rounded bg-[#08090C] border border-[#1F2430]">
+          <span class="text-[#F3F4F6]">Rescan Environment & Sockets</span>
+          <kbd class="kbd-pro">R</kbd>
         </div>
-        <div class="flex items-center justify-between p-2 rounded-lg bg-slate-950/70 border border-slate-800">
-          <span class="text-slate-300">Switch to Environment Tab</span>
-          <kbd class="px-2 py-0.5 rounded bg-slate-800 text-blue-300 font-mono text-[11px] border border-slate-700">1</kbd>
+        <div class="flex items-center justify-between p-2 rounded bg-[#08090C] border border-[#1F2430]">
+          <span class="text-[#F3F4F6]">Switch to Environment Tab</span>
+          <kbd class="kbd-pro">1</kbd>
         </div>
-        <div class="flex items-center justify-between p-2 rounded-lg bg-slate-950/70 border border-slate-800">
-          <span class="text-slate-300">Switch to Port Manager Tab</span>
-          <kbd class="px-2 py-0.5 rounded bg-slate-800 text-blue-300 font-mono text-[11px] border border-slate-700">2</kbd>
+        <div class="flex items-center justify-between p-2 rounded bg-[#08090C] border border-[#1F2430]">
+          <span class="text-[#F3F4F6]">Switch to Port Manager Tab</span>
+          <kbd class="kbd-pro">2</kbd>
         </div>
-        <div class="flex items-center justify-between p-2 rounded-lg bg-slate-950/70 border border-slate-800">
-          <span class="text-slate-300">Switch to Project Auditor Tab</span>
-          <kbd class="px-2 py-0.5 rounded bg-slate-800 text-blue-300 font-mono text-[11px] border border-slate-700">3</kbd>
+        <div class="flex items-center justify-between p-2 rounded bg-[#08090C] border border-[#1F2430]">
+          <span class="text-[#F3F4F6]">Switch to Project Auditor Tab</span>
+          <kbd class="kbd-pro">3</kbd>
         </div>
-        <div class="flex items-center justify-between p-2 rounded-lg bg-slate-950/70 border border-slate-800">
-          <span class="text-slate-300">Switch to Settings Tab</span>
-          <kbd class="px-2 py-0.5 rounded bg-slate-800 text-blue-300 font-mono text-[11px] border border-slate-700">4</kbd>
+        <div class="flex items-center justify-between p-2 rounded bg-[#08090C] border border-[#1F2430]">
+          <span class="text-[#F3F4F6]">Switch to Settings Tab</span>
+          <kbd class="kbd-pro">4</kbd>
         </div>
-        <div class="flex items-center justify-between p-2 rounded-lg bg-slate-950/70 border border-slate-800">
-          <span class="text-slate-300">Close Modal / Blur Search</span>
-          <kbd class="px-2 py-0.5 rounded bg-slate-800 text-blue-300 font-mono text-[11px] border border-slate-700">Esc</kbd>
+        <div class="flex items-center justify-between p-2 rounded bg-[#08090C] border border-[#1F2430]">
+          <span class="text-[#F3F4F6]">Close Modal / Blur Search</span>
+          <kbd class="kbd-pro">Esc</kbd>
         </div>
       </div>
 
       <!-- Workstation Telemetry -->
-      <div class="p-3 rounded-xl bg-slate-950/80 border border-slate-800 space-y-1.5 text-xs">
-        <div class="text-[10px] font-bold text-slate-500 tracking-wider uppercase flex items-center gap-1.5">
-          <i class="fa-solid fa-server text-blue-400"></i> Workstation Telemetry
+      <div class="p-3 rounded bg-[#08090C] border border-[#1F2430] space-y-1.5 text-xs">
+        <div class="text-[10px] font-mono font-semibold text-[#475569] tracking-wider uppercase flex items-center gap-1.5">
+          <i class="fa-solid fa-server text-[#06B6D4]"></i> Workstation Telemetry
         </div>
         <div class="grid grid-cols-2 gap-2 text-[11px] font-mono">
-          <div><span class="text-slate-500">OS:</span> <span id="sys-os" class="text-slate-300">...</span></div>
-          <div><span class="text-slate-500">Arch:</span> <span id="sys-arch" class="text-slate-300">...</span></div>
-          <div><span class="text-slate-500">Host:</span> <span id="sys-host" class="text-slate-300">...</span></div>
-          <div><span class="text-slate-500">Python:</span> <span id="sys-python" class="text-slate-300">...</span></div>
+          <div><span class="text-[#475569]">OS:</span> <span id="sys-os" class="text-[#F3F4F6]">...</span></div>
+          <div><span class="text-[#475569]">Arch:</span> <span id="sys-arch" class="text-[#F3F4F6]">...</span></div>
+          <div><span class="text-[#475569]">Host:</span> <span id="sys-host" class="text-[#F3F4F6]">...</span></div>
+          <div><span class="text-[#475569]">Python:</span> <span id="sys-python" class="text-[#10B981]">...</span></div>
         </div>
       </div>
 
-      <div class="pt-2 border-t border-slate-800 flex justify-end">
-        <button onclick="toggleHelpModal()" class="px-4 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-xs font-semibold transition">Got it</button>
+      <div class="pt-2 border-t border-[#1F2430] flex justify-end">
+        <button onclick="toggleHelpModal()" class="btn-primary-pro px-4 py-1.5 text-xs font-semibold">Got it</button>
       </div>
     </div>
   </div>
 
   <!-- TOAST NOTIFICATION -->
-  <div id="toast" class="fixed bottom-12 right-6 px-4 py-2.5 rounded-lg bg-emerald-600 text-white text-xs font-medium shadow-2xl transform translate-y-20 opacity-0 transition duration-300 flex items-center gap-2 z-50">
+  <div id="toast" class="fixed bottom-10 right-6 px-3.5 py-2 rounded bg-[#0E1015] border border-[#10B981] text-[#10B981] text-xs font-mono shadow-2xl transform translate-y-20 opacity-0 transition duration-300 flex items-center gap-2 z-50">
     <i class="fa-solid fa-check" id="toast-icon"></i> <span id="toast-msg">Success</span>
   </div>
 
@@ -1162,14 +1317,14 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
       const icon = document.getElementById('toast-icon');
       document.getElementById('toast-msg').innerText = msg;
       if (isError) {
-        toast.className = 'fixed bottom-12 right-6 px-4 py-2.5 rounded-lg bg-rose-600 text-white text-xs font-medium shadow-2xl transform translate-y-0 opacity-100 transition duration-300 flex items-center gap-2 z-50';
-        icon.className = 'fa-solid fa-triangle-exclamation';
+        toast.className = 'fixed bottom-10 right-6 px-3.5 py-2 rounded bg-[#0E1015] border border-[#EF4444] text-[#EF4444] text-xs font-mono shadow-2xl transform translate-y-0 opacity-100 transition duration-200 flex items-center gap-2 z-50';
+        icon.className = 'fa-solid fa-triangle-exclamation text-xs';
       } else {
-        toast.className = 'fixed bottom-12 right-6 px-4 py-2.5 rounded-lg bg-emerald-600 text-white text-xs font-medium shadow-2xl transform translate-y-0 opacity-100 transition duration-300 flex items-center gap-2 z-50';
-        icon.className = 'fa-solid fa-check';
+        toast.className = 'fixed bottom-10 right-6 px-3.5 py-2 rounded bg-[#0E1015] border border-[#10B981] text-[#10B981] text-xs font-mono shadow-2xl transform translate-y-0 opacity-100 transition duration-200 flex items-center gap-2 z-50';
+        icon.className = 'fa-solid fa-check text-xs';
       }
       setTimeout(() => {
-        toast.className = 'fixed bottom-12 right-6 px-4 py-2.5 rounded-lg bg-emerald-600 text-white text-xs font-medium shadow-2xl transform translate-y-20 opacity-0 transition duration-300 flex items-center gap-2 z-50';
+        toast.className = 'fixed bottom-10 right-6 px-3.5 py-2 rounded bg-[#0E1015] border border-[#10B981] text-[#10B981] text-xs font-mono shadow-2xl transform translate-y-20 opacity-0 transition duration-200 flex items-center gap-2 z-50';
       }, 2800);
     }
 
@@ -1227,10 +1382,10 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
         const btn = document.getElementById(`nav-btn-${t}`);
         const view = document.getElementById(`view-${t}`);
         if (t === tab) {
-          btn.className = 'w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition border nav-active';
+          btn.className = 'w-full flex items-center justify-between px-2.5 py-2 rounded text-xs font-medium transition nav-active';
           view.classList.remove('hidden');
         } else {
-          btn.className = 'w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition border nav-inactive';
+          btn.className = 'w-full flex items-center justify-between px-2.5 py-2 rounded text-xs font-medium transition nav-inactive';
           view.classList.add('hidden');
         }
       });
@@ -1252,15 +1407,15 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
       // Update Top Breadcrumb
       const bc = document.getElementById('top-breadcrumb');
       if (tab === 'env') {
-        bc.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-blue-400 shadow-[0_0_6px_#60a5fa] flex-shrink-0"></span> Environment & Diagnostics';
+        bc.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-[#10B981] shadow-[0_0_6px_#10B981] flex-shrink-0"></span> Environment & Diagnostics';
       } else if (tab === 'ports') {
-        bc.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-indigo-400 shadow-[0_0_6px_#818cf8] flex-shrink-0"></span> Port Manager & Sockets';
+        bc.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-[#06B6D4] shadow-[0_0_6px_#06B6D4] flex-shrink-0"></span> Port Manager & Sockets';
         fetchPorts();
       } else if (tab === 'project') {
-        bc.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_6px_#34d399] flex-shrink-0"></span> Project Workstation Auditor';
+        bc.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-[#8B5CF6] shadow-[0_0_6px_#8B5CF6] flex-shrink-0"></span> Project Workstation Auditor';
         renderRecentProjects();
       } else if (tab === 'settings') {
-        bc.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-slate-400 flex-shrink-0"></span> Preferences & Search Roots';
+        bc.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-[#94A3B8] flex-shrink-0"></span> Preferences & Search Roots';
         loadConfig();
         loadSystemInfo();
       }
@@ -1407,18 +1562,18 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
       const container = document.getElementById('inspector-content');
       const r = allReports.find(x => x.id === toolId);
       if (!r) {
-        container.innerHTML = '<div class="p-6 text-slate-400">Tool details not found.</div>';
+        container.innerHTML = '<div class="p-6 text-[#94A3B8]">Tool details not found.</div>';
         return;
       }
       if (r.scanning) {
         container.innerHTML = `
           <div class="p-8 text-center space-y-4">
-            <div class="w-12 h-12 mx-auto rounded-2xl bg-blue-500/15 border border-blue-500/30 flex items-center justify-center text-blue-400 text-xl">
+            <div class="w-10 h-10 mx-auto rounded bg-[#06B6D41A] border border-[#06B6D440] flex items-center justify-center text-[#06B6D4] text-lg">
               <i class="fa-solid fa-circle-notch fa-spin"></i>
             </div>
             <div>
-              <h3 class="text-white font-bold text-base">Inspecting ${r.name}...</h3>
-              <p class="text-slate-400 text-xs mt-1">Environment inspection is currently running for this tool.</p>
+              <h3 class="text-[#F3F4F6] font-semibold text-sm">Inspecting ${r.name}...</h3>
+              <p class="text-[#94A3B8] text-xs mt-1">Environment inspection is currently running for this tool.</p>
             </div>
           </div>
         `;
@@ -1427,7 +1582,7 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
 
       const toolCats = (r.categories && r.categories.length > 0) ? r.categories : [r.category];
       const categoriesHtml = toolCats.map(c => 
-        `<span class="text-[10px] text-slate-300 uppercase tracking-wider font-mono font-semibold px-2 py-0.5 bg-slate-800 rounded border border-slate-700/60">${c}</span>`
+        `<span class="text-[10px] text-[#94A3B8] uppercase tracking-wider font-mono font-medium px-2 py-0.5 bg-[#141721] rounded border border-[#1F2430]">${c}</span>`
       ).join('');
 
       const cleanHome = (r.home_path || '').replace(/"/g, '&quot;');
@@ -1439,21 +1594,21 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
         diagHtml = r.diagnostics.map(d => {
           const cleanFix = (d.suggested_fix || '').replace(/"/g, '&quot;');
           return `
-            <div class="p-4 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-200 text-xs space-y-3">
-              <div class="flex items-start gap-2.5 font-medium leading-relaxed">
-                <i class="fa-solid fa-triangle-exclamation text-amber-400 mt-0.5 text-sm flex-shrink-0"></i>
+            <div class="p-3.5 rounded bg-[#F59E0B0D] border border-[#F59E0B33] text-[#F59E0B] text-xs space-y-2.5">
+              <div class="flex items-start gap-2 font-medium leading-relaxed">
+                <i class="fa-solid fa-triangle-exclamation text-[#F59E0B] mt-0.5 text-xs flex-shrink-0"></i>
                 <span>${d.message}</span>
               </div>
               ${d.suggested_fix ? `
-                <div class="bg-slate-950 p-3 rounded-lg border border-amber-500/20 space-y-2">
-                  <div class="text-[10px] uppercase tracking-wider font-bold text-amber-400/80">Remediation Command:</div>
-                  <div class="flex items-center justify-between gap-2 font-mono text-[11px] text-slate-200 min-w-0">
+                <div class="bg-[#08090C] p-2.5 rounded border border-[#1F2430] space-y-2">
+                  <div class="text-[10px] uppercase font-mono tracking-wider font-semibold text-[#F59E0B]">Remediation Command:</div>
+                  <div class="flex items-center justify-between gap-2 font-mono text-[11px] text-[#F3F4F6] min-w-0">
                     <code class="truncate">${d.suggested_fix}</code>
                     <div class="flex items-center gap-1.5 flex-shrink-0">
-                      <button onclick="copyToClipboard(this.dataset.cmd, 'command')" data-cmd="${cleanFix}" class="px-2.5 py-1 rounded bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 text-[10px] font-bold transition flex items-center gap-1">
+                      <button onclick="copyToClipboard(this.dataset.cmd, 'command')" data-cmd="${cleanFix}" class="btn-secondary-pro px-2 py-0.5 text-[10px] font-mono flex items-center gap-1">
                         <i class="fa-regular fa-copy"></i> Copy
                       </button>
-                      <button onclick="applyFix(this.dataset.cmd)" data-cmd="${cleanFix}" class="px-2.5 py-1 rounded bg-blue-600 hover:bg-blue-500 text-white text-[10px] font-bold transition flex items-center gap-1 shadow-sm">
+                      <button onclick="applyFix(this.dataset.cmd)" data-cmd="${cleanFix}" class="btn-primary-pro px-2.5 py-0.5 text-[10px] font-semibold flex items-center gap-1">
                         <i class="fa-solid fa-wand-magic-sparkles"></i> Apply
                       </button>
                     </div>
@@ -1465,21 +1620,21 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
         }).join('');
       } else if (r.status === 'healthy') {
         diagHtml = `
-          <div class="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/25 text-emerald-300 text-xs flex items-center gap-2.5">
-            <i class="fa-solid fa-circle-check text-base text-emerald-400 flex-shrink-0"></i>
+          <div class="p-3 rounded bg-[#10B9810D] border border-[#10B98133] text-[#10B981] text-xs flex items-center gap-2.5">
+            <i class="fa-solid fa-circle-check text-sm text-[#10B981] flex-shrink-0"></i>
             <div>
-              <div class="font-bold">Workstation Ready</div>
-              <div class="text-[11px] text-slate-300 mt-0.5">All path registrations and core companions are operating optimally.</div>
+              <div class="font-semibold">Workstation Ready</div>
+              <div class="text-[11px] text-[#94A3B8] mt-0.5">All path registrations and core companions are operating optimally.</div>
             </div>
           </div>
         `;
       } else {
         diagHtml = `
-          <div class="p-3.5 rounded-xl bg-slate-900 border border-slate-800 text-slate-400 text-xs flex items-center gap-2.5">
-            <i class="fa-solid fa-circle-info text-base text-slate-500 flex-shrink-0"></i>
+          <div class="p-3 rounded bg-[#141721] border border-[#1F2430] text-[#94A3B8] text-xs flex items-center gap-2.5">
+            <i class="fa-solid fa-circle-info text-sm text-[#475569] flex-shrink-0"></i>
             <div>
-              <div class="font-bold text-slate-300">Tool Not Detected</div>
-              <div class="text-[11px] text-slate-400 mt-0.5">This tool was not detected in system PATH, registry, or custom search roots.</div>
+              <div class="font-semibold text-[#F3F4F6]">Tool Not Detected</div>
+              <div class="text-[11px] text-[#94A3B8] mt-0.5">This tool was not detected in system PATH, registry, or custom search roots.</div>
             </div>
           </div>
         `;
@@ -1490,20 +1645,20 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
       if (r.companions && r.companions.length > 0) {
         companionsHtml = `
           <div class="space-y-2">
-            <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center justify-between">
+            <div class="text-[10px] font-mono font-semibold text-[#475569] uppercase tracking-wider flex items-center justify-between">
               <span>Ecosystem Companions</span>
-              <span class="font-mono text-slate-500">${r.companions.filter(c => c.installed).length}/${r.companions.length} Available</span>
+              <span class="font-mono text-[#94A3B8]">${r.companions.filter(c => c.installed).length}/${r.companions.length} Available</span>
             </div>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
               ${r.companions.map(c => `
-                <div class="p-2.5 rounded-xl bg-[#060a14] border border-slate-800/80 flex items-center justify-between text-xs">
+                <div class="p-2 rounded bg-[#08090C] border border-[#1F2430] flex items-center justify-between text-xs">
                   <div class="flex items-center gap-2 min-w-0">
-                    <span class="w-5 h-5 rounded flex items-center justify-center text-[11px] ${c.installed ? 'bg-emerald-500/20 text-emerald-400' : 'bg-slate-800 text-slate-600'}">
+                    <span class="w-4 h-4 rounded flex items-center justify-center text-[10px] ${c.installed ? 'bg-[#10B9811A] text-[#10B981]' : 'bg-[#141721] text-[#475569]'}">
                       <i class="fa-solid ${c.installed ? 'fa-check' : 'fa-xmark'}"></i>
                     </span>
-                    <span class="font-semibold text-slate-200 truncate">${c.name}</span>
+                    <span class="font-medium text-[#F3F4F6] truncate">${c.name}</span>
                   </div>
-                  <span class="font-mono text-[10px] text-slate-400 flex-shrink-0">${c.version ? 'v' + c.version : (c.installed ? 'detected' : 'missing')}</span>
+                  <span class="font-mono text-[10px] text-[#94A3B8] flex-shrink-0">${c.version ? 'v' + c.version : (c.installed ? 'detected' : 'missing')}</span>
                 </div>
               `).join('')}
             </div>
@@ -1513,77 +1668,77 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
 
       container.innerHTML = `
         <!-- Drawer Header -->
-        <div class="p-5 sm:p-6 border-b border-slate-800 flex items-start justify-between gap-4 bg-[#070b16]">
-          <div class="flex items-center gap-3.5 min-w-0">
-            <div class="w-12 h-12 rounded-2xl bg-[#0d1424] border border-slate-700/80 flex items-center justify-center text-2xl flex-shrink-0 shadow-lg">
+        <div class="p-4 sm:p-5 border-b border-[#1F2430] flex items-start justify-between gap-3 bg-[#08090C]">
+          <div class="flex items-center gap-3 min-w-0">
+            <div class="w-10 h-10 rounded bg-[#141721] border border-[#1F2430] flex items-center justify-center text-xl flex-shrink-0 shadow">
               ${getToolIcon(r.id, r.category)}
             </div>
             <div class="min-w-0">
-              <h2 class="text-lg font-black text-white tracking-tight truncate">${r.name}</h2>
-              <div class="flex items-center gap-2 mt-1">
-                <span class="text-xs font-mono font-bold text-blue-400">${r.version ? 'v' + r.version : (r.installed ? 'Installed' : 'Not Detected')}</span>
-                <span class="text-slate-600">•</span>
+              <h2 class="text-base font-semibold text-[#F3F4F6] tracking-tight truncate">${r.name}</h2>
+              <div class="flex items-center gap-2 mt-0.5">
+                <span class="text-xs font-mono font-medium text-[#06B6D4]">${r.version ? 'v' + r.version : (r.installed ? 'Installed' : 'Not Detected')}</span>
+                <span class="text-[#2E3446]">•</span>
                 <div class="flex items-center gap-1">${categoriesHtml}</div>
               </div>
             </div>
           </div>
           <div class="flex items-center gap-2 flex-shrink-0">
             ${getBadge(r.status)}
-            <button onclick="closeInspectorDrawer()" class="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition" title="Close Drawer (Esc)">
-              <i class="fa-solid fa-xmark text-base"></i>
+            <button onclick="closeInspectorDrawer()" class="p-1.5 rounded text-[#94A3B8] hover:text-[#F3F4F6] hover:bg-[#141721] transition" title="Close Drawer (Esc)">
+              <i class="fa-solid fa-xmark text-sm"></i>
             </button>
           </div>
         </div>
 
         <!-- Drawer Body -->
-        <div class="flex-1 overflow-y-auto p-5 sm:p-6 space-y-6 custom-scrollbar font-sans">
+        <div class="flex-1 overflow-y-auto p-4 sm:p-5 space-y-5 custom-scrollbar font-sans">
           <!-- Diagnostics / Health Status Card -->
-          <div class="space-y-2">
-            <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Health Status & Action Items</div>
+          <div class="space-y-1.5">
+            <div class="text-[10px] font-mono font-semibold text-[#475569] uppercase tracking-wider">Health Status & Action Items</div>
             ${diagHtml}
           </div>
 
           <!-- Installation & Binary Locations -->
-          <div class="space-y-3">
-            <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Paths & Filesystem Locations</div>
+          <div class="space-y-2.5">
+            <div class="text-[10px] font-mono font-semibold text-[#475569] uppercase tracking-wider">Paths & Filesystem Locations</div>
             
             <!-- Root Path -->
-            <div class="bg-[#070b16] p-3 rounded-xl border border-slate-800/80 space-y-1.5">
-              <div class="flex items-center justify-between text-[11px] text-slate-400">
-                <span class="font-bold text-blue-400 uppercase tracking-wider text-[10px]"><i class="fa-solid fa-folder text-xs mr-1"></i> Root / Home Directory</span>
+            <div class="bg-[#0E1015] p-3 rounded border border-[#1F2430] space-y-1.5">
+              <div class="flex items-center justify-between text-[11px] text-[#94A3B8]">
+                <span class="font-mono font-medium text-[#06B6D4] uppercase tracking-wider text-[10px]"><i class="fa-solid fa-folder text-xs mr-1"></i> Root / Home Directory</span>
                 <div class="flex items-center gap-1">
                   ${r.home_path ? `
-                    <button onclick="copyToClipboard('${cleanHome}', 'root path')" class="px-2 py-0.5 rounded hover:bg-slate-800 text-slate-400 hover:text-white text-[11px] transition flex items-center gap-1">
-                      <i class="fa-regular fa-copy text-[10px]"></i> Copy
+                    <button onclick="copyToClipboard('${cleanHome}', 'root path')" class="btn-secondary-pro px-2 py-0.5 text-[10px] flex items-center gap-1">
+                      <i class="fa-regular fa-copy text-[9px]"></i> Copy
                     </button>
-                    <button onclick="openFolder('${cleanHome}')" class="px-2 py-0.5 rounded hover:bg-slate-800 text-slate-400 hover:text-blue-400 text-[11px] transition flex items-center gap-1">
-                      <i class="fa-regular fa-folder-open text-[10px]"></i> Open
+                    <button onclick="openFolder('${cleanHome}')" class="btn-secondary-pro px-2 py-0.5 text-[10px] flex items-center gap-1 hover:text-[#06B6D4]">
+                      <i class="fa-regular fa-folder-open text-[9px]"></i> Open
                     </button>
                   ` : ''}
                 </div>
               </div>
-              <div class="font-mono text-xs text-slate-200 break-all select-text bg-[#03060d] p-2 rounded-lg border border-slate-800/60">
-                ${r.home_path || '<span class="text-slate-600 italic">Not detected or not applicable</span>'}
+              <div class="font-mono text-xs text-[#F3F4F6] break-all select-text bg-[#08090C] p-2 rounded border border-[#1F2430]">
+                ${r.home_path || '<span class="text-[#475569] italic">Not detected or not applicable</span>'}
               </div>
             </div>
 
             <!-- Binary Path -->
-            <div class="bg-[#070b16] p-3 rounded-xl border border-slate-800/80 space-y-1.5">
-              <div class="flex items-center justify-between text-[11px] text-slate-400">
-                <span class="font-bold text-emerald-400 uppercase tracking-wider text-[10px]"><i class="fa-solid fa-terminal text-xs mr-1"></i> Primary Executable Binary</span>
+            <div class="bg-[#0E1015] p-3 rounded border border-[#1F2430] space-y-1.5">
+              <div class="flex items-center justify-between text-[11px] text-[#94A3B8]">
+                <span class="font-mono font-medium text-[#10B981] uppercase tracking-wider text-[10px]"><i class="fa-solid fa-terminal text-xs mr-1"></i> Primary Executable Binary</span>
                 <div class="flex items-center gap-1">
                   ${r.binary_path ? `
-                    <button onclick="copyToClipboard('${cleanBin}', 'binary path')" class="px-2 py-0.5 rounded hover:bg-slate-800 text-slate-400 hover:text-white text-[11px] transition flex items-center gap-1">
-                      <i class="fa-regular fa-copy text-[10px]"></i> Copy
+                    <button onclick="copyToClipboard('${cleanBin}', 'binary path')" class="btn-secondary-pro px-2 py-0.5 text-[10px] flex items-center gap-1">
+                      <i class="fa-regular fa-copy text-[9px]"></i> Copy
                     </button>
-                    <button onclick="openFolder('${cleanBin}')" class="px-2 py-0.5 rounded hover:bg-slate-800 text-slate-400 hover:text-emerald-400 text-[11px] transition flex items-center gap-1">
-                      <i class="fa-regular fa-folder-open text-[10px]"></i> Open
+                    <button onclick="openFolder('${cleanBin}')" class="btn-secondary-pro px-2 py-0.5 text-[10px] flex items-center gap-1 hover:text-[#10B981]">
+                      <i class="fa-regular fa-folder-open text-[9px]"></i> Open
                     </button>
                   ` : ''}
                 </div>
               </div>
-              <div class="font-mono text-xs text-slate-200 break-all select-text bg-[#03060d] p-2 rounded-lg border border-slate-800/60">
-                ${r.binary_path || '<span class="text-slate-600 italic">Not detected in system PATH</span>'}
+              <div class="font-mono text-xs text-[#F3F4F6] break-all select-text bg-[#08090C] p-2 rounded border border-[#1F2430]">
+                ${r.binary_path || '<span class="text-[#475569] italic">Not detected in system PATH</span>'}
               </div>
             </div>
           </div>
@@ -1592,29 +1747,29 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
           ${companionsHtml}
 
           <!-- Metadata & Origin -->
-          <div class="p-4 rounded-xl bg-[#070b16] border border-slate-800/80 space-y-2 text-xs">
-            <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Inspector Information</div>
-            <div class="text-slate-300 text-[11px] leading-relaxed">${r.description || 'Monitored development tool inspector in workstation environment suite.'}</div>
-            <div class="pt-2 flex flex-wrap items-center gap-3 text-[11px] text-slate-500 font-mono">
-              <span>Tool ID: <strong class="text-slate-300">${r.id}</strong></span>
+          <div class="p-3.5 rounded bg-[#0E1015] border border-[#1F2430] space-y-1.5 text-xs">
+            <div class="text-[10px] font-mono font-semibold text-[#475569] uppercase tracking-wider">Inspector Information</div>
+            <div class="text-[#94A3B8] text-[11px] leading-relaxed">${r.description || 'Monitored development tool inspector in workstation environment suite.'}</div>
+            <div class="pt-1.5 flex flex-wrap items-center gap-3 text-[11px] text-[#475569] font-mono">
+              <span>Tool ID: <strong class="text-[#F3F4F6]">${r.id}</strong></span>
               <span>•</span>
-              <span>Installed: <strong class="${r.installed ? 'text-emerald-400' : 'text-slate-400'}">${r.installed ? 'Yes' : 'No'}</strong></span>
+              <span>Installed: <strong class="${r.installed ? 'text-[#10B981]' : 'text-[#94A3B8]'}">${r.installed ? 'Yes' : 'No'}</strong></span>
             </div>
           </div>
 
           <!-- Collapsible Raw JSON Data -->
-          <details class="text-xs bg-[#070b16] rounded-xl border border-slate-800/80 p-3 group">
-            <summary class="font-bold text-slate-400 hover:text-slate-200 cursor-pointer flex items-center justify-between select-none">
+          <details class="text-xs bg-[#0E1015] rounded border border-[#1F2430] p-2.5 group">
+            <summary class="font-medium text-[#94A3B8] hover:text-[#F3F4F6] cursor-pointer flex items-center justify-between select-none">
               <span>View Raw Report (JSON)</span>
-              <span class="text-[10px] text-blue-400 group-open:rotate-180 transition-transform"><i class="fa-solid fa-chevron-down"></i></span>
+              <span class="text-[10px] text-[#06B6D4] group-open:rotate-180 transition-transform"><i class="fa-solid fa-chevron-down"></i></span>
             </summary>
-            <div class="mt-3 space-y-2">
+            <div class="mt-2.5 space-y-2">
               <div class="flex justify-end">
-                <button onclick="copyToClipboard(JSON.stringify(allReports.find(x => x.id === '${r.id}'), null, 2), 'raw JSON')" class="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-[10px] font-semibold text-slate-300 transition">
+                <button onclick="copyToClipboard(JSON.stringify(allReports.find(x => x.id === '${r.id}'), null, 2), 'raw JSON')" class="btn-secondary-pro px-2 py-0.5 text-[10px] font-mono">
                   Copy JSON
                 </button>
               </div>
-              <pre class="bg-[#03060d] p-3 rounded-lg border border-slate-800 font-mono text-[10px] text-slate-300 overflow-x-auto custom-scrollbar select-text">${JSON.stringify(r, null, 2)}</pre>
+              <pre class="bg-[#08090C] p-2.5 rounded border border-[#1F2430] font-mono text-[10px] text-[#94A3B8] overflow-x-auto custom-scrollbar select-text">${JSON.stringify(r, null, 2)}</pre>
             </div>
           </details>
         </div>
@@ -1635,51 +1790,51 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
     ];
 
     function getToolIcon(id, category) {
-      if (id === 'docker') return '<i class="fa-brands fa-docker text-blue-400"></i>';
-      if (id === 'android_studio') return '<i class="fa-brands fa-android text-emerald-400"></i>';
-      if (id === 'android') return '<i class="fa-solid fa-mobile-screen-button text-amber-400"></i>';
-      if (id === 'node') return '<i class="fa-brands fa-node-js text-emerald-400"></i>';
-      if (id === 'git') return '<i class="fa-brands fa-git-alt text-orange-400"></i>';
-      if (id === 'python') return '<i class="fa-brands fa-python text-yellow-400"></i>';
-      if (id === 'java') return '<i class="fa-brands fa-java text-red-400"></i>';
-      if (id === 'flutter') return '<i class="fa-solid fa-feather-pointed text-cyan-400"></i>';
-      if (id === 'golang') return '<i class="fa-brands fa-golang text-cyan-400"></i>';
-      if (id === 'rust') return '<i class="fa-brands fa-rust text-amber-500"></i>';
-      if (id === 'vscode') return '<i class="fa-solid fa-code text-blue-400"></i>';
-      if (id === 'dotnet') return '<i class="fa-brands fa-microsoft text-purple-400"></i>';
-      if (id === 'bun') return '<i class="fa-solid fa-bread-slice text-amber-200"></i>';
-      if (id === 'gh') return '<i class="fa-brands fa-github text-white"></i>';
-      if (id === 'cmake') return '<i class="fa-solid fa-screwdriver-wrench text-rose-400"></i>';
-      if (id === 'ollama') return '<i class="fa-solid fa-brain text-purple-400"></i>';
-      if (id === 'kubectl') return '<i class="fa-solid fa-dharmachakra text-blue-400"></i>';
-      if (id === 'terraform') return '<i class="fa-solid fa-layer-group text-purple-400"></i>';
-      if (id === 'c_compiler') return '<i class="fa-solid fa-c text-blue-500"></i>';
-      if (id === 'php') return '<i class="fa-brands fa-php text-indigo-400"></i>';
-      if (id === 'cuda') return '<i class="fa-solid fa-microchip text-emerald-400"></i>';
-      if (id === 'sqlite') return '<i class="fa-solid fa-database text-cyan-400"></i>';
-      if (category === 'runtime') return '<i class="fa-solid fa-terminal text-blue-400"></i>';
-      if (category === 'ide') return '<i class="fa-solid fa-code text-indigo-400"></i>';
-      if (category === 'build') return '<i class="fa-solid fa-screwdriver-wrench text-amber-400"></i>';
-      if (category === 'ai') return '<i class="fa-solid fa-brain text-purple-400"></i>';
-      if (category === 'database') return '<i class="fa-solid fa-database text-cyan-400"></i>';
-      if (category === 'cloud') return '<i class="fa-solid fa-cloud text-sky-400"></i>';
-      return '<i class="fa-solid fa-cube text-slate-400"></i>';
+      if (id === 'docker') return '<i class="fa-brands fa-docker text-[#06B6D4]"></i>';
+      if (id === 'android_studio') return '<i class="fa-brands fa-android text-[#10B981]"></i>';
+      if (id === 'android') return '<i class="fa-solid fa-mobile-screen-button text-[#F59E0B]"></i>';
+      if (id === 'node') return '<i class="fa-brands fa-node-js text-[#10B981]"></i>';
+      if (id === 'git') return '<i class="fa-brands fa-git-alt text-[#F59E0B]"></i>';
+      if (id === 'python') return '<i class="fa-brands fa-python text-[#F59E0B]"></i>';
+      if (id === 'java') return '<i class="fa-brands fa-java text-[#EF4444]"></i>';
+      if (id === 'flutter') return '<i class="fa-solid fa-feather-pointed text-[#06B6D4]"></i>';
+      if (id === 'golang') return '<i class="fa-brands fa-golang text-[#06B6D4]"></i>';
+      if (id === 'rust') return '<i class="fa-brands fa-rust text-[#F59E0B]"></i>';
+      if (id === 'vscode') return '<i class="fa-solid fa-code text-[#06B6D4]"></i>';
+      if (id === 'dotnet') return '<i class="fa-brands fa-microsoft text-[#8B5CF6]"></i>';
+      if (id === 'bun') return '<i class="fa-solid fa-bread-slice text-[#F59E0B]"></i>';
+      if (id === 'gh') return '<i class="fa-brands fa-github text-[#F3F4F6]"></i>';
+      if (id === 'cmake') return '<i class="fa-solid fa-screwdriver-wrench text-[#EF4444]"></i>';
+      if (id === 'ollama') return '<i class="fa-solid fa-brain text-[#8B5CF6]"></i>';
+      if (id === 'kubectl') return '<i class="fa-solid fa-dharmachakra text-[#06B6D4]"></i>';
+      if (id === 'terraform') return '<i class="fa-solid fa-layer-group text-[#8B5CF6]"></i>';
+      if (id === 'c_compiler') return '<i class="fa-solid fa-c text-[#06B6D4]"></i>';
+      if (id === 'php') return '<i class="fa-brands fa-php text-[#8B5CF6]"></i>';
+      if (id === 'cuda') return '<i class="fa-solid fa-microchip text-[#10B981]"></i>';
+      if (id === 'sqlite') return '<i class="fa-solid fa-database text-[#06B6D4]"></i>';
+      if (category === 'runtime') return '<i class="fa-solid fa-terminal text-[#06B6D4]"></i>';
+      if (category === 'ide') return '<i class="fa-solid fa-code text-[#8B5CF6]"></i>';
+      if (category === 'build') return '<i class="fa-solid fa-screwdriver-wrench text-[#F59E0B]"></i>';
+      if (category === 'ai') return '<i class="fa-solid fa-brain text-[#8B5CF6]"></i>';
+      if (category === 'database') return '<i class="fa-solid fa-database text-[#06B6D4]"></i>';
+      if (category === 'cloud') return '<i class="fa-solid fa-cloud text-[#06B6D4]"></i>';
+      return '<i class="fa-solid fa-cube text-[#94A3B8]"></i>';
     }
 
     function getBadge(status) {
       if (status === 'scanning') {
-        return '<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-blue-500/15 text-blue-300 border border-blue-500/30 whitespace-nowrap animate-pulse"><i class="fa-solid fa-circle-notch fa-spin text-[10px]"></i> Scanning</span>';
+        return '<span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[10px] font-mono font-semibold bg-[#06B6D41A] text-[#06B6D4] border border-[#06B6D440] whitespace-nowrap animate-pulse"><i class="fa-solid fa-circle-notch fa-spin text-[9px]"></i> Scanning</span>';
       }
       if (status === 'healthy') {
-        return '<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 whitespace-nowrap"><span class="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_6px_#34d399]"></span> Healthy</span>';
+        return '<span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[10px] font-mono font-semibold bg-[#10B9811A] text-[#10B981] border border-[#10B98140] whitespace-nowrap"><span class="w-1.5 h-1.5 rounded-full bg-[#10B981] shadow-[0_0_6px_#10B981]"></span> Healthy</span>';
       }
       if (status === 'warning') {
-        return '<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-amber-500/15 text-amber-300 border border-amber-500/30 whitespace-nowrap"><i class="fa-solid fa-triangle-exclamation text-[10px]"></i> Action Needed</span>';
+        return '<span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[10px] font-mono font-semibold bg-[#F59E0B1A] text-[#F59E0B] border border-[#F59E0B40] whitespace-nowrap"><i class="fa-solid fa-triangle-exclamation text-[9px]"></i> Action Needed</span>';
       }
       if (status === 'error') {
-        return '<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-rose-500/15 text-rose-300 border border-rose-500/30 whitespace-nowrap"><i class="fa-solid fa-xmark text-[10px]"></i> Error</span>';
+        return '<span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[10px] font-mono font-semibold bg-[#EF44441A] text-[#EF4444] border border-[#EF444440] whitespace-nowrap"><i class="fa-solid fa-xmark text-[9px]"></i> Error</span>';
       }
-      return '<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-slate-800/80 text-slate-400 border border-slate-700/80 whitespace-nowrap"><span class="w-1.5 h-1.5 rounded-full bg-slate-500"></span> Not Detected</span>';
+      return '<span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[10px] font-mono font-semibold bg-[#141721] text-[#94A3B8] border border-[#1F2430] whitespace-nowrap"><span class="w-1.5 h-1.5 rounded-full bg-[#475569]"></span> Not Detected</span>';
     }
 
     function toolMatchesCategory(r, cat) {
@@ -1777,14 +1932,14 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
           ? allReports.length 
           : allReports.filter(r => toolMatchesCategory(r, domain.id)).length;
         const isActive = currentCategory === domain.id;
-        const activeClass = 'cat-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#131d36] text-white border border-blue-500/40 shadow-sm transition flex-shrink-0 flex items-center gap-1.5';
-        const inactiveClass = 'cat-btn px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-white hover:bg-slate-800/50 border border-transparent transition flex-shrink-0 flex items-center gap-1.5';
+        const activeClass = 'cat-btn px-2.5 py-1 rounded text-xs font-medium bg-[#141721] text-white border border-[#10B98180] shadow-sm transition flex-shrink-0 flex items-center gap-1.5';
+        const inactiveClass = 'cat-btn px-2.5 py-1 rounded text-xs font-medium text-[#94A3B8] hover:text-[#F3F4F6] hover:bg-[#141721] border border-transparent transition flex-shrink-0 flex items-center gap-1.5';
         
         return `
           <button onclick="setCategory('${domain.id}')" class="${isActive ? activeClass : inactiveClass}" data-cat="${domain.id}">
-            <i class="fa-solid ${domain.icon} text-[10px] ${isActive ? 'text-blue-400' : 'text-slate-500'}"></i>
+            <i class="fa-solid ${domain.icon} text-[10px] ${isActive ? 'text-[#10B981]' : 'text-[#475569]'}"></i>
             <span>${domain.label}</span>
-            <span class="ml-0.5 text-[10px] ${isActive ? 'text-blue-300 font-bold' : 'text-slate-500 font-mono'}">${count}</span>
+            <span class="ml-0.5 text-[10px] font-mono ${isActive ? 'text-[#10B981] font-semibold' : 'text-[#475569]'}">${count}</span>
           </button>
         `;
       }).join('');
@@ -1808,13 +1963,13 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
       const listEl = document.getElementById('tools-list-container');
 
       if (mode === 'grid') {
-        gridBtn.className = 'p-1.5 rounded-md text-xs bg-blue-600/30 text-blue-400 hover:text-white transition';
-        listBtn.className = 'p-1.5 rounded-md text-xs text-slate-400 hover:text-white transition';
+        gridBtn.className = 'p-1 rounded text-xs bg-[#141721] text-[#10B981] border border-[#10B98140] transition';
+        listBtn.className = 'p-1 rounded text-xs text-[#94A3B8] hover:text-[#F3F4F6] transition';
         gridEl.classList.remove('hidden');
         listEl.classList.add('hidden');
       } else {
-        gridBtn.className = 'p-1.5 rounded-md text-xs text-slate-400 hover:text-white transition';
-        listBtn.className = 'p-1.5 rounded-md text-xs bg-blue-600/30 text-blue-400 hover:text-white transition';
+        gridBtn.className = 'p-1 rounded text-xs text-[#94A3B8] hover:text-[#F3F4F6] transition';
+        listBtn.className = 'p-1 rounded text-xs bg-[#141721] text-[#10B981] border border-[#10B98140] transition';
         gridEl.classList.add('hidden');
         listEl.classList.remove('hidden');
       }
@@ -1888,56 +2043,56 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
       if (isScanning) {
         const toolCats = (r.categories && r.categories.length > 0) ? r.categories : [r.category || 'tool'];
         const categoriesHtml = toolCats.slice(0, 2).map(c => 
-          `<span class="text-[9px] text-slate-500 uppercase tracking-wider font-mono font-semibold px-1.5 py-0.5 bg-slate-900 rounded border border-slate-800/80">${c}</span>`
-        ).join('') + (toolCats.length > 2 ? `<span class="text-[9px] text-slate-600 font-mono">+${toolCats.length - 2}</span>` : '');
+          `<span class="text-[9px] text-[#475569] uppercase tracking-wider font-mono font-medium px-1.5 py-0.5 bg-[#08090C] rounded border border-[#1F2430]">${c}</span>`
+        ).join('') + (toolCats.length > 2 ? `<span class="text-[9px] text-[#475569] font-mono">+${toolCats.length - 2}</span>` : '');
 
         return `
           <div>
             <!-- Header: Icon, Name, Scanning Badge -->
-            <div class="flex items-start justify-between gap-2.5 mb-3">
-              <div class="flex items-center gap-3 min-w-0">
-                <div class="w-10 h-10 rounded-xl bg-[#060a14] border border-slate-800 flex items-center justify-center text-lg flex-shrink-0 text-slate-400 shadow-inner">
+            <div class="flex items-start justify-between gap-2.5 mb-2.5">
+              <div class="flex items-center gap-2.5 min-w-0">
+                <div class="w-9 h-9 rounded bg-[#08090C] border border-[#1F2430] flex items-center justify-center text-base flex-shrink-0 text-[#94A3B8]">
                   ${getToolIcon(r.id, r.category)}
                 </div>
                 <div class="min-w-0">
-                  <h3 class="font-bold text-white text-sm tracking-tight truncate" title="${r.name}">
+                  <h3 class="font-semibold text-[#F3F4F6] text-xs tracking-tight truncate" title="${r.name}">
                     ${r.name}
                   </h3>
-                  <div class="flex items-center gap-1.5 mt-1">
-                    <span class="relative flex h-2 w-2">
-                      <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
-                      <span class="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
+                  <div class="flex items-center gap-1.5 mt-0.5">
+                    <span class="relative flex h-1.5 w-1.5">
+                      <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#06B6D4] opacity-75"></span>
+                      <span class="relative inline-flex rounded-full h-1.5 w-1.5 bg-[#06B6D4]"></span>
                     </span>
-                    <span class="text-[11px] font-mono text-blue-400 font-medium">Scanning...</span>
+                    <span class="text-[10px] font-mono text-[#06B6D4] font-medium">Scanning...</span>
                   </div>
                 </div>
               </div>
               <div class="flex-shrink-0">
-                <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-blue-500/15 text-blue-300 border border-blue-500/30 whitespace-nowrap animate-pulse">
-                  <i class="fa-solid fa-circle-notch fa-spin text-[10px]"></i> Scanning
+                <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[10px] font-mono font-semibold bg-[#06B6D41A] text-[#06B6D4] border border-[#06B6D440] whitespace-nowrap animate-pulse">
+                  <i class="fa-solid fa-circle-notch fa-spin text-[9px]"></i> Scanning
                 </span>
               </div>
             </div>
 
             <!-- Categories & Shimmer Path Skeleton -->
-            <div class="space-y-2 my-2.5 text-xs">
+            <div class="space-y-2 my-2 text-xs">
               <div class="flex items-center gap-1 flex-wrap">
                 ${categoriesHtml}
               </div>
-              <div class="bg-[#050812] px-2.5 py-2 rounded-lg border border-slate-800/80 flex items-center gap-2">
-                <i class="fa-solid fa-terminal text-slate-700 text-[10px]"></i>
-                <div class="h-3.5 bg-slate-800/90 rounded skeleton-shimmer w-3/4"></div>
+              <div class="bg-[#08090C] px-2 py-1.5 rounded border border-[#1F2430] flex items-center gap-2">
+                <i class="fa-solid fa-terminal text-[#475569] text-[9px]"></i>
+                <div class="h-3 bg-[#141721] rounded skeleton-shimmer w-3/4"></div>
               </div>
             </div>
           </div>
 
           <!-- Bottom Footer Bar Skeleton -->
-          <div class="pt-2.5 mt-1 border-t border-slate-800/70 flex items-center justify-between text-xs">
+          <div class="pt-2 mt-1 border-t border-[#1F2430] flex items-center justify-between text-xs">
             <div class="flex items-center gap-1.5">
-              <div class="h-4 w-16 bg-slate-800/60 rounded skeleton-shimmer"></div>
+              <div class="h-3.5 w-14 bg-[#141721] rounded skeleton-shimmer"></div>
             </div>
-            <span class="text-[11px] font-mono text-slate-500 flex items-center gap-1">
-              <i class="fa-solid fa-spinner fa-spin text-[9px] text-blue-400"></i> running
+            <span class="text-[10px] font-mono text-[#475569] flex items-center gap-1">
+              <i class="fa-solid fa-spinner fa-spin text-[9px] text-[#06B6D4]"></i> running
             </span>
           </div>
         `;
@@ -1946,8 +2101,8 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
       // Completed card
       const toolCats = (r.categories && r.categories.length > 0) ? r.categories : [r.category];
       const categoriesHtml = toolCats.slice(0, 2).map(c => 
-        `<span class="text-[9px] text-slate-400 uppercase tracking-wider font-mono font-semibold px-1.5 py-0.5 bg-slate-900 rounded border border-slate-800">${c}</span>`
-      ).join('') + (toolCats.length > 2 ? `<span class="text-[9px] text-slate-500 font-mono">+${toolCats.length - 2}</span>` : '');
+        `<span class="text-[9px] text-[#94A3B8] uppercase tracking-wider font-mono font-medium px-1.5 py-0.5 bg-[#08090C] rounded border border-[#1F2430]">${c}</span>`
+      ).join('') + (toolCats.length > 2 ? `<span class="text-[9px] text-[#475569] font-mono">+${toolCats.length - 2}</span>` : '');
 
       const primaryPath = r.home_path || r.binary_path || '';
       const cleanPath = primaryPath.replace(/"/g, '&quot;');
@@ -1956,8 +2111,8 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
       if (r.companions && r.companions.length > 0) {
         const installedComp = r.companions.filter(c => c.installed).length;
         companionPill = `
-          <span class="inline-flex items-center gap-1 text-[10px] font-mono text-slate-400 bg-slate-900/80 px-2 py-0.5 rounded border border-slate-800">
-            <i class="fa-solid fa-layer-group text-[9px] text-indigo-400"></i> ${installedComp}/${r.companions.length}
+          <span class="inline-flex items-center gap-1 text-[10px] font-mono text-[#94A3B8] bg-[#08090C] px-1.5 py-0.2 rounded border border-[#1F2430]">
+            <i class="fa-solid fa-layer-group text-[9px] text-[#8B5CF6]"></i> ${installedComp}/${r.companions.length}
           </span>
         `;
       }
@@ -1965,7 +2120,7 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
       let diagStrip = '';
       if (r.diagnostics && r.diagnostics.length > 0) {
         diagStrip = `
-          <span class="inline-flex items-center gap-1 text-[10px] font-semibold text-amber-300 bg-amber-500/15 px-2 py-0.5 rounded border border-amber-500/30 truncate max-w-[140px]" title="${r.diagnostics[0].message}">
+          <span class="inline-flex items-center gap-1 text-[10px] font-mono font-medium text-[#F59E0B] bg-[#F59E0B1A] px-1.5 py-0.2 rounded border border-[#F59E0B40] truncate max-w-[130px]" title="${r.diagnostics[0].message}">
             <i class="fa-solid fa-triangle-exclamation text-[9px]"></i> Action
           </span>
         `;
@@ -1974,17 +2129,17 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
       return `
         <div>
           <!-- Header: Icon, Name, Version, Status -->
-          <div class="flex items-start justify-between gap-2.5 mb-3">
-            <div class="flex items-center gap-3 min-w-0">
-              <div class="w-10 h-10 rounded-xl bg-[#060a14] border border-slate-800 flex items-center justify-center text-lg flex-shrink-0 group-hover:border-blue-500/40 group-hover:bg-[#0a1224] transition shadow-inner">
+          <div class="flex items-start justify-between gap-2.5 mb-2.5">
+            <div class="flex items-center gap-2.5 min-w-0">
+              <div class="w-9 h-9 rounded bg-[#08090C] border border-[#1F2430] flex items-center justify-center text-base flex-shrink-0 group-hover:border-[#2E3446] group-hover:bg-[#141721] transition">
                 ${getToolIcon(r.id, r.category)}
               </div>
               <div class="min-w-0">
-                <h3 class="font-bold text-white text-sm tracking-tight truncate group-hover:text-blue-300 transition" title="${r.name}">
+                <h3 class="font-semibold text-[#F3F4F6] text-xs tracking-tight truncate group-hover:text-[#10B981] transition" title="${r.name}">
                   ${r.name}
                 </h3>
-                <div class="text-[11px] font-mono font-semibold text-blue-400 mt-0.5 truncate">
-                  ${r.version ? 'v' + r.version : (r.installed ? '<span class="text-slate-400 font-normal">Installed</span>' : '<span class="text-slate-500 font-normal">Not detected</span>')}
+                <div class="text-[11px] font-mono font-medium text-[#06B6D4] mt-0.5 truncate">
+                  ${r.version ? 'v' + r.version : (r.installed ? '<span class="text-[#94A3B8] font-normal">Installed</span>' : '<span class="text-[#475569] font-normal">Not detected</span>')}
                 </div>
               </div>
             </div>
@@ -1994,18 +2149,18 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
           </div>
 
           <!-- Categories & Primary Path -->
-          <div class="space-y-2 my-2.5 text-xs">
+          <div class="space-y-1.5 my-2 text-xs">
             <div class="flex items-center gap-1 flex-wrap">
               ${categoriesHtml}
             </div>
-            <div class="bg-[#050812] px-2.5 py-1.5 rounded-lg border border-slate-800/80 flex items-center justify-between gap-1.5 min-w-0 text-[11px] font-mono text-slate-400" title="${cleanPath}">
+            <div class="bg-[#08090C] px-2 py-1 rounded border border-[#1F2430] flex items-center justify-between gap-1.5 min-w-0 text-[11px] font-mono text-[#94A3B8]" title="${cleanPath}">
               <div class="truncate flex items-center gap-1.5">
-                <i class="fa-solid ${r.home_path ? 'fa-folder text-blue-400' : 'fa-terminal text-emerald-400'} text-[10px] flex-shrink-0"></i>
-                <span class="truncate">${primaryPath || '<span class="text-slate-600 italic">No path registered</span>'}</span>
+                <i class="fa-solid ${r.home_path ? 'fa-folder text-[#06B6D4]' : 'fa-terminal text-[#10B981]'} text-[9px] flex-shrink-0"></i>
+                <span class="truncate">${primaryPath || '<span class="text-[#475569] italic">No path registered</span>'}</span>
               </div>
               ${primaryPath ? `
-                <button onclick="event.stopPropagation(); copyToClipboard('${cleanPath}', 'path')" class="p-1 text-slate-500 hover:text-white transition flex-shrink-0" title="Copy path">
-                  <i class="fa-regular fa-copy text-[10px]"></i>
+                <button onclick="event.stopPropagation(); copyToClipboard('${cleanPath}', 'path')" class="p-0.5 text-[#475569] hover:text-[#F3F4F6] transition flex-shrink-0" title="Copy path">
+                  <i class="fa-regular fa-copy text-[9px]"></i>
                 </button>
               ` : ''}
             </div>
@@ -2013,13 +2168,13 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
         </div>
 
         <!-- Bottom Footer Bar -->
-        <div class="pt-2.5 mt-1 border-t border-slate-800/70 flex items-center justify-between text-xs">
+        <div class="pt-2 mt-1 border-t border-[#1F2430] flex items-center justify-between text-xs">
           <div class="flex items-center gap-1.5 min-w-0">
             ${companionPill}
             ${diagStrip}
           </div>
-          <span class="text-[11px] font-semibold text-blue-400 group-hover:text-blue-300 flex items-center gap-1 flex-shrink-0 transition">
-            Inspect <i class="fa-solid fa-chevron-right text-[9px] group-hover:translate-x-0.5 transition"></i>
+          <span class="text-[11px] font-medium text-[#10B981] group-hover:translate-x-0.5 flex items-center gap-1 flex-shrink-0 transition">
+            Inspect <i class="fa-solid fa-chevron-right text-[9px]"></i>
           </span>
         </div>
       `;
@@ -2033,35 +2188,35 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
 
       if (r.scanning) {
         return `
-          <td class="py-3 px-4 font-bold text-white flex items-center gap-2">
-            <span class="w-6 h-6 rounded bg-slate-800 flex items-center justify-center text-xs flex-shrink-0 text-slate-400">${getToolIcon(r.id, r.category)}</span>
+          <td class="py-2.5 px-3.5 font-semibold text-[#F3F4F6] flex items-center gap-2">
+            <span class="w-6 h-6 rounded bg-[#08090C] border border-[#1F2430] flex items-center justify-center text-xs flex-shrink-0 text-[#94A3B8]">${getToolIcon(r.id, r.category)}</span>
             <span class="truncate max-w-[150px]">${r.name}</span>
           </td>
-          <td class="py-3 px-4 uppercase text-[10px] font-mono text-slate-400">${catsDisplay}</td>
-          <td class="py-3 px-4">
-            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] bg-blue-500/10 text-blue-300 border border-blue-500/20 font-mono animate-pulse">
+          <td class="py-2.5 px-3.5 uppercase text-[10px] font-mono text-[#94A3B8]">${catsDisplay}</td>
+          <td class="py-2.5 px-3.5">
+            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] bg-[#06B6D41A] text-[#06B6D4] border border-[#06B6D440] font-mono animate-pulse">
               <i class="fa-solid fa-circle-notch fa-spin text-[9px]"></i> Scanning
             </span>
           </td>
-          <td class="py-3 px-4"><div class="h-3 w-12 bg-slate-800 rounded skeleton-shimmer"></div></td>
-          <td class="py-3 px-4"><div class="h-3 w-28 bg-slate-800 rounded skeleton-shimmer"></div></td>
-          <td class="py-3 px-4"><div class="h-3 w-28 bg-slate-800 rounded skeleton-shimmer"></div></td>
-          <td class="py-3 px-4 text-right text-slate-600">—</td>
+          <td class="py-2.5 px-3.5"><div class="h-3 w-12 bg-[#141721] rounded skeleton-shimmer"></div></td>
+          <td class="py-2.5 px-3.5"><div class="h-3 w-28 bg-[#141721] rounded skeleton-shimmer"></div></td>
+          <td class="py-2.5 px-3.5"><div class="h-3 w-28 bg-[#141721] rounded skeleton-shimmer"></div></td>
+          <td class="py-2.5 px-3.5 text-right text-[#475569]">—</td>
         `;
       }
 
       return `
-        <td class="py-3 px-4 font-bold text-white flex items-center gap-2">
-          <span class="w-6 h-6 rounded bg-slate-800 flex items-center justify-center text-xs flex-shrink-0">${getToolIcon(r.id, r.category)}</span>
+        <td class="py-2.5 px-3.5 font-semibold text-[#F3F4F6] flex items-center gap-2">
+          <span class="w-6 h-6 rounded bg-[#08090C] border border-[#1F2430] flex items-center justify-center text-xs flex-shrink-0">${getToolIcon(r.id, r.category)}</span>
           <span class="truncate max-w-[150px]">${r.name}</span>
         </td>
-        <td class="py-3 px-4 uppercase text-[10px] font-mono text-slate-400">${catsDisplay}</td>
-        <td class="py-3 px-4">${getBadge(r.status)}</td>
-        <td class="py-3 px-4 font-mono text-blue-300">${r.version ? 'v' + r.version : '—'}</td>
-        <td class="py-3 px-4 font-mono text-slate-400 truncate max-w-[180px]" title="${cleanHome}">${r.home_path || '<span class="text-slate-600">—</span>'}</td>
-        <td class="py-3 px-4 font-mono text-emerald-400 truncate max-w-[180px]" title="${cleanBin}">${r.binary_path || '<span class="text-slate-600">—</span>'}</td>
-        <td class="py-3 px-4 text-right">
-          <button onclick="event.stopPropagation(); openInspectorDrawer('${r.id}')" class="px-2.5 py-1 bg-[#131d36] hover:bg-blue-600 text-blue-300 hover:text-white rounded text-[11px] font-semibold transition border border-blue-500/30">Inspect</button>
+        <td class="py-2.5 px-3.5 uppercase text-[10px] font-mono text-[#94A3B8]">${catsDisplay}</td>
+        <td class="py-2.5 px-3.5">${getBadge(r.status)}</td>
+        <td class="py-2.5 px-3.5 font-mono text-[#06B6D4]">${r.version ? 'v' + r.version : '—'}</td>
+        <td class="py-2.5 px-3.5 font-mono text-[#94A3B8] truncate max-w-[180px]" title="${cleanHome}">${r.home_path || '<span class="text-[#475569]">—</span>'}</td>
+        <td class="py-2.5 px-3.5 font-mono text-[#10B981] truncate max-w-[180px]" title="${cleanBin}">${r.binary_path || '<span class="text-[#475569]">—</span>'}</td>
+        <td class="py-2.5 px-3.5 text-right">
+          <button onclick="event.stopPropagation(); openInspectorDrawer('${r.id}')" class="btn-secondary-pro px-2.5 py-1 text-[11px] font-medium">Inspect</button>
         </td>
       `;
     }
@@ -2072,12 +2227,12 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
 
       if (tools.length === 0) {
         grid.innerHTML = `
-          <div class="col-span-full py-16 text-center text-slate-400 glass-card rounded-2xl p-8 border border-slate-800">
-            <i class="fa-solid fa-filter-circle-xmark text-4xl mb-3 text-slate-500 block"></i>
-            <h4 class="text-base font-bold text-white">No Matching Tools or Runtimes</h4>
-            <p class="text-xs text-slate-400 mt-1 max-w-md mx-auto">No tools match your current search query and status filter.</p>
+          <div class="col-span-full py-16 text-center text-[#94A3B8] card-pro p-8">
+            <i class="fa-solid fa-filter-circle-xmark text-3xl mb-3 text-[#475569] block"></i>
+            <h4 class="text-sm font-semibold text-[#F3F4F6]">No Matching Tools or Runtimes</h4>
+            <p class="text-xs text-[#94A3B8] mt-1 max-w-md mx-auto">No tools match your current search query and status filter.</p>
             <div class="mt-4">
-              <button onclick="resetAllFilters()" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-xs font-bold transition shadow-sm">
+              <button onclick="resetAllFilters()" class="btn-primary-pro px-4 py-1.5 text-xs font-semibold">
                 Reset Search & Filters
               </button>
             </div>
@@ -2089,7 +2244,7 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
       tools.forEach(r => {
         const card = document.createElement('div');
         card.id = `tool-card-${r.id}`;
-        card.className = 'glass-card rounded-2xl p-4 sm:p-5 flex flex-col justify-between transition-all duration-200 border border-slate-800/80 hover:border-blue-500/40 hover:bg-[#0e1628] shadow-xl cursor-pointer group';
+        card.className = 'card-pro p-3.5 sm:p-4 flex flex-col justify-between hover:border-[#2E3446] hover:bg-[#141721] transition cursor-pointer group';
         card.onclick = () => { if (!r.scanning) openInspectorDrawer(r.id); };
         card.innerHTML = renderToolCardInner(r);
         grid.appendChild(card);
@@ -2101,14 +2256,14 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
       tbody.innerHTML = '';
 
       if (tools.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="7" class="py-12 text-center text-slate-500 italic">No tools found matching criteria.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="7" class="py-12 text-center text-[#475569] font-mono italic">No tools found matching criteria.</td></tr>`;
         return;
       }
 
       tools.forEach(r => {
         const tr = document.createElement('tr');
         tr.id = `tool-row-${r.id}`;
-        tr.className = 'hover:bg-slate-800/40 transition text-slate-300 cursor-pointer';
+        tr.className = 'hover:bg-[#141721] transition text-[#F3F4F6] cursor-pointer';
         tr.onclick = () => { if (!r.scanning) openInspectorDrawer(r.id); };
         tr.innerHTML = renderToolRowInner(r);
         tbody.appendChild(tr);
@@ -2291,13 +2446,13 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
       const groupedContainer = document.getElementById('ports-grouped-container');
 
       if (mode === 'flat') {
-        flatBtn.className = 'px-2.5 py-1 rounded-md text-xs bg-blue-600/30 text-blue-400 font-semibold transition flex items-center gap-1.5';
-        groupedBtn.className = 'px-2.5 py-1 rounded-md text-xs text-slate-400 hover:text-white font-semibold transition flex items-center gap-1.5';
+        flatBtn.className = 'px-2.5 py-1 rounded text-xs bg-[#10B981]/15 text-[#10B981] border border-[#10B981]/30 font-semibold transition flex items-center gap-1.5';
+        groupedBtn.className = 'px-2.5 py-1 rounded text-xs text-slate-400 hover:text-white border border-transparent font-medium transition flex items-center gap-1.5';
         flatContainer.classList.remove('hidden');
         groupedContainer.classList.add('hidden');
       } else {
-        flatBtn.className = 'px-2.5 py-1 rounded-md text-xs text-slate-400 hover:text-white font-semibold transition flex items-center gap-1.5';
-        groupedBtn.className = 'px-2.5 py-1 rounded-md text-xs bg-blue-600/30 text-blue-400 font-semibold transition flex items-center gap-1.5';
+        flatBtn.className = 'px-2.5 py-1 rounded text-xs text-slate-400 hover:text-white border border-transparent font-medium transition flex items-center gap-1.5';
+        groupedBtn.className = 'px-2.5 py-1 rounded text-xs bg-[#10B981]/15 text-[#10B981] border border-[#10B981]/30 font-semibold transition flex items-center gap-1.5';
         flatContainer.classList.add('hidden');
         groupedContainer.classList.remove('hidden');
       }
@@ -2308,17 +2463,17 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
       const p = parseInt(port, 10);
       const webPorts = [80, 443, 3000, 3001, 3002, 4000, 4200, 4321, 5000, 5173, 5174, 8000, 8080, 8081, 8888, 9000, 9999];
       if (webPorts.includes(p)) {
-        return { label: 'Web / HTTP', icon: 'fa-globe', badge: 'bg-blue-500/20 text-blue-300 border-blue-500/30' };
+        return { label: 'Web / HTTP', icon: 'fa-globe', badge: 'bg-[#06B6D4]/15 text-[#06B6D4] border-[#06B6D4]/30' };
       }
       const dbPorts = [3306, 5432, 6379, 27017, 1433, 9042, 1521, 5984, 8529];
       if (dbPorts.includes(p)) {
-        return { label: 'Database', icon: 'fa-database', badge: 'bg-cyan-500/20 text-cyan-300 border-cyan-500/30' };
+        return { label: 'Database', icon: 'fa-database', badge: 'bg-[#10B981]/15 text-[#10B981] border-[#10B981]/30' };
       }
       const devPorts = [9229, 5005, 5858, 2345, 9003];
       if (devPorts.includes(p)) {
-        return { label: 'Dev Debug', icon: 'fa-bug', badge: 'bg-purple-500/20 text-purple-300 border-purple-500/30' };
+        return { label: 'Dev Debug', icon: 'fa-bug', badge: 'bg-[#8B5CF6]/15 text-[#8B5CF6] border-[#8B5CF6]/30' };
       }
-      return { label: 'Service', icon: 'fa-network-wired', badge: 'bg-slate-800 text-slate-400 border-slate-700/60' };
+      return { label: 'Service', icon: 'fa-network-wired', badge: 'bg-[#141721] text-slate-400 border-[#1F2430]' };
     }
 
     function isWebPort(port, isDevPort) {
@@ -2389,38 +2544,38 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
       const filtered = getFilteredPorts();
 
       if (filtered.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="7" class="py-12 text-center text-slate-500 italic">No listening sockets found matching criteria.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="7" class="py-12 text-center text-slate-500 italic font-mono text-xs">No listening sockets found matching criteria.</td></tr>`;
         return;
       }
 
       filtered.forEach(p => {
         const tr = document.createElement('tr');
-        tr.className = 'hover:bg-slate-800/40 transition text-slate-300';
+        tr.className = 'hover:bg-[#141721]/60 transition text-slate-300 border-b border-[#1F2430]/50';
 
         const portBadge = p.is_dev_port
-          ? `<span class="inline-flex items-center gap-1 font-mono font-bold text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded border border-blue-500/25">:${p.port}</span>`
-          : `<span class="font-mono font-bold text-slate-200">:${p.port}</span>`;
+          ? `<span class="inline-flex items-center gap-1 font-mono font-semibold text-[#06B6D4] bg-[#06B6D4]/10 px-2 py-0.5 rounded border border-[#06B6D4]/25">:${p.port}</span>`
+          : `<span class="font-mono font-semibold text-slate-200">:${p.port}</span>`;
 
         const cat = getPortCategory(p.port);
-        const tagBadge = `<span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-semibold border ${cat.badge}"><i class="fa-solid ${cat.icon} text-[9px]"></i> ${cat.label}</span>`;
+        const tagBadge = `<span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[10px] font-semibold font-mono border ${cat.badge}"><i class="fa-solid ${cat.icon} text-[9px]"></i> ${cat.label}</span>`;
 
         const statusBadge = p.is_system_critical
-          ? `<span class="text-rose-400 font-medium inline-flex items-center gap-1"><i class="fa-solid fa-shield-halved text-[10px]"></i> Protected OS</span>`
-          : `<span class="text-emerald-400 font-medium inline-flex items-center gap-1"><i class="fa-solid fa-user text-[10px]"></i> User Process</span>`;
+          ? `<span class="text-rose-400 font-medium inline-flex items-center gap-1.5 text-xs"><i class="fa-solid fa-shield-halved text-[10px]"></i> Protected OS</span>`
+          : `<span class="text-[#10B981] font-medium inline-flex items-center gap-1.5 text-xs"><i class="fa-solid fa-user text-[10px]"></i> User Process</span>`;
 
         const browserBtn = isWebPort(p.port, p.is_dev_port)
-          ? `<a href="http://localhost:${p.port}" target="_blank" class="px-2 py-1 bg-blue-600/20 hover:bg-blue-600/40 text-blue-300 hover:text-white rounded text-[11px] font-semibold transition border border-blue-500/30 inline-flex items-center gap-1" title="Open in browser"><i class="fa-solid fa-arrow-up-right-from-square text-[9px]"></i> Open</a>`
+          ? `<a href="http://localhost:${p.port}" target="_blank" class="btn-secondary-pro text-[11px] py-1 px-2.5 inline-flex items-center gap-1" title="Open in browser"><i class="fa-solid fa-arrow-up-right-from-square text-[9px] text-[#10B981]"></i> Open</a>`
           : '';
 
         const actionBtn = p.is_system_critical
-          ? `<button onclick="openKillModal(${p.port}, '${p.process_name}', ${p.pid}, true)" class="px-2.5 py-1 bg-slate-800 hover:bg-rose-950 text-slate-400 hover:text-rose-300 rounded text-[11px] font-semibold transition border border-slate-700">Protected</button>`
-          : `<button onclick="openKillModal(${p.port}, '${p.process_name}', ${p.pid}, false)" class="px-2.5 py-1 bg-rose-600/80 hover:bg-rose-600 text-white rounded text-[11px] font-semibold transition shadow-sm">Kill</button>`;
+          ? `<button onclick="openKillModal(${p.port}, '${p.process_name}', ${p.pid}, true)" class="px-2.5 py-1 bg-[#141721] hover:bg-rose-950/40 text-slate-400 hover:text-rose-300 rounded text-[11px] font-medium transition border border-[#1F2430]">Protected</button>`
+          : `<button onclick="openKillModal(${p.port}, '${p.process_name}', ${p.pid}, false)" class="btn-destructive text-[11px] py-1 px-2.5">Kill</button>`;
 
         tr.innerHTML = `
           <td class="py-3 px-4 font-mono">${portBadge}</td>
           <td class="py-3 px-4">${tagBadge}</td>
           <td class="py-3 px-4 font-semibold text-white truncate max-w-[180px]" title="${p.process_name}">${p.process_name}</td>
-          <td class="py-3 px-4 font-mono text-yellow-400">${p.pid}</td>
+          <td class="py-3 px-4 font-mono text-amber-400">${p.pid}</td>
           <td class="py-3 px-4 font-mono text-slate-400">${p.address}</td>
           <td class="py-3 px-4">${statusBadge}</td>
           <td class="py-3 px-4 text-right">
@@ -2440,7 +2595,7 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
       const filtered = getFilteredPorts();
 
       if (filtered.length === 0) {
-        container.innerHTML = `<div class="glass-card rounded-xl p-12 text-center text-slate-500 italic">No listening sockets found matching criteria.</div>`;
+        container.innerHTML = `<div class="card-pro p-12 text-center text-slate-500 italic font-mono text-xs">No listening sockets found matching criteria.</div>`;
         return;
       }
 
@@ -2461,23 +2616,23 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
 
       Object.values(groups).forEach(g => {
         const card = document.createElement('div');
-        card.className = 'glass-card rounded-xl p-4 sm:p-5 border border-slate-800 space-y-3.5';
+        card.className = 'card-pro p-4 sm:p-5 space-y-3.5';
 
         const killBtn = g.is_system_critical
-          ? `<button onclick="openKillModal(${g.sockets[0].port}, '${g.process_name}', ${g.pid}, true)" class="px-2.5 py-1 bg-slate-800 hover:bg-rose-950 text-slate-400 hover:text-rose-300 rounded text-[11px] font-semibold transition border border-slate-700">Protected</button>`
-          : `<button onclick="openKillModal(${g.sockets[0].port}, '${g.process_name}', ${g.pid}, false)" class="px-2.5 py-1 bg-rose-600/80 hover:bg-rose-600 text-white rounded text-[11px] font-semibold transition shadow-sm">Kill Process</button>`;
+          ? `<button onclick="openKillModal(${g.sockets[0].port}, '${g.process_name}', ${g.pid}, true)" class="px-2.5 py-1 bg-[#141721] hover:bg-rose-950/40 text-slate-400 hover:text-rose-300 rounded text-[11px] font-medium transition border border-[#1F2430]">Protected</button>`
+          : `<button onclick="openKillModal(${g.sockets[0].port}, '${g.process_name}', ${g.pid}, false)" class="btn-destructive text-[11px] py-1 px-2.5">Kill Process</button>`;
 
         const socketsHtml = g.sockets.map(p => {
           const cat = getPortCategory(p.port);
           const browserLink = isWebPort(p.port, p.is_dev_port)
-            ? `<a href="http://localhost:${p.port}" target="_blank" class="text-[10px] text-blue-400 hover:text-blue-300 font-semibold underline flex items-center gap-1 ml-1"><i class="fa-solid fa-arrow-up-right-from-square"></i> Open</a>`
+            ? `<a href="http://localhost:${p.port}" target="_blank" class="text-[10px] text-[#10B981] hover:underline font-mono font-semibold flex items-center gap-1 ml-1"><i class="fa-solid fa-arrow-up-right-from-square text-[9px]"></i> Open</a>`
             : '';
 
           return `
-            <div class="bg-[#070b16] p-2.5 rounded-lg border border-slate-800/80 flex items-center justify-between gap-2 text-xs">
+            <div class="bg-[#08090C] p-2.5 rounded border border-[#1F2430] flex items-center justify-between gap-2 text-xs">
               <div class="flex items-center gap-2 min-w-0">
-                <span class="font-mono font-bold ${p.is_dev_port ? 'text-blue-400' : 'text-slate-200'}">:${p.port}</span>
-                <span class="inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[10px] font-semibold border ${cat.badge}">${cat.label}</span>
+                <span class="font-mono font-semibold ${p.is_dev_port ? 'text-[#06B6D4]' : 'text-slate-200'}">:${p.port}</span>
+                <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold font-mono border ${cat.badge}">${cat.label}</span>
                 <span class="font-mono text-[10px] text-slate-500 truncate">${p.address}</span>
               </div>
               <div class="flex items-center gap-2 flex-shrink-0">
@@ -2488,15 +2643,15 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
         }).join('');
 
         card.innerHTML = `
-          <div class="flex items-center justify-between gap-3 border-b border-slate-800/70 pb-3">
+          <div class="flex items-center justify-between gap-3 border-b border-[#1F2430] pb-3">
             <div class="flex items-center gap-2.5 min-w-0">
-              <div class="w-8 h-8 rounded-lg bg-slate-800/80 flex items-center justify-center text-sm font-bold text-indigo-400 flex-shrink-0">
+              <div class="w-8 h-8 rounded bg-[#141721] border border-[#1F2430] flex items-center justify-center text-xs font-bold text-[#10B981] flex-shrink-0">
                 <i class="fa-solid fa-microchip"></i>
               </div>
               <div class="min-w-0">
-                <div class="font-bold text-white text-sm truncate">${g.process_name}</div>
+                <div class="font-semibold text-white text-sm truncate">${g.process_name}</div>
                 <div class="flex items-center gap-2 text-[10px] text-slate-400 font-mono">
-                  <span>PID: <strong class="text-yellow-400">${g.pid}</strong></span>
+                  <span>PID: <strong class="text-amber-400">${g.pid}</strong></span>
                   <span>•</span>
                   <span>${g.sockets.length} listening socket(s)</span>
                 </div>
@@ -2597,7 +2752,7 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
       container.innerHTML = recents.map(p => {
         const cleanP = p.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
         return `
-          <button onclick="setAndAuditProject('${cleanP}')" class="px-2 py-0.5 rounded bg-slate-800/80 hover:bg-slate-700 text-slate-300 font-mono text-[11px] truncate max-w-[180px] transition border border-slate-700/60" title="${p}">
+          <button onclick="setAndAuditProject('${cleanP}')" class="px-2 py-0.5 rounded bg-[#141721] hover:bg-[#141721]/80 hover:border-[#10B981]/50 text-slate-300 font-mono text-[11px] truncate max-w-[180px] transition border border-[#1F2430]" title="${p}">
             ${p}
           </button>
         `;
@@ -2617,10 +2772,10 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
       const btn = document.getElementById('btn-browse-project');
       const icon = document.getElementById('browse-folder-icon');
       const input = document.getElementById('project-path-input');
-      const originalIcon = icon ? icon.className : 'fa-regular fa-folder-open text-blue-400 text-xs';
+      const originalIcon = icon ? icon.className : 'fa-regular fa-folder-open text-[#10B981] text-xs';
 
       try {
-        if (icon) icon.className = 'fa-solid fa-spinner fa-spin text-blue-400 text-xs';
+        if (icon) icon.className = 'fa-solid fa-spinner fa-spin text-[#10B981] text-xs';
         if (btn) btn.disabled = true;
 
         const currentVal = input ? input.value.trim() : '';
@@ -2686,7 +2841,7 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
 
         const typesContainer = document.getElementById('rep-detected-types');
         typesContainer.innerHTML = (data.detected_types || []).map(t =>
-          `<span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-500/20 text-blue-300 border border-blue-500/30 uppercase tracking-wider">${t}</span>`
+          `<span class="px-2 py-0.5 rounded text-[10px] font-semibold font-mono bg-[#10B981]/15 text-[#10B981] border border-[#10B981]/30 uppercase tracking-wider">${t}</span>`
         ).join('');
 
         // Readiness Score Calculation & Scorecard
@@ -2701,14 +2856,14 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
         scoreBarEl.style.width = `${scorePct}%`;
 
         if (scorePct === 100) {
-          scorePctEl.className = 'text-2xl font-black text-emerald-400';
-          scoreBarEl.className = 'h-full bg-emerald-500 rounded-full transition-all duration-500';
+          scorePctEl.className = 'text-2xl font-bold font-mono text-[#10B981]';
+          scoreBarEl.className = 'h-full bg-[#10B981] rounded transition-all duration-500';
         } else if (scorePct >= 60) {
-          scorePctEl.className = 'text-2xl font-black text-amber-400';
-          scoreBarEl.className = 'h-full bg-amber-500 rounded-full transition-all duration-500';
+          scorePctEl.className = 'text-2xl font-bold font-mono text-amber-400';
+          scoreBarEl.className = 'h-full bg-amber-400 rounded transition-all duration-500';
         } else {
-          scorePctEl.className = 'text-2xl font-black text-rose-400';
-          scoreBarEl.className = 'h-full bg-rose-500 rounded-full transition-all duration-500';
+          scorePctEl.className = 'text-2xl font-bold font-mono text-rose-400';
+          scoreBarEl.className = 'h-full bg-rose-500 rounded transition-all duration-500';
         }
 
         document.getElementById('rep-satisfied-count').innerText = `${satisfiedChecks} satisfied`;
@@ -2716,25 +2871,25 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
 
         const badgeEl = document.getElementById('rep-status-badge');
         if (data.ready_to_build) {
-          badgeEl.innerHTML = '<span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30"><i class="fa-solid fa-check"></i> READY TO BUILD</span>';
+          badgeEl.innerHTML = '<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-semibold font-mono bg-[#10B981]/15 text-[#10B981] border border-[#10B981]/30"><i class="fa-solid fa-check text-[11px]"></i> READY TO BUILD</span>';
         } else {
-          badgeEl.innerHTML = '<span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-rose-500/20 text-rose-300 border border-rose-500/30"><i class="fa-solid fa-triangle-exclamation"></i> PREREQS MISSING</span>';
+          badgeEl.innerHTML = '<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-semibold font-mono bg-rose-500/15 text-rose-400 border border-rose-500/30"><i class="fa-solid fa-triangle-exclamation text-[11px]"></i> PREREQS MISSING</span>';
         }
 
         const tbody = document.getElementById('project-checks-tbody');
         tbody.innerHTML = '';
         (data.checks || []).forEach(c => {
           const tr = document.createElement('tr');
-          tr.className = 'hover:bg-slate-800/40 text-slate-300';
+          tr.className = 'hover:bg-[#141721]/60 text-slate-300 border-b border-[#1F2430]/50';
           const stat = c.satisfied
-            ? '<span class="text-emerald-400 font-bold inline-flex items-center gap-1"><i class="fa-solid fa-check text-[10px]"></i> Satisfied</span>'
-            : '<span class="text-rose-400 font-bold inline-flex items-center gap-1"><i class="fa-solid fa-xmark text-[10px]"></i> Missing</span>';
+            ? '<span class="text-[#10B981] font-semibold inline-flex items-center gap-1 font-mono text-xs"><i class="fa-solid fa-check text-[10px]"></i> Satisfied</span>'
+            : '<span class="text-rose-400 font-semibold inline-flex items-center gap-1 font-mono text-xs"><i class="fa-solid fa-xmark text-[10px]"></i> Missing</span>';
           tr.innerHTML = `
             <td class="py-2.5 px-4">${stat}</td>
-            <td class="py-2.5 px-4 font-bold text-white">${c.name}</td>
-            <td class="py-2.5 px-4 font-mono text-slate-400">${c.required}</td>
-            <td class="py-2.5 px-4 font-mono text-cyan-300">${c.detected || '<span class="text-slate-500">None</span>'}</td>
-            <td class="py-2.5 px-4 text-slate-300">${c.message}</td>
+            <td class="py-2.5 px-4 font-semibold text-white">${c.name}</td>
+            <td class="py-2.5 px-4 font-mono text-slate-400 text-xs">${c.required}</td>
+            <td class="py-2.5 px-4 font-mono text-[#06B6D4] text-xs">${c.detected || '<span class="text-slate-500">None</span>'}</td>
+            <td class="py-2.5 px-4 text-slate-300 text-xs">${c.message}</td>
           `;
           tbody.appendChild(tr);
         });
@@ -2748,9 +2903,9 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
           actionsList.innerHTML = currentProjectActions.map(act => {
             const cleanCmd = act.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
             return `
-              <div class="flex items-center justify-between p-2.5 rounded-lg bg-slate-950/80 border border-amber-500/20 text-xs">
+              <div class="flex items-center justify-between p-2.5 rounded bg-[#08090C] border border-[#1F2430] text-xs">
                 <div class="font-mono text-slate-200 truncate mr-2"><code>${act}</code></div>
-                <button onclick="copyToClipboard('${cleanCmd}', 'command')" class="px-2.5 py-1 rounded bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 text-[11px] font-semibold transition flex-shrink-0">Copy</button>
+                <button onclick="copyToClipboard('${cleanCmd}', 'command')" class="btn-secondary-pro text-[11px] py-1 px-2.5 font-mono flex-shrink-0">Copy</button>
               </div>
             `;
           }).join('');
@@ -2787,7 +2942,7 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
 
       const paths = currentConfig.search_paths || [];
       if (paths.length === 0) {
-        listEl.innerHTML = '<div class="text-xs text-slate-500 italic p-3 bg-slate-950/60 rounded-lg border border-slate-800 text-center">No custom search roots configured. Standard OS & ecosystem discovery is active.</div>';
+        listEl.innerHTML = '<div class="text-xs text-slate-500 italic p-3 bg-[#08090C] rounded border border-[#1F2430] text-center font-mono">No custom search roots configured. Standard OS & ecosystem discovery is active.</div>';
         bannerEl.classList.add('hidden');
         return;
       }
@@ -2796,9 +2951,9 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
       bannerListEl.innerText = paths.join(', ');
 
       listEl.innerHTML = paths.map(p => `
-        <div class="flex items-center justify-between p-2.5 bg-slate-950/80 rounded-lg border border-slate-800 text-xs">
+        <div class="flex items-center justify-between p-2.5 bg-[#08090C] rounded border border-[#1F2430] text-xs">
           <div class="flex items-center gap-2 font-mono text-slate-200 truncate" title="${p}">
-            <i class="fa-regular fa-folder text-blue-400"></i>
+            <i class="fa-regular fa-folder text-[#10B981]"></i>
             <span class="truncate">${p}</span>
           </div>
           <button onclick="removeSearchPath('${p.replace(/\\\\/g, '\\\\\\\\')}')" class="p-1 hover:text-rose-400 text-slate-500 transition" title="Remove path">
