@@ -1,9 +1,9 @@
 # DevToolkit: Master Software Reference & Technical Manual
 
 > **Author**: Bhardvaj  
-> **Version**: 0.2.0 (Phase 3 Course Correction & Desktop UI Polish)  
+> **Version**: 0.3.0 (Phase 7: Deep Tool Inspection & 7-Zone Process Flow)  
 > **Repository**: [https://github.com/Bhardvaj/DevToolkit](https://github.com/Bhardvaj/DevToolkit)  
-> **Document Purpose**: Authoritative reference manual documenting the software architecture, discovery algorithms, inspector heuristics, utility modules, REST APIs, desktop UI, and distribution pipelines.
+> **Document Purpose**: Authoritative reference manual documenting the software architecture, discovery algorithms, deep inspection heuristics, utility modules, REST APIs, desktop UI, and distribution pipelines.
 
 ---
 
@@ -177,6 +177,58 @@ DevToolkit includes 22 native inspectors located in `devtoolkit/modules/inspecto
 | `android_studio` | Android Studio | `ide` | `studio64.exe`, Registry, Start Menu | Locates Studio root, embedded OpenJDK JBR version, and allocated JVM maximum heap memory. |
 | `flutter` | Flutter SDK | `mobile` | `flutter.bat`, `dart.exe`, Content Signature | Checks Dart SDK, Flutter channel, and doctor status. |
 
+### 3.1 Phase 7 Deep Tool Inspection Architecture (Batch 1 Core Tools)
+
+In addition to baseline non-blocking discovery, DevToolkit provides on-demand deep telemetry triggered when a user expands the slide-over Inspector Drawer (`GET /api/tool/{tool_id}/deep`):
+
+- **Python (`python`)**:
+  - **Multi-Instance Precedence**: Resolves all Python binaries via `where.exe`, classifying active PATH binaries vs. virtual environments (`.venv`), global Program Files CPython, and Windows Store alias stubs.
+  - **Environment Alignment**: Evaluates `PYTHONPATH` and `PYTHONHOME`. Flags `missing` or `divergent` if pointing away from the active interpreter.
+  - **CLI Diagnostics**: Executes `python -m sysconfig` (extracting paths and platform) and `pip list --outdated --format=json`.
+  - **Remediations**: Generates copyable scripts for virtual environment creation (`python -m venv .venv`) and upgrading pip packages.
+
+- **Node.js (`node`)**:
+  - **Multi-Instance Precedence**: Scans active node executable against NVM Windows (`%NVM_HOME%`, `%NVM_SYMLINK%`) and Volta installations.
+  - **Environment Alignment**: Checks `NODE_PATH` and global prefix (`npm config get prefix`).
+  - **CLI Diagnostics**: Captures `npm doctor` health status and queries top global packages (`npm list -g --depth=0`).
+  - **Remediations**: Generates copyable commands to switch NVM versions or configure global prefix directories.
+
+- **Git (`git`)**:
+  - **Multi-Instance Precedence**: Discovers active Git binary and alternates across Git for Windows, Scoop, or Winget.
+  - **Environment Alignment**: Inspects `GIT_EXEC_PATH` and `GIT_SSH`.
+  - **CLI Diagnostics**: Executes `git config --list --show-origin` to isolate configuration source files (system, global, local), inspects `user.name`, `user.email`, `core.autocrlf`, and checks for GPG commit signing keys (`user.signingkey`).
+  - **Remediations**: Generates copyable commands to configure user identity and CRLF normalization.
+
+- **Docker (`docker`)**:
+  - **Daemon Inspection**: Tests daemon socket availability without blocking; checks `DOCKER_HOST`, `DOCKER_TLS_VERIFY`, `DOCKER_CERT_PATH`.
+  - **CLI Diagnostics**: Dumps `docker version`, `docker system df` (container, image, volume, and build cache storage utilization), and `docker compose version`.
+  - **Remediations**: Generates copyable commands to start Docker Desktop service or prune build caches safely.
+
+- **Java / JDK (`java`)**:
+  - **Multi-Instance Precedence**: Scans JDKs across `JAVA_HOME`, Windows Registry, Android Studio embedded JBR, and Gradle properties.
+  - **Environment Alignment**: Compares live `JAVA_HOME` against the active compiler path; flags `divergent` if they point to different installations.
+  - **Bytecode & Architecture**: Inspects JDK `release` metadata file to verify OS architecture (`x86_64`) and vendor (`Eclipse Adoptium`, `Oracle`, `JetBrains`).
+  - **CLI Diagnostics**: Captures `java -XshowSettings:properties -version` and `javac -version`.
+  - **Remediations**: Generates copyable PowerShell command to align `JAVA_HOME` with the active JDK path.
+
+- **Go (`golang`)**:
+  - **Multi-Instance Precedence**: Detects Go compiler binaries across PATH and custom roots.
+  - **Environment Alignment**: Audits `GOROOT` and `GOPATH` for alignment with the active binary.
+  - **CLI Diagnostics**: Executes `go env -json` to extract module cache, build cache, and proxy configurations.
+  - **Remediations**: Generates copyable scripts to align `GOROOT` and initialize `GOPATH`.
+
+- **Rust (`rust`)**:
+  - **Multi-Instance Precedence**: Discovers `rustc` and `cargo` binaries across system PATH and `~/.cargo/bin`.
+  - **Environment Alignment**: Checks `RUSTUP_HOME` and `CARGO_HOME`.
+  - **CLI Diagnostics**: Dumps `rustup show` (active toolchains, installed targets) and `cargo --version --verbose`.
+  - **Remediations**: Generates copyable commands to update rustup toolchains or install target architectures.
+
+- **.NET SDK (`dotnet`)**:
+  - **Multi-Instance Precedence**: Discovers active `dotnet.exe` and secondary x86/x64 installations.
+  - **Environment Alignment**: Checks `DOTNET_ROOT` and `DOTNET_MULTILEVEL_LOOKUP`.
+  - **CLI Diagnostics**: Executes `dotnet --info` and `dotnet --list-sdks`.
+  - **Remediations**: Generates copyable commands to set `DOTNET_ROOT` or configure target framework runtimes.
+
 ---
 
 ## 4. Workstation Utility Modules
@@ -292,7 +344,15 @@ At serve time, `get_dashboard_html()` inlines `styles.css` and `app.js` into pla
 1. **Environment & Diagnostics (`view-env`)**:
    - **Progressive Async Tool Loading & Skeleton Cards**: Instant first paint (<50ms) rendering 22 shimmer skeleton cards. Server-Sent Events (SSE) streaming (`/api/audit/stream`) audits concurrently across up to 32 worker threads, snapping tools into place as they complete (50–200ms for fast tools, live scanning spinner for slower tools).
    - **Interactive Stat Metric Filter Cards**: 6 top metric cards (*Audited Tools*, *Installed*, *Healthy*, *Action Needed*, *Critical Errors*, *Not Found*) double as one-click filters with active rings and reset pills.
-   - **Slide-Over Detail Drawer (Inspector)**: Smooth right-side drawer displaying complete path locations with "Copy" and native "Open in Explorer" actions, full health diagnostics, companion matrix, and raw JSON export.
+   - **Standardized 7-Zone Slide-Over Inspector Drawer**: Smooth right-side drawer displaying comprehensive forensic tool data:
+     - *Zone 1: Identity & Health Header*: Tool icon, name, category, health badge, version chip, and probe latency badge (`12ms`).
+     - *Zone 2: Primary Runtime & Quick Access*: Monospace active path, 1-click "Open in Explorer" folder button, copy path button, and discovery source badge.
+     - *Zone 3: Multi-Instance & Precedence Discovery*: Lists all discovered instances with `Active (PATH)` vs `Alternate` status badges, source, and instance path.
+     - *Zone 4: Environment Variable Alignment Matrix*: Tabular breakdown of relevant runtime env vars (`JAVA_HOME`, `PYTHONPATH`, `GOROOT`, `DOTNET_ROOT`), current values, recommended targets, and health badges (`Aligned`, `Divergent`, `Missing`).
+     - *Zone 5: Subsystems & Ecosystem Status*: Companion tools, sub-runtimes, package managers, and versions.
+     - *Zone 6: Remediation & Setup Commands*: Strictly copyable terminal commands with a 1-click copy button (purged 1-click system execution for security).
+     - *Zone 7: Deep Diagnostics & CLI Telemetry*: Tabbed forensic view containing CLI stdout dumps (e.g., `dotnet --info`, `go env -json`, `git config -l --show-origin`), actionable diagnostic warnings, and full JSON payload export.
+     - *On-Demand Shimmer Loader*: Initial drawer open triggers `GET /api/tool/{tool_id}/deep` with animated shimmer skeleton loaders until deep telemetry completes, ensuring zero latency impact on baseline audits.
    - **Uniform Compact Cards**: Clean, balanced grid cards with branded icons, version tags, multi-category chips, primary path snippets, and mini companion counters.
    - **Export Report Menu**: Top toolbar dropdown offering 1-click Markdown table export (clipboard), JSON summary copy, and direct `.md` report download.
    - **Precision Centered Search Bar**: Centered search icon and `Ctrl+K` accelerator badge with mathematical flex alignment.
@@ -338,6 +398,7 @@ The local FastAPI server runs on `http://127.0.0.1:4321`.
 | `GET` | `/api/audit` | Run full workstation audit | None | `AuditSummary` |
 | `GET` | `/api/audit/stream` | Stream progressive audit results (SSE) | None | `text/event-stream` (`init`, `tool`, `done`) |
 | `POST` | `/api/audit` | Run filtered audit | `AuditRequest` (`categories`, `tool_ids`) | `AuditSummary` |
+| `GET` | `/api/tool/{tool_id}/deep` | On-demand deep inspection telemetry | None | `DeepTelemetryReport` |
 | `GET` | `/api/system` | Get host OS and telemetry | None | `SystemInfo` |
 | `GET` | `/api/tools` | List registered inspectors | None | `List[ToolInfo]` |
 | `GET` | `/api/ports` | List listening TCP sockets | Query: `dev_only=bool` | `List[PortInfo]` |

@@ -31,6 +31,37 @@ class CompanionTool(BaseModel):
     binary_path: Optional[str] = None
 
 
+class DiscoveredInstance(BaseModel):
+    """An individual discovered installation or binary of a tool on the workstation."""
+    path: str
+    binary_path: Optional[str] = None
+    version: Optional[str] = None
+    source: str = "PATH"  # "PATH" | "Registry" | "SearchRoot" | "IDE_Config" | "Default"
+    is_active: bool = False
+    details: Optional[str] = None
+
+
+class EnvVarStatus(BaseModel):
+    """Status of a monitored environment variable for a tool."""
+    name: str
+    value: Optional[str] = None
+    status: str = "aligned"  # "aligned" | "divergent" | "missing"
+    target_path: Optional[str] = None
+    message: Optional[str] = None
+
+
+class DeepTelemetryReport(BaseModel):
+    """Asynchronous deep domain report generated on-demand when inspecting a tool."""
+    tool_id: str
+    timestamp: str
+    probe_latency_ms: int = 0
+    instances: List[DiscoveredInstance] = Field(default_factory=list)
+    env_vars: List[EnvVarStatus] = Field(default_factory=list)
+    telemetry: Dict[str, Any] = Field(default_factory=dict)
+    raw_dumps: Dict[str, str] = Field(default_factory=dict)
+    discovery_trace: List[str] = Field(default_factory=list)
+
+
 class ToolReport(BaseModel):
     id: str
     name: str
@@ -44,6 +75,7 @@ class ToolReport(BaseModel):
     companions: List[CompanionTool] = Field(default_factory=list)
     diagnostics: List[DiagnosticIssue] = Field(default_factory=list)
     metadata: Dict[str, Any] = Field(default_factory=dict)
+    deep_report: Optional[DeepTelemetryReport] = None
 
     def model_post_init(self, __context: Any) -> None:
         if not self.categories and self.category:

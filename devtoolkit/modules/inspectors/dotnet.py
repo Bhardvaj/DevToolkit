@@ -6,11 +6,16 @@ import sys
 from pathlib import Path
 from typing import List
 
+from datetime import datetime, timezone
 from devtoolkit.core.base import BaseInspector
+from devtoolkit.core.inventory import OSInventory
 from devtoolkit.core.models import (
     CompanionTool,
+    DeepTelemetryReport,
     DiagnosticIssue,
     DiagnosticLevel,
+    DiscoveredInstance,
+    EnvVarStatus,
     HealthStatus,
     ToolReport,
 )
@@ -84,7 +89,7 @@ class DotNetInspector(BaseInspector):
                 DiagnosticIssue(
                     level=DiagnosticLevel.WARNING,
                     message="No .NET SDKs installed (only the .NET runtime is available). Building projects requires an SDK.",
-                    suggested_fix="Install the latest .NET SDK from https://dotnet.microsoft.com/download",
+                    suggested_fix="winget install Microsoft.DotNet.SDK.8",
                 )
             )
 
@@ -97,7 +102,7 @@ class DotNetInspector(BaseInspector):
                     DiagnosticIssue(
                         level=DiagnosticLevel.ERROR,
                         message=f"DOTNET_ROOT points to non-existent path: {dotnet_root}",
-                        suggested_fix="Correct or remove the DOTNET_ROOT environment variable.",
+                        suggested_fix=f'setx DOTNET_ROOT "{dotnet_bin.parent}" /M',
                     )
                 )
 
@@ -126,4 +131,127 @@ class DotNetInspector(BaseInspector):
                 "runtimes_count": len(runtime_lines),
                 "sdk_list": sdk_lines[:5],
             },
+        )
+
+    def deep_inspect(self, runner: SafeRunner) -> DeepTelemetryReport:
+        base_rep = self.inspect(runner)
+        trace: list[str] = [f"Base inspection complete. installed={base_rep.installed}"]
+        instances: list[DiscoveredInstance] = []
+        seen_paths: set[str] = set()
+
+        def _add_inst(p: Path, bin_p: Path | None, ver: str | None, src: str, active: bool, details: str | None = None):
+            key = str(bin_p or p).lower() if sys.platform == "win32" else str(bin_p or p)
+            if key not in seen_paths:
+                seen_paths.add(key)
+                instances.append(
+                    DiscoveredInstance(
+                        path=str(p),
+                        binary_path=str(bin_p) if bin_p else None,
+                        version=ver,
+                        source=src,
+                        is_active=active,
+                        details=details,
+                    )
+                )
+
+        # 1. System PATH binaries
+        path_bins = runner.resolve_all_binaries("dotnet")
+        trace.append(f"Found {len(path_bins)} 'dotnet' binary candidates in system PATH")
+        for idx, pb in enumerate(path_bins):
+            is_act = (idx == 0) and bool(base_rep.binary_path) and (str(pb).lower() == str(base_rep.binary_path).lower())
+            ver = base_rep.version if is_act else None
+            _add_inst(pb.parent, pb, ver, "PATH", is_act, "Active binary in system PATH" if is_act else "Alternate binary in PATH")
+
+        # 2. Known 64-bit and 32-bit Program Files locations
+        for cand in [
+            Path(r"C:\Program Files\dotnet\dotnet.exe"),
+            Path(r"C:\Program Files (x86)\dotnet\dotnet.exe"),
+        ]:
+            if cand.exists():
+                is_act = bool(base_rep.binary_path) and (str(cand).lower() == str(base_rep.binary_path).lower())
+                arch = "64-bit Architecture" if "x86" not in str(cand).lower() else "32-bit (x86) Architecture"
+                _add_inst(cand.parent, cand, None, "Registry", is_act, f"Standard .NET root ({arch})")
+
+        # 3. Registry uninstall inventory
+        reg_apps = OSInventory.find_app_locations(".NET")
+        for reg_p in reg_apps:
+            reg_bin = reg_p / "dotnet.exe"
+            b_target = reg_bin if reg_bin.exists() else None
+            is_act = bool(base_rep.binary_path and b_target and str(b_target).lower() == str(base_rep.binary_path).lower())
+            _add_inst(reg_p, b_target, None, "Registry", is_act, "Windows Registry .NET installation")
+
+        # 4. Monitored Environment Variables Alignment
+        env_vars: list[EnvVarStatus] = []
+        active_home = base_rep.home_path
+
+        # DOTNET_ROOT
+        dotnet_root = runner.read_env("DOTNET_ROOT")
+        if dotnet_root:
+            dr_exists = Path(dotnet_root).exists()
+            is_aligned = active_home and (str(Path(dotnet_root).resolve()).lower() == str(Path(active_home).resolve()).lower())
+            env_vars.append(
+                EnvVarStatus(
+                    name="DOTNET_ROOT",
+                    value=dotnet_root,
+                    status="aligned" if is_aligned else ("divergent" if dr_exists else "missing"),
+                    target_path=active_home or dotnet_root,
+                    message="Aligned with active .NET host" if is_aligned else "Diverges from active .NET installation directory!",
+                )
+            )
+        else:
+            env_vars.append(
+                EnvVarStatus(
+                    name="DOTNET_ROOT",
+                    value=None,
+                    status="aligned",
+                    message="Not set (using standard C:\\Program Files\\dotnet default location)",
+                )
+            )
+
+        # DOTNET_MULTILEVEL_LOOKUP
+        ml_lookup = runner.read_env("DOTNET_MULTILEVEL_LOOKUP")
+        if ml_lookup:
+            env_vars.append(
+                EnvVarStatus(
+                    name="DOTNET_MULTILEVEL_LOOKUP",
+                    value=ml_lookup,
+                    status="aligned",
+                    message=f"Multi-level lookup explicitly configured to '{ml_lookup}'",
+                )
+            )
+
+        # 5. Deep Domain Telemetry & Raw Dumps
+        telemetry: dict[str, Any] = {
+            "sdks_installed_count": base_rep.metadata.get("sdks_count", 0),
+            "runtimes_installed_count": base_rep.metadata.get("runtimes_count", 0),
+        }
+
+        raw_dumps: dict[str, str] = {}
+        if base_rep.binary_path:
+            # dotnet --info (comprehensive dump)
+            info_res = runner.run_command([base_rep.binary_path, "--info"], timeout=3.5)
+            if info_res.ok and info_res.stdout:
+                raw_dumps["dotnet --info"] = info_res.stdout
+
+            # dotnet --list-sdks
+            sdks_res = runner.run_command([base_rep.binary_path, "--list-sdks"], timeout=2.5)
+            if sdks_res.ok and sdks_res.stdout:
+                raw_dumps["dotnet --list-sdks"] = sdks_res.stdout
+                telemetry["sdks"] = [l.strip() for l in sdks_res.stdout.splitlines() if l.strip()]
+
+            # dotnet --list-runtimes
+            runtimes_res = runner.run_command([base_rep.binary_path, "--list-runtimes"], timeout=2.5)
+            if runtimes_res.ok and runtimes_res.stdout:
+                raw_dumps["dotnet --list-runtimes"] = runtimes_res.stdout
+                telemetry["runtimes"] = [l.strip() for l in runtimes_res.stdout.splitlines() if l.strip()]
+
+        return DeepTelemetryReport(
+            tool_id=self.id,
+            timestamp=datetime.now(timezone.utc).isoformat(),
+            probe_latency_ms=0,
+            instances=instances,
+            env_vars=env_vars,
+            telemetry=telemetry,
+            raw_dumps=raw_dumps,
+            discovery_trace=trace,
         )

@@ -232,6 +232,9 @@ let activeTab = 'env';
     }
 
     // ==================== SLIDE-OVER INSPECTOR DRAWER ====================
+    let deepReportCache = {};
+    let deepReportLoading = {};
+
     function openInspectorDrawer(toolId) {
       activeDrawerToolId = toolId;
       renderInspectorDrawer(toolId);
@@ -245,6 +248,11 @@ let activeTab = 'env';
         backdrop.classList.add('opacity-100');
         panel.classList.add('open');
       }, 10);
+
+      // Trigger on-demand deep inspection probe if not cached
+      if (!deepReportCache[toolId] && !deepReportLoading[toolId]) {
+        fetchDeepTelemetry(toolId);
+      }
     }
 
     function closeInspectorDrawer() {
@@ -260,6 +268,51 @@ let activeTab = 'env';
         drawer.classList.add('hidden');
         activeDrawerToolId = null;
       }, 280);
+    }
+
+    async function fetchDeepTelemetry(toolId, forceRefresh = false) {
+      if (deepReportLoading[toolId]) return;
+      deepReportLoading[toolId] = true;
+      if (forceRefresh) {
+        delete deepReportCache[toolId];
+      }
+      if (activeDrawerToolId === toolId) {
+        renderInspectorDrawer(toolId);
+      }
+      try {
+        const res = await fetch(`/api/tool/${toolId}/deep`);
+        if (res.ok) {
+          const data = await res.json();
+          deepReportCache[toolId] = data;
+        } else {
+          console.warn(`Deep inspection endpoint returned ${res.status} for ${toolId}`);
+        }
+      } catch (err) {
+        console.error(`Failed to fetch deep telemetry for ${toolId}:`, err);
+      } finally {
+        deepReportLoading[toolId] = false;
+        if (activeDrawerToolId === toolId) {
+          renderInspectorDrawer(toolId);
+        }
+      }
+    }
+
+    function downloadDeepReport(toolId) {
+      const r = allReports.find(x => x.id === toolId);
+      const deep = deepReportCache[toolId];
+      const payload = {
+        generated_at: new Date().toISOString(),
+        tool: r || null,
+        deep_telemetry: deep || null,
+      };
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${toolId}_diagnostic_report.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast(`Downloaded ${toolId} diagnostic bundle`);
     }
 
     function renderInspectorDrawer(toolId) {
@@ -284,6 +337,9 @@ let activeTab = 'env';
         return;
       }
 
+      const deep = deepReportCache[toolId];
+      const isLoadingDeep = deepReportLoading[toolId];
+
       const toolCats = (r.categories && r.categories.length > 0) ? r.categories : [r.category];
       const categoriesHtml = toolCats.map(c => 
         `<span class="text-[10px] text-[#94A3B8] uppercase tracking-wider font-mono font-medium px-2 py-0.5 bg-[#141721] rounded border border-[#1F2430]">${c}</span>`
@@ -291,8 +347,19 @@ let activeTab = 'env';
 
       const cleanHome = (r.home_path || '').replace(/"/g, '&quot;');
       const cleanBin = (r.binary_path || '').replace(/"/g, '&quot;');
+      const cleanVer = (r.version || '').replace(/"/g, '&quot;');
 
-      // Diagnostics HTML
+      // Precedence tag
+      let precedenceTag = '';
+      if (r.installed) {
+        if (r.binary_path && (r.binary_path.toLowerCase().includes('windowsapps') || r.binary_path.toLowerCase().includes('portable'))) {
+          precedenceTag = '<span class="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/30 font-medium">Portable / Standalone</span>';
+        } else {
+          precedenceTag = '<span class="text-[10px] font-mono px-2 py-0.5 rounded bg-[#10B981]/10 text-[#10B981] border border-[#10B981]/30 font-medium">Active in PATH</span>';
+        }
+      }
+
+      // ZONE 2: Diagnostics & Recommended Actions (NO 1-click apply, clean copyable commands)
       let diagHtml = '';
       if (r.diagnostics && r.diagnostics.length > 0) {
         diagHtml = r.diagnostics.map(d => {
@@ -307,15 +374,10 @@ let activeTab = 'env';
                 <div class="bg-[#08090C] p-2.5 rounded border border-[#1F2430] space-y-2">
                   <div class="text-[10px] uppercase font-mono tracking-wider font-semibold text-[#F59E0B]">Remediation Command:</div>
                   <div class="flex items-center justify-between gap-2 font-mono text-[11px] text-[#F3F4F6] min-w-0">
-                    <code class="truncate">${d.suggested_fix}</code>
-                    <div class="flex items-center gap-1.5 flex-shrink-0">
-                      <button onclick="copyToClipboard(this.dataset.cmd, 'command')" data-cmd="${cleanFix}" class="btn-secondary-pro px-2 py-0.5 text-[10px] font-mono flex items-center gap-1">
-                        <i class="fa-regular fa-copy"></i> Copy
-                      </button>
-                      <button onclick="applyFix(this.dataset.cmd)" data-cmd="${cleanFix}" class="btn-primary-pro px-2.5 py-0.5 text-[10px] font-semibold flex items-center gap-1">
-                        <i class="fa-solid fa-wand-magic-sparkles"></i> Apply
-                      </button>
-                    </div>
+                    <code class="truncate bg-[#141721] px-2 py-1 rounded border border-[#1F2430] flex-1 select-text">${d.suggested_fix}</code>
+                    <button onclick="copyToClipboard(this.dataset.cmd, 'command')" data-cmd="${cleanFix}" class="btn-secondary-pro px-2.5 py-1 text-[11px] font-mono flex items-center gap-1.5 flex-shrink-0 hover:border-[#10B981]/50 hover:text-[#10B981]">
+                      <i class="fa-regular fa-copy"></i> Copy
+                    </button>
                   </div>
                 </div>
               ` : ''}
@@ -344,7 +406,52 @@ let activeTab = 'env';
         `;
       }
 
-      // Companions HTML
+      // ZONE 3: Monitored Environment Variables Table
+      let envVarsHtml = '';
+      if (deep && deep.env_vars && deep.env_vars.length > 0) {
+        envVarsHtml = `
+          <div class="space-y-1.5">
+            <div class="text-[10px] font-mono font-semibold text-[#475569] uppercase tracking-wider">Monitored Environment Variables</div>
+            <div class="bg-[#08090C] rounded border border-[#1F2430] overflow-hidden divide-y divide-[#1F2430]">
+              ${deep.env_vars.map(ev => {
+                let badgeClass = 'badge-aligned';
+                let iconClass = 'fa-check';
+                if (ev.status === 'divergent') {
+                  badgeClass = 'badge-divergent';
+                  iconClass = 'fa-triangle-exclamation';
+                } else if (ev.status === 'missing') {
+                  badgeClass = 'badge-missing';
+                  iconClass = 'fa-xmark';
+                }
+                const cleanVal = (ev.value || '').replace(/"/g, '&quot;');
+                return `
+                  <div class="p-2.5 flex items-start justify-between gap-3 text-xs hover:bg-[#141721]/40 transition">
+                    <div class="min-w-0 space-y-0.5">
+                      <div class="flex items-center gap-2">
+                        <span class="font-mono font-semibold text-[#F3F4F6] text-[11px]">${ev.name}</span>
+                        <span class="${badgeClass} px-1.5 py-0.2 rounded text-[9px] font-mono font-semibold uppercase inline-flex items-center gap-1">
+                          <i class="fa-solid ${iconClass} text-[8px]"></i> ${ev.status}
+                        </span>
+                      </div>
+                      <div class="font-mono text-[10px] text-slate-400 truncate select-text" title="${ev.value || 'Not configured'}">
+                        ${ev.value ? `<code>${ev.value}</code>` : '<span class="text-slate-600 italic">Unset</span>'}
+                      </div>
+                      ${ev.message ? `<div class="text-[10px] text-slate-400">${ev.message}</div>` : ''}
+                    </div>
+                    ${ev.value ? `
+                      <button onclick="copyToClipboard('${cleanVal}', '${ev.name}')" class="btn-secondary-pro px-2 py-0.5 text-[9px] font-mono flex-shrink-0 hover:text-[#06B6D4]">
+                        <i class="fa-regular fa-copy"></i>
+                      </button>
+                    ` : ''}
+                  </div>
+                `;
+              }).join('')}
+            </div>
+          </div>
+        `;
+      }
+
+      // ZONE 4: Ecosystem & Companion Subsystems Matrix
       let companionsHtml = '';
       if (r.companions && r.companions.length > 0) {
         companionsHtml = `
@@ -370,6 +477,107 @@ let activeTab = 'env';
         `;
       }
 
+      // ZONE 5: Deep Domain Telemetry (On-demand with shimmer loader)
+      let deepTelemetryHtml = '';
+      if (isLoadingDeep && !deep) {
+        deepTelemetryHtml = `
+          <div class="space-y-2">
+            <div class="flex items-center justify-between text-[10px] font-mono font-semibold text-[#475569] uppercase tracking-wider">
+              <span class="flex items-center gap-1.5"><i class="fa-solid fa-microchip text-[#06B6D4]"></i> Deep Domain Telemetry</span>
+              <span class="text-[#06B6D4] text-[10px] font-mono flex items-center gap-1"><i class="fa-solid fa-spinner fa-spin"></i> Probing...</span>
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+              <div class="h-16 rounded bg-[#0E1015] border border-[#1F2430] skeleton-shimmer"></div>
+              <div class="h-16 rounded bg-[#0E1015] border border-[#1F2430] skeleton-shimmer"></div>
+              <div class="h-16 rounded bg-[#0E1015] border border-[#1F2430] skeleton-shimmer"></div>
+              <div class="h-16 rounded bg-[#0E1015] border border-[#1F2430] skeleton-shimmer"></div>
+            </div>
+          </div>
+        `;
+      } else if (deep && deep.telemetry && Object.keys(deep.telemetry).length > 0) {
+        const tiles = Object.entries(deep.telemetry).filter(([k, v]) => v !== null && v !== undefined && typeof v !== 'object');
+        if (tiles.length > 0) {
+          deepTelemetryHtml = `
+            <div class="space-y-2">
+              <div class="flex items-center justify-between text-[10px] font-mono font-semibold text-[#475569] uppercase tracking-wider">
+                <span class="flex items-center gap-1.5"><i class="fa-solid fa-microchip text-[#06B6D4]"></i> Deep Domain Telemetry</span>
+                <span class="text-[10px] font-mono text-[#06B6D4] bg-[#06B6D4]/10 border border-[#06B6D4]/30 px-1.5 py-0.2 rounded flex items-center gap-1">
+                  <i class="fa-solid fa-bolt text-[9px]"></i> ${deep.probe_latency_ms}ms
+                </span>
+              </div>
+              <div class="grid grid-cols-2 sm:grid-cols-2 gap-2">
+                ${tiles.map(([k, v]) => `
+                  <div class="p-2.5 rounded bg-[#08090C] border border-[#1F2430] space-y-1">
+                    <div class="text-[10px] font-mono text-slate-500 uppercase tracking-wider truncate">${k.replace(/_/g, ' ')}</div>
+                    <div class="font-mono text-xs text-[#F3F4F6] font-semibold truncate select-text" title="${String(v)}">${String(v)}</div>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          `;
+        }
+      }
+
+      // ZONE 6: Discovered Installations & Multi-Instance Precedence
+      let instancesHtml = '';
+      if (isLoadingDeep && !deep) {
+        instancesHtml = `
+          <div class="space-y-2">
+            <div class="text-[10px] font-mono font-semibold text-[#475569] uppercase tracking-wider flex items-center justify-between">
+              <span>Discovered Installations & Precedence</span>
+            </div>
+            <div class="h-20 rounded bg-[#0E1015] border border-[#1F2430] skeleton-shimmer"></div>
+          </div>
+        `;
+      } else if (deep && deep.instances && deep.instances.length > 0) {
+        instancesHtml = `
+          <div class="space-y-2">
+            <div class="text-[10px] font-mono font-semibold text-[#475569] uppercase tracking-wider flex items-center justify-between">
+              <span>Discovered Installations & Precedence</span>
+              <span class="font-mono text-[#94A3B8]">${deep.instances.length} Located</span>
+            </div>
+            <div class="bg-[#08090C] rounded border border-[#1F2430] divide-y divide-[#1F2430] overflow-hidden">
+              ${deep.instances.map(inst => {
+                const cleanInstPath = (inst.path || '').replace(/"/g, '&quot;');
+                const cleanInstBin = (inst.binary_path || inst.path || '').replace(/"/g, '&quot;');
+                return `
+                  <div class="p-3 hover:bg-[#141721]/50 transition space-y-1.5 text-xs">
+                    <div class="flex items-center justify-between gap-2">
+                      <div class="flex items-center gap-2 min-w-0">
+                        ${inst.is_active
+                          ? '<span class="instance-active-badge px-1.5 py-0.5 rounded text-[9px] font-mono font-semibold uppercase flex items-center gap-1 flex-shrink-0"><i class="fa-solid fa-circle-check text-[8px]"></i> Active in PATH</span>'
+                          : `<span class="text-slate-400 bg-[#141721] border border-[#1F2430] px-1.5 py-0.5 rounded text-[9px] font-mono uppercase flex-shrink-0">${inst.source}</span>`
+                        }
+                        ${inst.version ? `<span class="font-mono text-[10px] text-[#06B6D4] font-medium truncate">v${inst.version}</span>` : ''}
+                      </div>
+                      <div class="flex items-center gap-1 flex-shrink-0">
+                        <button onclick="copyToClipboard('${cleanInstBin}', 'installation path')" class="btn-secondary-pro px-2 py-0.5 text-[10px] flex items-center gap-1" title="Copy Path">
+                          <i class="fa-regular fa-copy text-[9px]"></i> Copy
+                        </button>
+                        <button onclick="openFolder('${cleanInstPath}')" class="btn-secondary-pro px-2 py-0.5 text-[10px] flex items-center gap-1 hover:text-[#06B6D4]" title="Open Folder">
+                          <i class="fa-regular fa-folder-open text-[9px]"></i> Open
+                        </button>
+                      </div>
+                    </div>
+                    <div class="font-mono text-[11px] text-[#F3F4F6] break-all select-text bg-[#0E1015] p-1.5 rounded border border-[#1F2430]">
+                      ${inst.binary_path || inst.path}
+                    </div>
+                    ${inst.details ? `<div class="text-[10px] text-slate-400">${inst.details}</div>` : ''}
+                  </div>
+                `;
+              }).join('')}
+            </div>
+          </div>
+        `;
+      }
+
+      // ZONE 7: Diagnostic Telemetry Bundle & Raw Data (Enhanced JSON)
+      const rawDumpKeys = deep && deep.raw_dumps ? Object.keys(deep.raw_dumps) : [];
+      const bundlePayload = {
+        tool: r,
+        deep_telemetry: deep || null,
+      };
+
       container.innerHTML = `
         <!-- Drawer Header -->
         <div class="p-4 sm:p-5 border-b border-[#1F2430] flex items-start justify-between gap-3 bg-[#08090C]">
@@ -378,15 +586,26 @@ let activeTab = 'env';
               ${getToolIcon(r.id, r.category)}
             </div>
             <div class="min-w-0">
-              <h2 class="text-base font-semibold text-[#F3F4F6] tracking-tight truncate">${r.name}</h2>
-              <div class="flex items-center gap-2 mt-0.5">
-                <span class="text-xs font-mono font-medium text-[#06B6D4]">${r.version ? 'v' + r.version : (r.installed ? 'Installed' : 'Not Detected')}</span>
+              <div class="flex items-center gap-2">
+                <h2 class="text-base font-semibold text-[#F3F4F6] tracking-tight truncate">${r.name}</h2>
+                ${precedenceTag}
+              </div>
+              <div class="flex items-center gap-2 mt-1">
+                ${r.version ? `
+                  <button onclick="copyToClipboard('${cleanVer}', 'version')" class="text-xs font-mono font-medium text-[#06B6D4] bg-[#06B6D4]/10 hover:bg-[#06B6D4]/20 border border-[#06B6D4]/30 px-1.5 py-0.5 rounded transition flex items-center gap-1" title="Click to copy version">
+                    <span>v${r.version}</span>
+                    <i class="fa-regular fa-copy text-[9px] text-[#06B6D4]/70"></i>
+                  </button>
+                ` : `<span class="text-xs font-mono text-slate-500">${r.installed ? 'Detected' : 'Not Found'}</span>`}
                 <span class="text-[#2E3446]">•</span>
                 <div class="flex items-center gap-1">${categoriesHtml}</div>
               </div>
             </div>
           </div>
           <div class="flex items-center gap-2 flex-shrink-0">
+            <button onclick="fetchDeepTelemetry('${r.id}', true)" class="p-1.5 rounded text-[#94A3B8] hover:text-[#06B6D4] hover:bg-[#141721] transition" title="Re-probe deep telemetry">
+              <i class="fa-solid fa-arrows-rotate text-xs ${isLoadingDeep ? 'fa-spin text-[#06B6D4]' : ''}"></i>
+            </button>
             ${getBadge(r.status)}
             <button onclick="closeInspectorDrawer()" class="p-1.5 rounded text-[#94A3B8] hover:text-[#F3F4F6] hover:bg-[#141721] transition" title="Close Drawer (Esc)">
               <i class="fa-solid fa-xmark text-sm"></i>
@@ -396,15 +615,15 @@ let activeTab = 'env';
 
         <!-- Drawer Body -->
         <div class="flex-1 overflow-y-auto p-4 sm:p-5 space-y-5 custom-scrollbar font-sans">
-          <!-- Diagnostics / Health Status Card -->
+          <!-- ZONE 2: Diagnostics / Health Status Card -->
           <div class="space-y-1.5">
-            <div class="text-[10px] font-mono font-semibold text-[#475569] uppercase tracking-wider">Health Status & Action Items</div>
+            <div class="text-[10px] font-mono font-semibold text-[#475569] uppercase tracking-wider">Health Status & Recommended Actions</div>
             ${diagHtml}
           </div>
 
-          <!-- Installation & Binary Locations -->
+          <!-- ZONE 3: Filesystem & Locations -->
           <div class="space-y-2.5">
-            <div class="text-[10px] font-mono font-semibold text-[#475569] uppercase tracking-wider">Paths & Filesystem Locations</div>
+            <div class="text-[10px] font-mono font-semibold text-[#475569] uppercase tracking-wider">Filesystem & Runtime Paths</div>
             
             <!-- Root Path -->
             <div class="bg-[#0E1015] p-3 rounded border border-[#1F2430] space-y-1.5">
@@ -445,35 +664,43 @@ let activeTab = 'env';
                 ${r.binary_path || '<span class="text-[#475569] italic">Not detected in system PATH</span>'}
               </div>
             </div>
+
+            <!-- Monitored Environment Variables Alignment -->
+            ${envVarsHtml}
           </div>
 
-          <!-- Companions -->
+          <!-- ZONE 4: Companions Matrix -->
           ${companionsHtml}
 
-          <!-- Metadata & Origin -->
-          <div class="p-3.5 rounded bg-[#0E1015] border border-[#1F2430] space-y-1.5 text-xs">
-            <div class="text-[10px] font-mono font-semibold text-[#475569] uppercase tracking-wider">Inspector Information</div>
-            <div class="text-[#94A3B8] text-[11px] leading-relaxed">${r.description || 'Monitored development tool inspector in workstation environment suite.'}</div>
-            <div class="pt-1.5 flex flex-wrap items-center gap-3 text-[11px] text-[#475569] font-mono">
-              <span>Tool ID: <strong class="text-[#F3F4F6]">${r.id}</strong></span>
-              <span>•</span>
-              <span>Installed: <strong class="${r.installed ? 'text-[#10B981]' : 'text-[#94A3B8]'}">${r.installed ? 'Yes' : 'No'}</strong></span>
-            </div>
-          </div>
+          <!-- ZONE 5: Deep Domain Telemetry -->
+          ${deepTelemetryHtml}
 
-          <!-- Collapsible Raw JSON Data -->
-          <details class="text-xs bg-[#0E1015] rounded border border-[#1F2430] p-2.5 group">
+          <!-- ZONE 6: Multi-Instance Discovery -->
+          ${instancesHtml}
+
+          <!-- ZONE 7: Collapsible Diagnostic Telemetry Bundle (JSON) -->
+          <details class="text-xs bg-[#0E1015] rounded border border-[#1F2430] p-3 group">
             <summary class="font-medium text-[#94A3B8] hover:text-[#F3F4F6] cursor-pointer flex items-center justify-between select-none">
-              <span>View Raw Report (JSON)</span>
+              <div class="flex items-center gap-2">
+                <i class="fa-solid fa-file-code text-[#06B6D4]"></i>
+                <span class="font-semibold text-white">Diagnostic Telemetry Bundle (JSON)</span>
+                ${deep ? `<span class="text-[10px] font-mono text-slate-500">(${rawDumpKeys.length} raw dumps • ${deep.discovery_trace?.length || 0} trace steps)</span>` : ''}
+              </div>
               <span class="text-[10px] text-[#06B6D4] group-open:rotate-180 transition-transform"><i class="fa-solid fa-chevron-down"></i></span>
             </summary>
-            <div class="mt-2.5 space-y-2">
-              <div class="flex justify-end">
-                <button onclick="copyToClipboard(JSON.stringify(allReports.find(x => x.id === '${r.id}'), null, 2), 'raw JSON')" class="btn-secondary-pro px-2 py-0.5 text-[10px] font-mono">
-                  Copy JSON
-                </button>
+            <div class="mt-3 space-y-2.5">
+              <div class="flex items-center justify-between">
+                <span class="text-[11px] text-slate-400 font-mono">Enriched machine-readable diagnostic bundle</span>
+                <div class="flex items-center gap-1.5">
+                  <button onclick="copyToClipboard(JSON.stringify(deepReportCache['${r.id}'] || allReports.find(x => x.id === '${r.id}'), null, 2), 'telemetry JSON')" class="btn-secondary-pro px-2.5 py-1 text-[10px] font-mono flex items-center gap-1">
+                    <i class="fa-regular fa-copy"></i> Copy JSON
+                  </button>
+                  <button onclick="downloadDeepReport('${r.id}')" class="btn-secondary-pro px-2.5 py-1 text-[10px] font-mono flex items-center gap-1 hover:text-[#10B981]">
+                    <i class="fa-solid fa-download"></i> Download Report
+                  </button>
+                </div>
               </div>
-              <pre class="bg-[#08090C] p-2.5 rounded border border-[#1F2430] font-mono text-[10px] text-[#94A3B8] overflow-x-auto custom-scrollbar select-text">${JSON.stringify(r, null, 2)}</pre>
+              <pre class="bg-[#08090C] p-3 rounded border border-[#1F2430] font-mono text-[10px] text-[#94A3B8] overflow-x-auto custom-scrollbar select-text max-h-[360px]">${JSON.stringify(bundlePayload, null, 2)}</pre>
             </div>
           </details>
         </div>

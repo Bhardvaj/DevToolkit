@@ -14,7 +14,7 @@ from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 import uvicorn
 
-from devtoolkit.core.models import AuditSummary
+from devtoolkit.core.models import AuditSummary, DeepTelemetryReport
 from devtoolkit.modules.utilities.ports import PortInfo, PortKillResult
 from devtoolkit.modules.utilities.project_auditor import ProjectAuditReport
 from devtoolkit.server.models import (
@@ -27,7 +27,14 @@ from devtoolkit.server.models import (
     SelectFolderRequest,
 )
 from devtoolkit.server.routes.actions import open_folder, post_apply_fix, post_select_folder
-from devtoolkit.server.routes.audit import get_audit, get_tools, post_audit, registry, stream_audit
+from devtoolkit.server.routes.audit import (
+    get_audit,
+    get_tool_deep,
+    get_tools,
+    post_audit,
+    registry,
+    stream_audit,
+)
 from devtoolkit.server.routes.ports import get_ports, post_kill_port
 from devtoolkit.server.routes.project import post_audit_project
 from devtoolkit.server.routes.system import delete_search_path, get_config, get_system, post_search_path
@@ -57,6 +64,7 @@ def register_routes(application: FastAPI) -> None:
     application.add_api_route("/api/audit/stream", stream_audit, methods=["GET"], tags=["audit"])
     application.add_api_route("/api/audit", post_audit, methods=["POST"], response_model=AuditSummary, tags=["audit"])
     application.add_api_route("/api/tools", get_tools, methods=["GET"], tags=["audit"])
+    application.add_api_route("/api/tool/{tool_id}/deep", get_tool_deep, methods=["GET"], response_model=DeepTelemetryReport, tags=["audit"])
 
     # Ports & Sockets
     application.add_api_route("/api/ports", get_ports, methods=["GET"], response_model=List[PortInfo], tags=["ports"])
@@ -155,6 +163,8 @@ __all__ = [
     "get_audit",
     "stream_audit",
     "get_tools",
+    "get_tool_deep",
+    "DeepTelemetryReport",
     "post_audit",
     "get_ports",
     "post_kill_port",

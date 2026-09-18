@@ -8,7 +8,7 @@ from datetime import datetime, timezone
 from typing import Dict, List, Optional, Type
 
 from devtoolkit.core.base import BaseInspector, BaseUtility
-from devtoolkit.core.models import AuditSummary, HealthStatus, ToolReport
+from devtoolkit.core.models import AuditSummary, DeepTelemetryReport, HealthStatus, ToolReport
 from devtoolkit.core.runner import SafeRunner
 import devtoolkit.modules.inspectors as inspectors_pkg
 
@@ -210,4 +210,29 @@ class PluginRegistry:
             "not_found_count": not_found_count,
             "system": sys_info.model_dump(mode="json"),
         }
+
+    def run_deep_inspection(self, tool_id: str) -> Optional[DeepTelemetryReport]:
+        """Execute on-demand deep inspection for a specific tool with latency tracking."""
+        inspector = self.get_inspector(tool_id)
+        if not inspector:
+            return None
+
+        import time
+        start = time.perf_counter()
+        try:
+            report = inspector.deep_inspect(self.runner)
+        except Exception as e:
+            report = DeepTelemetryReport(
+                tool_id=tool_id,
+                timestamp=datetime.now(timezone.utc).isoformat(),
+                probe_latency_ms=0,
+                instances=[],
+                env_vars=[],
+                telemetry={"error": str(e)},
+                raw_dumps={},
+                discovery_trace=[f"Error during deep inspection: {e}"],
+            )
+        elapsed_ms = int((time.perf_counter() - start) * 1000)
+        report.probe_latency_ms = elapsed_ms
+        return report
 

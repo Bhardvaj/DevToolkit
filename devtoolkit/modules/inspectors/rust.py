@@ -1,12 +1,18 @@
-"""Rust & Cargo Systems Programming Inspector."""
-
 import re
+import sys
+from datetime import datetime, timezone
 from pathlib import Path
+from typing import Any
+
 from devtoolkit.core.base import BaseInspector
+from devtoolkit.core.inventory import OSInventory
 from devtoolkit.core.models import (
     CompanionTool,
+    DeepTelemetryReport,
     DiagnosticIssue,
     DiagnosticLevel,
+    DiscoveredInstance,
+    EnvVarStatus,
     HealthStatus,
     ToolReport,
 )
@@ -68,7 +74,7 @@ class RustInspector(BaseInspector):
                 DiagnosticIssue(
                     level=DiagnosticLevel.WARNING,
                     message="Cargo package manager is not found alongside rustc.",
-                    suggested_fix="Install Cargo via rustup or distribution package manager.",
+                    suggested_fix="rustup component add cargo",
                 )
             )
 
@@ -86,4 +92,131 @@ class RustInspector(BaseInspector):
             status=status,
             companions=companions,
             diagnostics=diagnostics,
+        )
+
+    def deep_inspect(self, runner: SafeRunner) -> DeepTelemetryReport:
+        base_rep = self.inspect(runner)
+        trace: list[str] = [f"Base inspection complete. installed={base_rep.installed}"]
+        instances: list[DiscoveredInstance] = []
+        seen_paths: set[str] = set()
+
+        def _add_inst(p: Path, bin_p: Path | None, ver: str | None, src: str, active: bool, details: str | None = None):
+            key = str(bin_p or p).lower() if sys.platform == "win32" else str(bin_p or p)
+            if key not in seen_paths:
+                seen_paths.add(key)
+                instances.append(
+                    DiscoveredInstance(
+                        path=str(p),
+                        binary_path=str(bin_p) if bin_p else None,
+                        version=ver,
+                        source=src,
+                        is_active=active,
+                        details=details,
+                    )
+                )
+
+        # 1. System PATH binaries
+        path_bins = runner.resolve_all_binaries("rustc")
+        trace.append(f"Found {len(path_bins)} 'rustc' binary candidates in system PATH")
+        for idx, pb in enumerate(path_bins):
+            is_act = (idx == 0) and bool(base_rep.binary_path) and (str(pb).lower() == str(base_rep.binary_path).lower())
+            ver = base_rep.version if is_act else None
+            _add_inst(pb.parent, pb, ver, "PATH", is_act, "Active binary in system PATH" if is_act else "Alternate binary in PATH")
+
+        # 2. Standard Cargo Home Bin
+        std_cargo_bin = Path.home() / ".cargo" / "bin" / ("rustc.exe" if sys.platform == "win32" else "rustc")
+        if std_cargo_bin.exists():
+            is_act = bool(base_rep.binary_path) and (str(std_cargo_bin).lower() == str(base_rep.binary_path).lower())
+            _add_inst(std_cargo_bin.parent, std_cargo_bin, None, "Default", is_act, "Rustup standard ~/.cargo/bin location")
+
+        # 3. Monitored Environment Variables Alignment
+        env_vars: list[EnvVarStatus] = []
+
+        # CARGO_HOME
+        cargo_home = runner.read_env("CARGO_HOME")
+        std_cargo = Path.home() / ".cargo"
+        if cargo_home:
+            c_exists = Path(cargo_home).exists()
+            env_vars.append(
+                EnvVarStatus(
+                    name="CARGO_HOME",
+                    value=cargo_home,
+                    status="aligned" if c_exists else "divergent",
+                    target_path=cargo_home,
+                    message="Custom Cargo directory exists" if c_exists else "Configured CARGO_HOME does not exist!",
+                )
+            )
+        else:
+            env_vars.append(
+                EnvVarStatus(
+                    name="CARGO_HOME",
+                    value=str(std_cargo) if std_cargo.exists() else None,
+                    status="aligned",
+                    message="Using default ~/.cargo directory" if std_cargo.exists() else "Default ~/.cargo directory not created yet",
+                )
+            )
+
+        # RUSTUP_HOME
+        rustup_home = runner.read_env("RUSTUP_HOME")
+        std_rustup = Path.home() / ".rustup"
+        if rustup_home:
+            r_exists = Path(rustup_home).exists()
+            env_vars.append(
+                EnvVarStatus(
+                    name="RUSTUP_HOME",
+                    value=rustup_home,
+                    status="aligned" if r_exists else "divergent",
+                    target_path=rustup_home,
+                    message="Custom Rustup toolchain root exists" if r_exists else "Configured RUSTUP_HOME does not exist!",
+                )
+            )
+        else:
+            env_vars.append(
+                EnvVarStatus(
+                    name="RUSTUP_HOME",
+                    value=str(std_rustup) if std_rustup.exists() else None,
+                    status="aligned",
+                    message="Using default ~/.rustup directory" if std_rustup.exists() else "Default ~/.rustup directory not created yet",
+                )
+            )
+
+        # 4. Deep Domain Telemetry & Raw Dumps
+        telemetry: dict[str, Any] = {
+            "has_cargo": any(c.installed for c in base_rep.companions if c.name == "cargo"),
+            "has_rustup": any(c.installed for c in base_rep.companions if c.name == "rustup"),
+        }
+
+        raw_dumps: dict[str, str] = {}
+        if base_rep.binary_path:
+            # rustc -vV (host triple, commit hash, date)
+            vv_res = runner.run_command([base_rep.binary_path, "-vV"], timeout=2.5)
+            if vv_res.ok and vv_res.stdout:
+                raw_dumps["rustc -vV"] = vv_res.stdout
+                for line in vv_res.stdout.splitlines():
+                    if line.startswith("host:"):
+                        telemetry["host_triple"] = line.split(":")[-1].strip()
+                    elif line.startswith("commit-hash:"):
+                        telemetry["commit_hash"] = line.split(":")[-1].strip()[:9]
+                    elif line.startswith("release:"):
+                        telemetry["compiler_release"] = line.split(":")[-1].strip()
+
+            # rustup show
+            rustup_bin = runner.resolve_binary("rustup")
+            if rustup_bin:
+                show_res = runner.run_command([str(rustup_bin), "show"], timeout=3.0)
+                if show_res.ok and show_res.stdout:
+                    raw_dumps["rustup show"] = show_res.stdout
+                    for line in show_res.stdout.splitlines():
+                        if "(default)" in line:
+                            telemetry["default_toolchain"] = line.split()[0].strip()
+
+        return DeepTelemetryReport(
+            tool_id=self.id,
+            timestamp=datetime.now(timezone.utc).isoformat(),
+            probe_latency_ms=0,
+            instances=instances,
+            env_vars=env_vars,
+            telemetry=telemetry,
+            raw_dumps=raw_dumps,
+            discovery_trace=trace,
         )

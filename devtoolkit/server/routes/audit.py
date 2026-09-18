@@ -1,10 +1,10 @@
 """Environment audit and tools inspection API routes."""
 
 import json
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 from fastapi.responses import StreamingResponse
 
-from devtoolkit.core.models import AuditSummary
+from devtoolkit.core.models import AuditSummary, DeepTelemetryReport
 from devtoolkit.core.registry import PluginRegistry
 from devtoolkit.server.models import AuditRequest
 
@@ -52,3 +52,11 @@ def get_tools():
         }
         for i in inspectors
     ]
+
+
+@router.get("/tool/{tool_id}/deep", response_model=DeepTelemetryReport)
+def get_tool_deep(tool_id: str):
+    report = registry.run_deep_inspection(tool_id)
+    if not report:
+        raise HTTPException(status_code=404, detail=f"Tool '{tool_id}' not found")
+    return report

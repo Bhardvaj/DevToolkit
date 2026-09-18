@@ -136,6 +136,56 @@ class SafeRunner:
 
         return None
 
+    def resolve_all_binaries(
+        self,
+        name: str,
+        extra_paths: Optional[List[str]] = None,
+    ) -> List[Path]:
+        """Resolve all instances of an executable across PATH and optional candidate paths in order of precedence."""
+        results: List[Path] = []
+        seen_str: set = set()
+
+        def _add(p: Path):
+            try:
+                resolved = p.resolve()
+                key = str(resolved).lower() if sys.platform == "win32" else str(resolved)
+                if key not in seen_str and resolved.is_file():
+                    seen_str.add(key)
+                    results.append(resolved)
+            except Exception:
+                pass
+
+        # 1. Primary shutil.which
+        primary = shutil.which(name)
+        if primary:
+            _add(Path(primary))
+
+        # 2. Windows where.exe (returns ALL occurrences in PATH in precedence order)
+        if sys.platform == "win32":
+            res = self.run_command(["where.exe", name], timeout=2.5)
+            if res.ok and res.stdout:
+                for line in res.stdout.splitlines():
+                    clean = line.strip()
+                    if clean:
+                        _add(Path(clean))
+
+        # 3. Check extra paths
+        if extra_paths:
+            extensions = [""]
+            if sys.platform == "win32":
+                extensions = ["", ".exe", ".cmd", ".bat", ".ps1"]
+
+            for candidate_dir in extra_paths:
+                base_dir = Path(candidate_dir).expanduser()
+                if not base_dir.exists():
+                    continue
+                for ext in extensions:
+                    target = base_dir / f"{name}{ext}"
+                    if target.is_file() and os.access(target, os.X_OK):
+                        _add(target)
+
+        return results
+
     def read_env(self, var_name: str) -> Optional[str]:
         """Safely read an environment variable."""
         val = os.environ.get(var_name)

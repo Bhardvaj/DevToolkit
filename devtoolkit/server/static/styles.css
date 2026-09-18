@@ -161,3 +161,24 @@ body {
       background-size: 200% 100%;
       animation: shimmer 1.8s infinite;
     }
+    .badge-aligned {
+      color: #10B981;
+      background: rgba(16, 185, 129, 0.12);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+    .badge-divergent {
+      color: #F59E0B;
+      background: rgba(245, 158, 11, 0.12);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+    }
+    .badge-missing {
+      color: #EF4444;
+      background: rgba(239, 68, 68, 0.12);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+    }
+    .instance-active-badge {
+      color: #10B981;
+      background: rgba(16, 185, 129, 0.12);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+

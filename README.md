@@ -22,7 +22,15 @@
   - Top breadcrumbs bar with instant global search (`Ctrl+K`), rescan, and 1-click Markdown/JSON report export.
   - Interactive metric stat cards with 2px progress tracks (*Audited Tools*, *Installed*, *Healthy*, *Action Needed*, *Critical Errors*, *Not Found*).
   - Progressive Server-Sent Events (SSE) streaming with skeleton shimmers for sub-50ms instant first paint.
-  - Slide-over Inspector Drawer with full path copying, Explorer launch, 1-click remediation, companion matrix, and raw JSON.
+  - 🔬 **Standardized 7-Zone Deep Tool Inspection**:
+    - **Zone 1: Identity & Health Header**: Tool icon, name, category, health status, and live probe latency in ms.
+    - **Zone 2: Primary Runtime & Quick Access**: Active binary path, 1-click "Open in Explorer", copy path, and discovery source badge.
+    - **Zone 3: Multi-Instance & Precedence Discovery**: Detects all runtime instances via `where.exe`, classifying `Active (PATH)` vs. `Alternate` standby installations.
+    - **Zone 4: Environment Variable Alignment Matrix**: Live audit of key environment variables (`JAVA_HOME`, `GOROOT`, `PYTHONPATH`, etc.) with `Aligned`, `Divergent`, or `Missing` indicators.
+    - **Zone 5: Subsystems & Ecosystem Status**: Companion tools, package managers, and sub-runtime matrix.
+    - **Zone 6: Remediation & Setup Commands**: Copyable terminal commands with a 1-click copy button (safe, non-mutating).
+    - **Zone 7: Deep Diagnostics & CLI Telemetry**: Rich CLI diagnostic dumps (`dotnet --info`, `go env -json`, `git config -l --show-origin`), warnings, and JSON telemetry export.
+    - **On-Demand Shimmer Loading**: Telemetry loads on-demand via `GET /api/tool/{tool_id}/deep` with skeleton shimmer loaders.
   - Modern Port Manager with Web/Database/Debug categorization, browser opening, process grouping, and protected OS safeguards.
   - Visual Project Auditor with readiness gauge, recent project history chips, and native Windows folder browser picker.
 

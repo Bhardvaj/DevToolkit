@@ -36,6 +36,7 @@ def test_server_routes_registered():
     assert "/api/ports" in route_paths
     assert "/api/ports/kill" in route_paths
     assert "/api/project/audit" in route_paths
+    assert "/api/tool/{tool_id}/deep" in route_paths
     assert "/" in route_paths
 
 

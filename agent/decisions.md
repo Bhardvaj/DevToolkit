@@ -82,3 +82,42 @@ This file tracks major architectural choices, technical decisions, and trade-off
   - Provides a fast, non-mutating readiness check before compilation or running scripts.
   - Generates clear, copy-pasteable terminal commands to resolve missing dependencies.
 
+---
+
+## ADR-0008: Server Decomposition & Pure Static Frontend Asset Separation
+- **Date**: 2026-09-18
+- **Status**: Accepted
+- **Context**: `devtoolkit/server/app.py` grew into a 3,160-line monolith containing API endpoints, Pydantic models, inline HTML layout strings, embedded CSS, and 1,800+ lines of raw inline JavaScript. This degraded maintainability, prevented linting/syntax highlighting, and made incremental UI work fragile.
+- **Decision**: Decompose the server module into domain-driven components:
+  1. `models.py`: Dedicated API request and response schemas.
+  2. `routes/`: Modular APIRouters (`system.py`, `audit.py`, `ports.py`, `project.py`, `actions.py`).
+  3. `ui.py`: Robust 3-layer template engine (`importlib.resources` -> `sys._MEIPASS` -> filesystem) with zero runtime dependencies.
+  4. `static/`: Pure `index.html`, `styles.css`, and `app.js` with full syntax highlighting.
+  5. `app.py`: Clean 134-line coordinator with full backward-compatibility re-exports.
+- **Consequences**:
+  - Full IDE syntax highlighting, formatting, and static analysis for HTML/CSS/JS.
+  - Single-payload, zero-latency inlining preserved at serve-time for 100% offline desktop reliability.
+  - Core codebase modularity drastically improved without changing UI or behavior.
+
+---
+
+## ADR-0009: On-Demand Deep Tool Inspection & Standardized 7-Zone Process Flow
+- **Date**: 2026-09-18
+- **Status**: Accepted
+- **Context**: In Phase 5, tool card clicks revealed basic details, but lacked deep insight into multi-instance conflicts (e.g. multiple Python/Node versions on PATH vs Program Files or zip extracts), environment variable alignment (`JAVA_HOME`, `GOROOT`, `DOTNET_ROOT`), raw CLI diagnostics (`dotnet --info`, `go env`), and actionable copyable commands. Furthermore, running comprehensive diagnostic sub-commands on every tool during baseline audit would severely slow down initial page load.
+- **Decision**:
+  1. Standardize a consistent 7-Zone Process Flow layout inside the slide-over Inspector Drawer:
+     - Zone 1: Identity & Health Header (icon, title, status, version, category, latency).
+     - Zone 2: Primary Runtime & Quick Access (path, folder open, copy path, source).
+     - Zone 3: Multi-Instance & Precedence Discovery (active PATH vs alternates with source badges).
+     - Zone 4: Environment Variable Alignment Matrix (aligned, divergent, missing with expected targets).
+     - Zone 5: Subsystems & Ecosystem Status (companion tools, versions, availability).
+     - Zone 6: Remediation & Setup Commands (strictly copyable terminal commands with 1-click copy button, no 1-click system mutation).
+     - Zone 7: Deep Diagnostics & CLI Telemetry (tabs for diagnostic CLI dumps, security/perf warnings, raw JSON export).
+  2. Implement an on-demand REST endpoint `GET /api/tool/{tool_id}/deep` triggered only upon opening the drawer. Initial page load remains ultra-fast (<50ms via SSE), while the drawer shows an animated shimmer skeleton until deep telemetry arrives.
+- **Consequences**:
+  - Fast baseline dashboard startup is completely preserved.
+  - Multi-instance conflicts and path shadowing are immediately visible and actionable.
+  - Safe user control: no automatic system mutations without explicit terminal review.
+
+

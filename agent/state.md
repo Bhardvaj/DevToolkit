@@ -4,9 +4,9 @@ This document is continuously updated to reflect current project status, complet
 
 ---
 
-## Current Status: Phase 6.1 Complete (Code Maintainability & Modularity Refactoring, Server Decomposition, Static Frontend Separation)
-- **Active Task**: Phase 6.1 completed, 100% verified with 52 passing tests, and recompiled into standalone binary `dist/DevToolkit.exe` (20.88 MB).
-- **Architecture**: Decoupled Engine + 22 Tool Inspectors + 4-Layer Generalized Discovery + Modular Server Architecture (`devtoolkit/server/` decomposed into `app.py`, `models.py`, `routes/`, `ui.py`, and pure static frontend assets in `static/` with syntax highlighting and 3-layer resource resolution) + Google Stitch Precision UI (Obsidian Canvas, Geist & JetBrains Mono Typography, Micro-Borders, 4px Radii) + Dual-Mode Executable Entrypoint.
+## Current Status: Phase 7 (Batch 1) Complete (Deep Tool Inspection, Multi-Instance Detection, 7-Zone Process Flow)
+- **Active Task**: Phase 7 (Batch 1 - 8 Core Tools) completed, 100% verified with 56 passing tests, and recompiled into standalone binary `dist/DevToolkit.exe` (20.92 MB).
+- **Architecture**: Decoupled Engine + 22 Tool Inspectors + 4-Layer Generalized Discovery + Modular Server Architecture + Google Stitch Precision UI + 7-Zone Standardized Inspector Drawer + Multi-Instance Precedence Engine (`where.exe`) + Environment Variable Alignment Matrix + On-Demand Telemetry API (`GET /api/tool/{tool_id}/deep`) + Safe Copyable Remediations.
 - **Repository**: Synced on GitHub at [https://github.com/Bhardvaj/DevToolkit](https://github.com/Bhardvaj/DevToolkit).
 
 ---
@@ -141,11 +141,49 @@ This document is continuously updated to reflect current project status, complet
 
 ---
 
+## Milestone Checklist: Phase 7 (Batch 1 Completed - Deep Tool Inspection & 7-Zone Process Flow)
+- [x] **Core Deep Telemetry Models & Runner Precedence**:
+  - Extended `devtoolkit/core/models.py` with `DiscoveredInstance`, `EnvVarStatus`, `DeepTelemetryReport`, and `ToolReport.deep_report`.
+  - Added `SafeRunner.resolve_all_binaries` in `devtoolkit/core/runner.py` using native `where.exe` on Windows (and `which -a` on Unix) to discover all instances and enforce PATH precedence.
+  - Extended `BaseInspector.deep_inspect` in `devtoolkit/core/base.py` with default fallback telemetry.
+  - Implemented `PluginRegistry.run_deep_inspection(tool_id)` with execution latency tracking in ms.
+- [x] **On-Demand Deep Telemetry REST API**:
+  - Added `GET /api/tool/{tool_id}/deep` in `devtoolkit/server/routes/audit.py` with 404 error handling for unknown tools.
+  - Re-exported route in `devtoolkit/server/app.py`.
+- [x] **Batch 1 Deep Inspector Overhauls (8 Core Tools)**:
+  - **Python**: Resolves virtual environments, system PATH, Store stubs, Registry installs; evaluates `PYTHONPATH` & `PYTHONHOME`; runs `python -m sysconfig` (paths & platform) and `pip list --outdated --format=json`.
+  - **Node.js**: Resolves active node vs NVM/Volta versions; checks `NODE_PATH` & `npm config get prefix`; runs `npm doctor` & global package versions.
+  - **Git**: Resolves Git binaries and alternates (e.g. Git for Windows, scoop, winget); checks `GIT_EXEC_PATH` & `GIT_SSH`; dumps `git config --list --show-origin` and detects commit signing keys (`user.signingkey`).
+  - **Docker**: Inspects engine status; runs `docker version`, `docker system df`, `docker compose version`; checks `DOCKER_HOST`, `DOCKER_TLS_VERIFY`, `DOCKER_CERT_PATH`.
+  - **Java**: Resolves JDKs across `JAVA_HOME`, registry, Studio JBR, Gradle; parses `release` bytecode architecture; dumps `java -XshowSettings:properties -version` and `javac -version`.
+  - **Go**: Resolves Go compiler instances; checks `GOROOT` & `GOPATH` alignment; runs `go env -json` and parses cache directories.
+  - **Rust**: Resolves `rustc` and `cargo`; checks `RUSTUP_HOME` & `CARGO_HOME`; runs `rustup show` (active toolchain + targets) and `cargo --version --verbose`.
+  - **.NET SDK**: Resolves `dotnet` SDKs and runtimes; checks `DOTNET_ROOT` & `DOTNET_MULTILEVEL_LOOKUP`; runs `dotnet --info` and `dotnet --list-sdks`.
+- [x] **Standardized 7-Zone Slide-Over Inspector Drawer**:
+  - **Zone 1: Identity & Health Header**: Tool icon, display name, category, health badge, version chip, and probe latency badge (`12ms`).
+  - **Zone 2: Primary Runtime & Quick Access**: Monospace active path, "Open in Explorer" folder button, copy path button, and discovery source badge.
+  - **Zone 3: Multi-Instance & Precedence Discovery**: Lists all discovered instances with `Active (PATH)` vs `Alternate` status badges, source, and instance path.
+  - **Zone 4: Environment Variable Alignment Matrix**: Tabular matrix of relevant env vars displaying name, current value, recommended target, and status badges (`Aligned`, `Divergent`, `Missing`).
+  - **Zone 5: Subsystems & Ecosystem Status**: Companion tools, sub-runtimes, package managers, and versions.
+  - **Zone 6: Remediation & Setup Commands**: Strictly copyable terminal commands with a 1-click copy button (purged 1-click system execution for security).
+  - **Zone 7: Deep Diagnostics & CLI Telemetry**: Tabbed interface switching between CLI Raw Outputs (colored pre code blocks), Warnings/Security advisories, and Raw JSON payload download.
+- [x] **Client-Side UX & Shimmer Skeleton Loading**:
+  - Implemented on-demand fetch in `app.js` with client-side caching per drawer open session.
+  - Rendered animated shimmer skeleton placeholders while `GET /api/tool/{tool_id}/deep` resolves, guaranteeing non-blocking baseline startup.
+- [x] **Verification & Standalone Recompilation**:
+  - 56 passing unit tests (`56 passed in 39.17s`).
+  - Standalone binary recompiled: `dist/DevToolkit.exe` (20.92 MB).
+  - Screenshots captured and verified: Python, Node.js, .NET.
+
+---
+
 ## Future Horizons & Candidate Roadmap
 
-1. **Build Cache & Disk Cleaner (`devtoolkit clean`)**:
+1. **Phase 7 (Batch 2 - Remaining 14 Tools)**:
+   - Deep inspection implementations for VS Code, Bun, GitHub CLI, CMake, Ollama, Kubectl, Terraform, C/C++, PHP, CUDA, SQLite, Android SDK, Android Studio, Flutter.
+2. **Build Cache & Disk Cleaner (`devtoolkit clean`)**:
    - Audit and prune build caches across Node (`npm`, `pnpm`, `yarn`), Python (`pip`), Gradle (`.gradle/caches`), Docker (`docker system prune`), Flutter (`.pub-cache`).
-2. **Multi-Platform CI Matrix**:
+3. **Multi-Platform CI Matrix**:
    - Expand `.github/workflows/build.yml` to compile standalone binaries for macOS (`DevToolkit-macOS-arm64`) and Linux (`DevToolkit-linux-x86_64`).
 
 
