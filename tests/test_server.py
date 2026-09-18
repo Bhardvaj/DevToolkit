@@ -100,6 +100,15 @@ def test_serve_dashboard():
     assert "Port Manager" in response
     assert "Project Auditor" in response
     assert "Environment Watcher" in response
+    # Phase 5 UI & UX additions
+    assert "inspector-drawer" in response
+    assert "stat-filter-card" in response
+    assert "export-btn" in response
+    assert "ports-grouped-container" in response
+    assert "rep-score-pct" in response
+    assert "project-recent-chips" in response
+    assert "openInspectorDrawer" in response
+    assert "toggleStatusFilter" in response
 
 
 def test_apply_fix_handler():

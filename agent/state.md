@@ -4,9 +4,9 @@ This document is continuously updated to reflect current project status, complet
 
 ---
 
-## Current Status: Phase 3 Complete (Course Correction, Vertical Desktop UI, Dual-Mode .exe, Master Docs)
-- **Active Task**: Phase 3 complete and fully verified.
-- **Architecture**: Decoupled Engine + 4-Layer Generalized Discovery + Vertical Sidebar Desktop UI + Port Manager + Project Auditor + Dual-Mode Executable Entrypoint + Full Documentation Suite.
+## Current Status: Phase 5 Complete (UI & UX Overhaul, Inspector Drawer, Port Manager & Project Auditor Modernization)
+- **Active Task**: Phase 5 complete, tested (49 passing tests), and recompiled into standalone binary `dist/DevToolkit.exe` (20.87 MB).
+- **Architecture**: Decoupled Engine + 22 Tool Inspectors + 4-Layer Generalized Discovery + Uniform Compact Cards with Slide-Over Inspector Drawer + Interactive Metric Stat Filters + Process-Grouped Port Manager with Browser Launch + Visual Project Auditor Scorecard with 1-Click Fix Scripting + Dual-Mode Executable Entrypoint.
 - **Repository**: Synced on GitHub at [https://github.com/Bhardvaj/DevToolkit](https://github.com/Bhardvaj/DevToolkit).
 
 ---
@@ -26,46 +26,43 @@ This document is continuously updated to reflect current project status, complet
 ---
 
 ## Milestone Checklist: Phase 3 (Completed)
-- [x] Step 3.1: **Vertical Sidebar Navigation & Layout Matching Target Design**:
-  - [x] Re-architected `EMBEDDED_UI_HTML` in `devtoolkit/server/app.py`.
-  - [x] Left fixed vertical sidebar with DevToolkit squircle branding, `v0.2.0` badge, host pill with live uptime, `WORKSPACE HUB` section, `PREFERENCES` section, live watcher indicator, PATH count badge, and Git user avatar profile.
-  - [x] Top header breadcrumb trail (`toolkit / • Environment & Diagnostics`) updating dynamically per tab.
-  - [x] Global search bar with `Ctrl+K` keyboard shortcut badge.
-  - [x] Horizontal 6-metric stat row (*Audited Tools*, *Installed*, *Healthy*, *Action Needed*, *Critical Errors*, *Not Found*) with colored progress underline indicators matching design.
-  - [x] Category filter pills with live counts, Grid/List view toggle, and multi-field sorting selector.
-  - [x] Rich dark glassmorphic cards with root paths, binary paths, companion subsystems, diagnostics callout, and 1-click **Apply System Fix** action.
-  - [x] Persistent bottom status bar (`Environment Watcher: Active | PATH Entries: X | RAM Footprint: X MB | [R] Rescan | [F] Fix All Safe | [?] Help`).
-- [x] Step 3.2: **Native PC Software Ergonomics & Responsiveness**:
-  - [x] Viewport lock (`h-screen overflow-hidden flex flex-col`) preventing whole-page browser scrolling.
-  - [x] Independent scrollable main content panel with custom slim dark scrollbars.
-  - [x] Desktop keyboard accelerators: `Ctrl+K` (focus search), `R` (rescan), `1-4` (tabs), `F` (apply fixes), `?` (help modal), `Esc` (close modal/blur).
-- [x] Step 3.3: **Dual-Mode Executable Entrypoint (`DevToolkit.exe`)**:
-  - [x] Configured Typer callback in `devtoolkit/cli/main.py` with `invoke_without_command=True`.
-  - [x] Double-clicking in Windows Explorer or running `DevToolkit.exe` with no subcommands automatically launches the Desktop UI window.
-  - [x] Terminal invocations with subcommands (`inspect`, `doctor`, `ports`, `project`, `config`, `ui`, `--help`) execute as standard CLI commands.
-  - [x] Updated `scripts/build_standalone.ps1` with PyInstaller hidden imports for PyWebView (`webview.platforms.winforms`, `webview.platforms.edgechromium`).
-- [x] Step 3.4: **Comprehensive `README.md` Overhaul**:
-  - [x] Fully documented all CLI commands, UI walkthrough, keyboard shortcuts, dual-mode behavior, 4-layer discovery pipeline, and plugin authoring.
-- [x] Step 3.5: **Master Software Documentation**:
-  - [x] Authored `agent/documentation.md` containing an exhaustive architectural and technical manual.
-- [x] Step 3.6: **Test Suite Verification & Packaging Hardening**:
-  - [x] 100% of unit tests passing (30 test suite items verified).
-  - [x] Fixed PyInstaller standalone binary inspector discovery: exported `BUILTIN_INSPECTORS` in `devtoolkit/modules/inspectors/__init__.py` and registered them directly in `PluginRegistry.discover_inspectors()`.
-  - [x] Fixed grid card spacing (`gap-5 lg:gap-6`) and top stat boxes alignment on narrow screens (`grid-cols-2 sm:grid-cols-3 xl:grid-cols-6` with flex clipping and standard padding).
-- [x] Step 3.7: **UI Ergonomics & Element Decluttering**:
-  - [x] Removed redundant non-functional "Process Monitor" tab from side panel.
-  - [x] Made top environment search bar and rescan button conditional on Tab 1 (Environment), automatically hiding them on Port Manager, Project Auditor, and Settings tabs.
-  - [x] Added in-view "Refresh" action button directly into Port Manager filter bar.
-  - [x] Removed uptime counter from Host pill at the top of the sidebar.
-  - [x] Removed sidebar footer (profile card and "watcher active" block) for a cleaner vertical navigation panel.
-  - [x] Removed "Fix all safe" button and shortcut from bottom right status bar.
-- [x] Step 3.8: **Card Action Simplification & Multi-Category Architecture**:
-  - [x] Removed card footer ("Ready to build", "Explore &rarr;", "Not configured", "Settings" buttons) for a cleaner, compact presentation.
-  - [x] Streamlined ROOT and BINARY actions: removed redundant Run button (`play` icon), added reliable Copy and Open Folder actions to both.
-  - [x] Fixed Open Folder action on Windows: resolved JavaScript backslash escape string interpolation by binding paths through HTML `data-path` attributes and using native Win32 `os.startfile` on backend with Explorer fallback.
-  - [x] Implemented multi-category architecture: added `categories: List[str]` across `BaseInspector`, `ToolReport`, `PluginRegistry`, and all 10 inspector implementations.
-  - [x] Updated UI category filter pills and tool cards to render multiple category badges and match across all applicable tags.
-  - [x] Verified full test suite (31 tests passing) and recompiled standalone executable (`dist/DevToolkit.exe`).
+- [x] Vertical Sidebar Navigation & Layout matching target design.
+- [x] Native PC Software Ergonomics, Viewport Lock, and Desktop Keyboard Accelerators.
+- [x] Dual-Mode Executable Entrypoint (`DevToolkit.exe`).
+- [x] UI Ergonomics & Decluttering (cleaned header, sidebar, status bar, and card actions).
+- [x] Native `os.startfile` Open in Explorer.
+- [x] Multi-category architecture for all inspectors.
+
+---
+
+## Milestone Checklist: Phase 4 (Completed)
+- [x] Batch 1 Inspectors (VS Code, .NET SDK, Bun, GitHub CLI, CMake, Ollama).
+- [x] Batch 2 Inspectors (Kubectl, Terraform, C/C++ Compiler, PHP & Composer, NVIDIA CUDA Toolkit, SQLite).
+- [x] Total of 22 built-in inspectors across 9 domain categories.
+- [x] Companion subsystems status matrix across all tools.
+
+---
+
+## Milestone Checklist: Phase 5 (Completed)
+- [x] **Uniform Compact Tool Cards & Slide-Over Inspector Drawer**:
+  - Balanced uniform tool cards across all 22 tools preventing height disparity.
+  - Smooth slide-over Inspector Drawer with backdrop blur displaying complete paths, native "Open in Explorer", copy actions, diagnostic warnings with 1-click remediation, companion subsystems status, and raw JSON export.
+- [x] **Interactive Metric Stat Filter Cards**:
+  - 6 top metric cards (*Audited Tools*, *Installed*, *Healthy*, *Action Needed*, *Critical Errors*, *Not Found*) act as one-click toggles with active rings and an active status filter reset pill.
+- [x] **Export Environment Report**:
+  - Top header dropdown offering 1-click Markdown table export (clipboard), JSON summary copy, and direct `.md` report download.
+- [x] **Port Manager Modernization**:
+  - Automatic port categorization (*Web / HTTP*, *Database*, *Dev Debug*, *Service*).
+  - 1-Click "Open in Browser" action (`http://localhost:<port>`) for active web and developer ports.
+  - View mode toggle: Flat Sockets Table vs. Grouped by Process cards.
+- [x] **Project Auditor Modernization**:
+  - Visual Readiness Scorecard with percentage meter, breakdown counters, and manifest tags.
+  - Recent Projects history chips preserved in `localStorage` for 1-click re-scanning.
+  - 1-Click "Copy All Fix Commands" combining suggested setup actions into a copyable terminal script.
+- [x] **Verification & Standalone Recompilation**:
+  - All 49 unit tests passing (`49 passed in 30.67s`).
+  - Standalone executable recompiled: `dist/DevToolkit.exe` (20.87 MB).
+  - Smoke tests verified.
 
 ---
 

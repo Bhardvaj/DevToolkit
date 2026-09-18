@@ -276,6 +276,11 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
     .cat-active { background-color: #1e293b; color: #ffffff; border-color: #3b82f6; }
     .cat-inactive { color: #94a3b8; border-color: #1e293b; }
     .cat-inactive:hover { color: #ffffff; background-color: rgba(30, 41, 59, 0.4); }
+    .stat-filter-card { cursor: pointer; transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1); border: 1px solid rgba(255,255,255,0.07); }
+    .stat-filter-card:hover { border-color: rgba(96, 165, 250, 0.45); transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35); }
+    .stat-filter-active { border-color: #3b82f6 !important; background: rgba(30, 58, 138, 0.3) !important; box-shadow: 0 0 0 1px #3b82f6, 0 8px 24px rgba(59, 130, 246, 0.25) !important; }
+    .drawer-panel { transform: translateX(100%); transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1); }
+    .drawer-panel.open { transform: translateX(0); }
   </style>
 </head>
 <body class="h-full w-full bg-darkBg text-slate-100 font-sans select-none overflow-hidden flex flex-col">
@@ -380,6 +385,26 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
             <span class="text-[10px] font-mono text-slate-400" id="rescan-timer">(now)</span>
           </button>
 
+          <!-- Export Dropdown -->
+          <div class="relative inline-block text-left" id="export-dropdown-wrapper">
+            <button onclick="toggleExportMenu()" id="export-btn" class="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 bg-[#0e1526] hover:bg-[#131d36] text-slate-200 border border-slate-700/80 rounded-lg text-xs font-semibold transition shadow-sm flex-shrink-0" title="Export Environment Audit Report">
+              <i class="fa-solid fa-file-export text-xs text-blue-400"></i>
+              <span class="hidden md:inline">Export</span>
+              <i class="fa-solid fa-chevron-down text-[9px] text-slate-400"></i>
+            </button>
+            <div id="export-menu" class="hidden absolute right-0 mt-1 w-48 rounded-xl bg-slate-900 border border-slate-700 shadow-2xl z-50 py-1.5 text-xs text-slate-300">
+              <button onclick="exportReport('md')" class="w-full text-left px-3 py-2 hover:bg-slate-800 hover:text-white flex items-center gap-2 transition">
+                <i class="fa-solid fa-clipboard text-blue-400"></i> Copy Markdown Table
+              </button>
+              <button onclick="exportReport('json')" class="w-full text-left px-3 py-2 hover:bg-slate-800 hover:text-white flex items-center gap-2 transition">
+                <i class="fa-solid fa-code text-indigo-400"></i> Copy JSON Summary
+              </button>
+              <button onclick="exportReport('download')" class="w-full text-left px-3 py-2 hover:bg-slate-800 hover:text-white flex items-center gap-2 transition border-t border-slate-800 mt-1 pt-1.5">
+                <i class="fa-solid fa-download text-emerald-400"></i> Download Report (.md)
+              </button>
+            </div>
+          </div>
+
           <button onclick="toggleHelpModal()" class="p-2 hover:bg-slate-800/60 text-slate-400 hover:text-white rounded-lg transition flex-shrink-0" title="Shortcuts & Help (?)">
             <i class="fa-regular fa-circle-question text-sm"></i>
           </button>
@@ -392,10 +417,10 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
         <!-- ==================== VIEW 1: ENVIRONMENT AUDITOR ==================== -->
         <div id="view-env" class="space-y-6">
 
-          <!-- 6 Horizontal Stat Cards (Responsive: 2 cols on mobile, 3 cols on medium/narrow, 6 cols on xl desktop) -->
+          <!-- 6 Horizontal Interactive Stat Filter Cards -->
           <div class="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-3 sm:gap-4" id="stats-container">
             <!-- 1. Audited Tools -->
-            <div class="glass-card rounded-xl p-3.5 sm:p-4 flex flex-col justify-between relative overflow-hidden min-w-0">
+            <div onclick="toggleStatusFilter('all')" id="stat-card-all" class="glass-card stat-filter-card rounded-xl p-3.5 sm:p-4 flex flex-col justify-between relative overflow-hidden min-w-0" title="Click to show all tools">
               <div class="flex items-center justify-between gap-1 text-xs text-slate-400 font-medium min-w-0">
                 <span class="truncate">Audited Tools</span>
                 <i class="fa-regular fa-pen-to-square text-[11px] text-slate-500 flex-shrink-0"></i>
@@ -410,7 +435,7 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
             </div>
 
             <!-- 2. Installed -->
-            <div class="glass-card rounded-xl p-3.5 sm:p-4 flex flex-col justify-between relative overflow-hidden min-w-0">
+            <div onclick="toggleStatusFilter('installed')" id="stat-card-installed" class="glass-card stat-filter-card rounded-xl p-3.5 sm:p-4 flex flex-col justify-between relative overflow-hidden min-w-0" title="Click to filter installed tools">
               <div class="flex items-center justify-between gap-1 text-xs text-slate-400 font-medium min-w-0">
                 <span class="truncate">Installed</span>
                 <span class="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_6px_#34d399] flex-shrink-0"></span>
@@ -425,7 +450,7 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
             </div>
 
             <!-- 3. Healthy -->
-            <div class="glass-card rounded-xl p-3.5 sm:p-4 flex flex-col justify-between relative overflow-hidden min-w-0">
+            <div onclick="toggleStatusFilter('healthy')" id="stat-card-healthy" class="glass-card stat-filter-card rounded-xl p-3.5 sm:p-4 flex flex-col justify-between relative overflow-hidden min-w-0" title="Click to filter healthy tools">
               <div class="flex items-center justify-between gap-1 text-xs text-slate-400 font-medium min-w-0">
                 <span class="truncate">Healthy</span>
                 <span class="text-[10px] px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-300 font-semibold border border-emerald-500/30 flex-shrink-0">Optimal</span>
@@ -440,7 +465,7 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
             </div>
 
             <!-- 4. Action Needed -->
-            <div class="glass-card rounded-xl p-3.5 sm:p-4 flex flex-col justify-between relative overflow-hidden min-w-0">
+            <div onclick="toggleStatusFilter('warning')" id="stat-card-warning" class="glass-card stat-filter-card rounded-xl p-3.5 sm:p-4 flex flex-col justify-between relative overflow-hidden min-w-0" title="Click to filter tools with action needed">
               <div class="flex items-center justify-between gap-1 text-xs text-slate-400 font-medium min-w-0">
                 <span class="truncate">Action Needed</span>
                 <span class="w-2 h-2 rounded-full bg-amber-400 shadow-[0_0_6px_#fbbf24] flex-shrink-0"></span>
@@ -455,10 +480,10 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
             </div>
 
             <!-- 5. Critical Errors -->
-            <div class="glass-card rounded-xl p-3.5 sm:p-4 flex flex-col justify-between relative overflow-hidden min-w-0">
+            <div onclick="toggleStatusFilter('error')" id="stat-card-error" class="glass-card stat-filter-card rounded-xl p-3.5 sm:p-4 flex flex-col justify-between relative overflow-hidden min-w-0" title="Click to filter tools with errors">
               <div class="flex items-center justify-between gap-1 text-xs text-slate-400 font-medium min-w-0">
                 <span class="truncate">Critical Errors</span>
-                <span class="w-2 h-2 rounded-full bg-slate-500 flex-shrink-0"></span>
+                <span class="w-2 h-2 rounded-full bg-rose-500 flex-shrink-0"></span>
               </div>
               <div class="flex items-baseline justify-between gap-2 my-2 min-w-0">
                 <div class="text-xl sm:text-2xl font-black text-white tracking-tight leading-none flex-shrink-0" id="stat-error">—</div>
@@ -470,7 +495,7 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
             </div>
 
             <!-- 6. Not Found -->
-            <div class="glass-card rounded-xl p-3.5 sm:p-4 flex flex-col justify-between relative overflow-hidden min-w-0">
+            <div onclick="toggleStatusFilter('not_found')" id="stat-card-not_found" class="glass-card stat-filter-card rounded-xl p-3.5 sm:p-4 flex flex-col justify-between relative overflow-hidden min-w-0" title="Click to filter undetected tools">
               <div class="flex items-center justify-between gap-1 text-xs text-slate-400 font-medium min-w-0">
                 <span class="truncate">Not Found</span>
                 <span class="w-2 h-2 rounded-full bg-slate-600 flex-shrink-0"></span>
@@ -485,11 +510,25 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
             </div>
           </div>
 
-          <!-- Category Filter Pills + Layout Toggle & Sort Bar -->
+          <!-- Category Filter Pills + Status Pill + Layout Toggle & Sort Bar -->
           <div class="flex flex-col sm:flex-row items-center justify-between gap-3 bg-[#0a0f1e]/70 p-2.5 rounded-xl border border-slate-800/80">
-            <!-- Left: Filter Pills with Counts -->
-            <div class="flex items-center gap-1.5 overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0 custom-scrollbar" id="category-filters">
-              <!-- Dynamically populated by renderCategoryPills() -->
+            <!-- Left: Filter Pills with Counts & Active Status Pill -->
+            <div class="flex items-center gap-2 overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0 custom-scrollbar">
+              <div class="flex items-center gap-1.5" id="category-filters">
+                <!-- Dynamically populated by renderCategoryPills() -->
+              </div>
+
+              <!-- Active Status Filter Indicator Pill -->
+              <div id="active-status-pill-container" class="hidden items-center gap-1.5 pl-2 border-l border-slate-800">
+                <span id="active-status-pill" class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-blue-500/20 text-blue-300 border border-blue-500/30 flex items-center gap-1.5">
+                  <span id="active-status-pill-label">Filter: Action Needed</span>
+                  <button onclick="clearStatusFilter()" class="hover:text-white p-0.5" title="Clear status filter"><i class="fa-solid fa-xmark text-[10px]"></i></button>
+                </span>
+              </div>
+
+              <button id="reset-filters-btn" onclick="resetAllFilters()" class="hidden px-2 py-1 text-[11px] font-semibold text-rose-300 hover:text-rose-200 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/25 rounded-lg transition flex items-center gap-1 flex-shrink-0">
+                <i class="fa-solid fa-filter-circle-xmark text-[10px]"></i> Reset
+              </button>
             </div>
 
             <!-- Right: Layout Switcher & Sort Selector -->
@@ -575,41 +614,59 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
 
           <!-- Ports Filter Bar -->
           <div class="flex flex-col sm:flex-row items-center justify-between gap-3 bg-[#0a0f1e]/70 p-3 rounded-xl border border-slate-800/80">
-            <div class="flex items-center gap-3 w-full sm:w-auto">
+            <div class="flex items-center gap-2.5 w-full sm:w-auto flex-wrap">
               <label class="inline-flex items-center gap-2 cursor-pointer text-xs font-semibold text-slate-300 bg-slate-800/80 px-3 py-1.5 rounded-lg border border-slate-700 hover:bg-slate-700/80 transition">
                 <input type="checkbox" id="ports-dev-toggle" onchange="fetchPorts()" class="rounded border-slate-600 text-blue-600 focus:ring-blue-500" />
                 <span>Developer Ports Only</span>
               </label>
+
+              <!-- View Mode Toggle: Flat Table vs Grouped by Process -->
+              <div class="flex items-center bg-slate-900 border border-slate-800 rounded-lg p-0.5">
+                <button onclick="setPortViewMode('flat')" id="port-view-flat-btn" class="px-2.5 py-1 rounded-md text-xs bg-blue-600/30 text-blue-400 font-semibold transition flex items-center gap-1.5" title="Flat Sockets Table">
+                  <i class="fa-solid fa-list"></i>
+                  <span class="hidden sm:inline">Flat View</span>
+                </button>
+                <button onclick="setPortViewMode('grouped')" id="port-view-grouped-btn" class="px-2.5 py-1 rounded-md text-xs text-slate-400 hover:text-white font-semibold transition flex items-center gap-1.5" title="Group by Process">
+                  <i class="fa-solid fa-layer-group"></i>
+                  <span class="hidden sm:inline">By Process</span>
+                </button>
+              </div>
+
               <button onclick="fetchPorts()" class="px-3 py-1.5 bg-[#0e1526] hover:bg-[#131d36] text-slate-300 hover:text-white border border-slate-700/80 rounded-lg text-xs font-semibold transition flex items-center gap-1.5 shadow-sm">
                 <i class="fa-solid fa-rotate text-xs"></i>
                 <span>Refresh</span>
               </button>
-              <span class="text-xs text-slate-500 hidden sm:inline">• Highlights 3000, 5173, 8080, 27017, etc.</span>
             </div>
+
             <div class="relative w-full sm:w-72">
               <i class="fa-solid fa-search absolute left-3 top-2.5 text-xs text-slate-400"></i>
-              <input type="text" id="ports-search-input" oninput="renderPortsTable()" placeholder="Filter port, process, PID..." class="w-full pl-8 pr-3 py-1.5 bg-[#070a13] border border-slate-800/90 rounded-lg text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 transition" />
+              <input type="text" id="ports-search-input" oninput="renderPorts()" placeholder="Filter port, process, PID..." class="w-full pl-8 pr-3 py-1.5 bg-[#070a13] border border-slate-800/90 rounded-lg text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 transition" />
             </div>
           </div>
 
-          <!-- Ports Table -->
-          <div class="glass-card rounded-xl border border-slate-800 overflow-hidden shadow-xl">
+          <!-- Mode 1: Flat Ports Table -->
+          <div id="ports-flat-container" class="glass-card rounded-xl border border-slate-800 overflow-hidden shadow-xl">
             <div class="overflow-x-auto">
               <table class="w-full text-left text-xs">
                 <thead class="bg-slate-950/90 text-slate-400 uppercase tracking-wider text-[10px] border-b border-slate-800 font-semibold">
                   <tr>
                     <th class="py-3 px-4">Port</th>
-                    <th class="py-3 px-4">Tag</th>
+                    <th class="py-3 px-4">Classification</th>
                     <th class="py-3 px-4">Process Name</th>
                     <th class="py-3 px-4">PID</th>
                     <th class="py-3 px-4">Address</th>
                     <th class="py-3 px-4">Status</th>
-                    <th class="py-3 px-4 text-right">Action</th>
+                    <th class="py-3 px-4 text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody id="ports-table-body" class="divide-y divide-slate-800/60 font-sans"></tbody>
               </table>
             </div>
+          </div>
+
+          <!-- Mode 2: Grouped by Process Cards -->
+          <div id="ports-grouped-container" class="space-y-4 hidden">
+            <!-- Dynamically populated by renderPortsGrouped() -->
           </div>
         </div>
 
@@ -624,7 +681,7 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
                   Project Workstation Readiness Auditor
                 </h2>
                 <p class="text-xs text-slate-400 mt-1">
-                  Select any workspace directory or project repo on your disk to verify if your workstation satisfies its SDK, runtime, compiler, and environment requirements.
+                  Select any workspace directory or project repository to verify if your workstation satisfies its SDK, runtime, compiler, and manifest requirements.
                 </p>
               </div>
             </div>
@@ -640,28 +697,47 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
               </button>
             </div>
 
-            <div class="flex items-center gap-2 text-[11px] text-slate-400">
-              <span>Quick Preset:</span>
-              <button onclick="setProjectInput('.')" class="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 font-mono transition">Current Directory (.)</button>
+            <!-- Quick Presets & Recent History -->
+            <div class="flex flex-wrap items-center gap-2 text-[11px] text-slate-400 pt-1">
+              <span class="text-slate-500">Quick Presets:</span>
+              <button onclick="setAndAuditProject('.')" class="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 font-mono transition border border-slate-700/70">Current Workspace (.)</button>
+              <div id="project-recent-chips" class="flex flex-wrap items-center gap-1.5"></div>
             </div>
           </div>
 
           <!-- Audit Results Container -->
           <div id="project-results-container" class="space-y-4 hidden">
-            <!-- Header Card -->
-            <div id="project-header-card" class="glass-card rounded-xl p-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
-              <div>
-                <div class="flex items-center gap-2">
-                  <h3 class="text-lg font-bold text-white" id="rep-project-name">—</h3>
+            <!-- Header Card & Visual Readiness Scorecard -->
+            <div id="project-header-card" class="glass-card rounded-2xl p-5 sm:p-6 flex flex-col lg:flex-row lg:items-center justify-between gap-5 border border-slate-800">
+              <div class="space-y-2 min-w-0">
+                <div class="flex flex-wrap items-center gap-2.5">
+                  <h3 class="text-xl font-black text-white tracking-tight" id="rep-project-name">—</h3>
                   <div id="rep-detected-types" class="flex flex-wrap gap-1.5"></div>
                 </div>
-                <p class="text-xs font-mono text-slate-400 mt-1" id="rep-project-path">—</p>
+                <p class="text-xs font-mono text-slate-400 truncate max-w-xl" id="rep-project-path">—</p>
               </div>
-              <div id="rep-status-badge"></div>
+
+              <!-- Readiness Scorecard Gauge -->
+              <div class="flex items-center gap-4 bg-[#070b16] p-4 rounded-xl border border-slate-800 flex-shrink-0">
+                <div class="text-center min-w-[70px]">
+                  <div class="text-2xl font-black" id="rep-score-pct">100%</div>
+                  <div class="text-[10px] uppercase tracking-wider font-bold text-slate-500">Readiness</div>
+                </div>
+                <div class="w-32 hidden sm:block">
+                  <div class="h-2 rounded-full bg-slate-800 overflow-hidden">
+                    <div id="rep-score-bar" class="h-full bg-emerald-500 rounded-full transition-all duration-500" style="width: 100%"></div>
+                  </div>
+                  <div class="flex justify-between text-[10px] font-mono text-slate-400 mt-1">
+                    <span id="rep-satisfied-count">0 satisfied</span>
+                    <span id="rep-missing-count">0 missing</span>
+                  </div>
+                </div>
+                <div id="rep-status-badge" class="flex-shrink-0"></div>
+              </div>
             </div>
 
             <!-- Requirements Checklist Table -->
-            <div class="glass-card rounded-xl border border-slate-800 overflow-hidden">
+            <div class="glass-card rounded-xl border border-slate-800 overflow-hidden shadow-xl">
               <div class="px-5 py-3.5 bg-slate-950/80 border-b border-slate-800 flex items-center justify-between">
                 <h4 class="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
                   <i class="fa-solid fa-list-check text-blue-400"></i>
@@ -679,17 +755,23 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
                       <th class="py-2.5 px-4">Diagnostic Details</th>
                     </tr>
                   </thead>
-                  <tbody id="project-checks-tbody" class="divide-y divide-slate-800/60"></tbody>
+                  <tbody id="project-checks-tbody" class="divide-y divide-slate-800/60 font-sans"></tbody>
                 </table>
               </div>
             </div>
 
             <!-- Recommended Setup Actions -->
-            <div id="project-actions-card" class="glass-card rounded-xl p-5 space-y-3 hidden border-amber-500/30 bg-amber-500/5">
-              <h4 class="text-xs font-bold text-amber-400 uppercase tracking-wider flex items-center gap-2">
-                <i class="fa-solid fa-lightbulb"></i>
-                Recommended Setup Commands
-              </h4>
+            <div id="project-actions-card" class="glass-card rounded-xl p-5 space-y-3.5 hidden border-amber-500/30 bg-amber-500/5">
+              <div class="flex items-center justify-between gap-2 flex-wrap">
+                <h4 class="text-xs font-bold text-amber-400 uppercase tracking-wider flex items-center gap-2">
+                  <i class="fa-solid fa-lightbulb"></i>
+                  Recommended Setup Commands
+                </h4>
+                <button onclick="copyAllProjectActions()" class="px-3 py-1.5 bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 border border-amber-500/30 rounded-lg text-xs font-bold transition flex items-center gap-1.5 shadow-sm">
+                  <i class="fa-regular fa-copy"></i>
+                  <span>Copy All Fix Commands</span>
+                </button>
+              </div>
               <div id="project-actions-list" class="space-y-2"></div>
             </div>
           </div>
@@ -790,6 +872,17 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
         </div>
       </footer>
 
+    </div>
+  </div>
+
+  <!-- SLIDE-OVER DETAIL DRAWER (INSPECTOR) -->
+  <div id="inspector-drawer" class="fixed inset-0 z-50 overflow-hidden hidden" aria-labelledby="slide-over-title" role="dialog" aria-modal="true">
+    <div id="inspector-backdrop" onclick="closeInspectorDrawer()" class="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity duration-300 opacity-0"></div>
+    <div class="fixed inset-y-0 right-0 max-w-full flex pl-6 sm:pl-10 pointer-events-none">
+      <div id="inspector-panel" class="w-screen max-w-xl bg-[#090e1a] border-l border-slate-800 shadow-2xl flex flex-col drawer-panel pointer-events-auto z-10">
+        <!-- Content dynamically rendered by renderInspectorDrawer() -->
+        <div id="inspector-content" class="flex-1 flex flex-col overflow-hidden"></div>
+      </div>
     </div>
   </div>
 
@@ -899,11 +992,15 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
       const savedCat = localStorage.getItem('devtoolkit_last_category');
       if (savedCat) currentCategory = savedCat;
     } catch (e) {}
+    let currentStatusFilter = null; // null | 'all' | 'installed' | 'healthy' | 'warning' | 'error' | 'not_found'
     let currentLayout = 'grid';
     let currentSort = 'severity';
+    let currentPortView = 'flat'; // 'flat' | 'grouped'
     let currentConfig = { search_paths: [] };
     let pendingKill = null;
     let lastScanTime = Date.now();
+    let activeDrawerToolId = null;
+    let currentProjectActions = [];
 
     function showToast(msg, isError = false) {
       const toast = document.getElementById('toast');
@@ -922,6 +1019,7 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
     }
 
     function copyToClipboard(text, label) {
+      if (!text) return;
       navigator.clipboard.writeText(text);
       showToast('Copied ' + (label || 'content') + ' to clipboard!');
     }
@@ -936,7 +1034,7 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
         });
         const data = await res.json();
         if (res.ok) {
-          showToast('Opened folder in Explorer');
+          showToast('Opened in File Explorer');
         } else {
           showToast(data.detail || 'Failed to open folder', true);
         }
@@ -985,12 +1083,15 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
       // Show/hide top search bar & rescan button based on active tab (only visible on Environment tab)
       const searchWrapper = document.getElementById('top-search-wrapper');
       const rescanBtn = document.getElementById('rescan-btn');
+      const exportWrapper = document.getElementById('export-dropdown-wrapper');
       if (tab === 'env') {
         if (searchWrapper) searchWrapper.classList.remove('hidden');
         if (rescanBtn) rescanBtn.classList.remove('hidden');
+        if (exportWrapper) exportWrapper.classList.remove('hidden');
       } else {
         if (searchWrapper) searchWrapper.classList.add('hidden');
         if (rescanBtn) rescanBtn.classList.add('hidden');
+        if (exportWrapper) exportWrapper.classList.add('hidden');
       }
 
       // Update Top Breadcrumb
@@ -1002,6 +1103,7 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
         fetchPorts();
       } else if (tab === 'project') {
         bc.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_6px_#34d399] flex-shrink-0"></span> Project Workstation Auditor';
+        renderRecentProjects();
       } else if (tab === 'settings') {
         bc.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-slate-400 flex-shrink-0"></span> Preferences & Search Roots';
         loadConfig();
@@ -1028,6 +1130,327 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
       }
     }
     setInterval(updateTimerDisplay, 30000);
+
+    // ==================== EXPORT REPORT LOGIC ====================
+    function toggleExportMenu() {
+      const menu = document.getElementById('export-menu');
+      if (menu) menu.classList.toggle('hidden');
+    }
+
+    function closeExportMenu() {
+      const menu = document.getElementById('export-menu');
+      if (menu && !menu.classList.contains('hidden')) menu.classList.add('hidden');
+    }
+
+    document.addEventListener('click', (e) => {
+      const wrapper = document.getElementById('export-dropdown-wrapper');
+      if (wrapper && !wrapper.contains(e.target)) {
+        closeExportMenu();
+      }
+    });
+
+    function exportReport(type) {
+      closeExportMenu();
+      if (allReports.length === 0) {
+        showToast('No audit data available to export', true);
+        return;
+      }
+
+      if (type === 'json') {
+        const payload = {
+          generated_at: new Date().toISOString(),
+          total_tools: allReports.length,
+          reports: allReports
+        };
+        copyToClipboard(JSON.stringify(payload, null, 2), 'JSON report');
+        return;
+      }
+
+      // Markdown Format
+      const installed = allReports.filter(r => r.installed).length;
+      const healthy = allReports.filter(r => r.status === 'healthy').length;
+      const warning = allReports.filter(r => r.status === 'warning').length;
+
+      let md = `# DevToolkit Workstation Environment Audit\n\n`;
+      md += `- **Generated At**: ${new Date().toLocaleString()}\n`;
+      md += `- **Tools Audited**: ${allReports.length} | **Installed**: ${installed} | **Healthy**: ${healthy} | **Action Needed**: ${warning}\n\n`;
+      md += `| Tool | Categories | Status | Version | Root / Home Path | Binary Executable |\n`;
+      md += `| :--- | :--- | :--- | :--- | :--- | :--- |\n`;
+
+      allReports.forEach(r => {
+        const cats = (r.categories && r.categories.length > 0) ? r.categories.join(', ') : r.category;
+        const stat = r.status.toUpperCase();
+        const ver = r.version ? ('v' + r.version) : (r.installed ? 'Installed' : 'Not Detected');
+        const home = r.home_path ? `\`${r.home_path}\`` : '—';
+        const bin = r.binary_path ? `\`${r.binary_path}\`` : '—';
+        md += `| **${r.name}** | ${cats} | ${stat} | ${ver} | ${home} | ${bin} |\n`;
+      });
+
+      const warnings = allReports.filter(r => r.diagnostics && r.diagnostics.length > 0);
+      if (warnings.length > 0) {
+        md += `\n## Diagnostics & Action Items\n\n`;
+        warnings.forEach(r => {
+          md += `### ${r.name}\n`;
+          r.diagnostics.forEach(d => {
+            md += `- **Issue**: ${d.message}\n`;
+            if (d.suggested_fix) {
+              md += `  - **Suggested Fix**: \`${d.suggested_fix}\`\n`;
+            }
+          });
+          md += `\n`;
+        });
+      }
+
+      if (type === 'md') {
+        copyToClipboard(md, 'Markdown report');
+      } else if (type === 'download') {
+        const blob = new Blob([md], { type: 'text/markdown' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `devtoolkit-audit-${new Date().toISOString().slice(0, 10)}.md`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        showToast('Downloaded audit report as Markdown');
+      }
+    }
+
+    // ==================== SLIDE-OVER INSPECTOR DRAWER ====================
+    function openInspectorDrawer(toolId) {
+      activeDrawerToolId = toolId;
+      renderInspectorDrawer(toolId);
+      const drawer = document.getElementById('inspector-drawer');
+      const backdrop = document.getElementById('inspector-backdrop');
+      const panel = document.getElementById('inspector-panel');
+
+      drawer.classList.remove('hidden');
+      setTimeout(() => {
+        backdrop.classList.remove('opacity-0');
+        backdrop.classList.add('opacity-100');
+        panel.classList.add('open');
+      }, 10);
+    }
+
+    function closeInspectorDrawer() {
+      const backdrop = document.getElementById('inspector-backdrop');
+      const panel = document.getElementById('inspector-panel');
+      const drawer = document.getElementById('inspector-drawer');
+
+      backdrop.classList.remove('opacity-100');
+      backdrop.classList.add('opacity-0');
+      panel.classList.remove('open');
+
+      setTimeout(() => {
+        drawer.classList.add('hidden');
+        activeDrawerToolId = null;
+      }, 280);
+    }
+
+    function renderInspectorDrawer(toolId) {
+      const container = document.getElementById('inspector-content');
+      const r = allReports.find(x => x.id === toolId);
+      if (!r) {
+        container.innerHTML = '<div class="p-6 text-slate-400">Tool details not found.</div>';
+        return;
+      }
+
+      const toolCats = (r.categories && r.categories.length > 0) ? r.categories : [r.category];
+      const categoriesHtml = toolCats.map(c => 
+        `<span class="text-[10px] text-slate-300 uppercase tracking-wider font-mono font-semibold px-2 py-0.5 bg-slate-800 rounded border border-slate-700/60">${c}</span>`
+      ).join('');
+
+      const cleanHome = (r.home_path || '').replace(/"/g, '&quot;');
+      const cleanBin = (r.binary_path || '').replace(/"/g, '&quot;');
+
+      // Diagnostics HTML
+      let diagHtml = '';
+      if (r.diagnostics && r.diagnostics.length > 0) {
+        diagHtml = r.diagnostics.map(d => {
+          const cleanFix = (d.suggested_fix || '').replace(/"/g, '&quot;');
+          return `
+            <div class="p-4 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-200 text-xs space-y-3">
+              <div class="flex items-start gap-2.5 font-medium leading-relaxed">
+                <i class="fa-solid fa-triangle-exclamation text-amber-400 mt-0.5 text-sm flex-shrink-0"></i>
+                <span>${d.message}</span>
+              </div>
+              ${d.suggested_fix ? `
+                <div class="bg-slate-950 p-3 rounded-lg border border-amber-500/20 space-y-2">
+                  <div class="text-[10px] uppercase tracking-wider font-bold text-amber-400/80">Remediation Command:</div>
+                  <div class="flex items-center justify-between gap-2 font-mono text-[11px] text-slate-200 min-w-0">
+                    <code class="truncate">${d.suggested_fix}</code>
+                    <div class="flex items-center gap-1.5 flex-shrink-0">
+                      <button onclick="copyToClipboard(this.dataset.cmd, 'command')" data-cmd="${cleanFix}" class="px-2.5 py-1 rounded bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 text-[10px] font-bold transition flex items-center gap-1">
+                        <i class="fa-regular fa-copy"></i> Copy
+                      </button>
+                      <button onclick="applyFix(this.dataset.cmd)" data-cmd="${cleanFix}" class="px-2.5 py-1 rounded bg-blue-600 hover:bg-blue-500 text-white text-[10px] font-bold transition flex items-center gap-1 shadow-sm">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i> Apply
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ` : ''}
+            </div>
+          `;
+        }).join('');
+      } else if (r.status === 'healthy') {
+        diagHtml = `
+          <div class="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/25 text-emerald-300 text-xs flex items-center gap-2.5">
+            <i class="fa-solid fa-circle-check text-base text-emerald-400 flex-shrink-0"></i>
+            <div>
+              <div class="font-bold">Workstation Ready</div>
+              <div class="text-[11px] text-slate-300 mt-0.5">All path registrations and core companions are operating optimally.</div>
+            </div>
+          </div>
+        `;
+      } else {
+        diagHtml = `
+          <div class="p-3.5 rounded-xl bg-slate-900 border border-slate-800 text-slate-400 text-xs flex items-center gap-2.5">
+            <i class="fa-solid fa-circle-info text-base text-slate-500 flex-shrink-0"></i>
+            <div>
+              <div class="font-bold text-slate-300">Tool Not Detected</div>
+              <div class="text-[11px] text-slate-400 mt-0.5">This tool was not detected in system PATH, registry, or custom search roots.</div>
+            </div>
+          </div>
+        `;
+      }
+
+      // Companions HTML
+      let companionsHtml = '';
+      if (r.companions && r.companions.length > 0) {
+        companionsHtml = `
+          <div class="space-y-2">
+            <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center justify-between">
+              <span>Ecosystem Companions</span>
+              <span class="font-mono text-slate-500">${r.companions.filter(c => c.installed).length}/${r.companions.length} Available</span>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              ${r.companions.map(c => `
+                <div class="p-2.5 rounded-xl bg-[#060a14] border border-slate-800/80 flex items-center justify-between text-xs">
+                  <div class="flex items-center gap-2 min-w-0">
+                    <span class="w-5 h-5 rounded flex items-center justify-center text-[11px] ${c.installed ? 'bg-emerald-500/20 text-emerald-400' : 'bg-slate-800 text-slate-600'}">
+                      <i class="fa-solid ${c.installed ? 'fa-check' : 'fa-xmark'}"></i>
+                    </span>
+                    <span class="font-semibold text-slate-200 truncate">${c.name}</span>
+                  </div>
+                  <span class="font-mono text-[10px] text-slate-400 flex-shrink-0">${c.version ? 'v' + c.version : (c.installed ? 'detected' : 'missing')}</span>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        `;
+      }
+
+      container.innerHTML = `
+        <!-- Drawer Header -->
+        <div class="p-5 sm:p-6 border-b border-slate-800 flex items-start justify-between gap-4 bg-[#070b16]">
+          <div class="flex items-center gap-3.5 min-w-0">
+            <div class="w-12 h-12 rounded-2xl bg-[#0d1424] border border-slate-700/80 flex items-center justify-center text-2xl flex-shrink-0 shadow-lg">
+              ${getToolIcon(r.id, r.category)}
+            </div>
+            <div class="min-w-0">
+              <h2 class="text-lg font-black text-white tracking-tight truncate">${r.name}</h2>
+              <div class="flex items-center gap-2 mt-1">
+                <span class="text-xs font-mono font-bold text-blue-400">${r.version ? 'v' + r.version : (r.installed ? 'Installed' : 'Not Detected')}</span>
+                <span class="text-slate-600">•</span>
+                <div class="flex items-center gap-1">${categoriesHtml}</div>
+              </div>
+            </div>
+          </div>
+          <div class="flex items-center gap-2 flex-shrink-0">
+            ${getBadge(r.status)}
+            <button onclick="closeInspectorDrawer()" class="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition" title="Close Drawer (Esc)">
+              <i class="fa-solid fa-xmark text-base"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Drawer Body -->
+        <div class="flex-1 overflow-y-auto p-5 sm:p-6 space-y-6 custom-scrollbar font-sans">
+          <!-- Diagnostics / Health Status Card -->
+          <div class="space-y-2">
+            <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Health Status & Action Items</div>
+            ${diagHtml}
+          </div>
+
+          <!-- Installation & Binary Locations -->
+          <div class="space-y-3">
+            <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Paths & Filesystem Locations</div>
+            
+            <!-- Root Path -->
+            <div class="bg-[#070b16] p-3 rounded-xl border border-slate-800/80 space-y-1.5">
+              <div class="flex items-center justify-between text-[11px] text-slate-400">
+                <span class="font-bold text-blue-400 uppercase tracking-wider text-[10px]"><i class="fa-solid fa-folder text-xs mr-1"></i> Root / Home Directory</span>
+                <div class="flex items-center gap-1">
+                  ${r.home_path ? `
+                    <button onclick="copyToClipboard('${cleanHome}', 'root path')" class="px-2 py-0.5 rounded hover:bg-slate-800 text-slate-400 hover:text-white text-[11px] transition flex items-center gap-1">
+                      <i class="fa-regular fa-copy text-[10px]"></i> Copy
+                    </button>
+                    <button onclick="openFolder('${cleanHome}')" class="px-2 py-0.5 rounded hover:bg-slate-800 text-slate-400 hover:text-blue-400 text-[11px] transition flex items-center gap-1">
+                      <i class="fa-regular fa-folder-open text-[10px]"></i> Open
+                    </button>
+                  ` : ''}
+                </div>
+              </div>
+              <div class="font-mono text-xs text-slate-200 break-all select-text bg-[#03060d] p-2 rounded-lg border border-slate-800/60">
+                ${r.home_path || '<span class="text-slate-600 italic">Not detected or not applicable</span>'}
+              </div>
+            </div>
+
+            <!-- Binary Path -->
+            <div class="bg-[#070b16] p-3 rounded-xl border border-slate-800/80 space-y-1.5">
+              <div class="flex items-center justify-between text-[11px] text-slate-400">
+                <span class="font-bold text-emerald-400 uppercase tracking-wider text-[10px]"><i class="fa-solid fa-terminal text-xs mr-1"></i> Primary Executable Binary</span>
+                <div class="flex items-center gap-1">
+                  ${r.binary_path ? `
+                    <button onclick="copyToClipboard('${cleanBin}', 'binary path')" class="px-2 py-0.5 rounded hover:bg-slate-800 text-slate-400 hover:text-white text-[11px] transition flex items-center gap-1">
+                      <i class="fa-regular fa-copy text-[10px]"></i> Copy
+                    </button>
+                    <button onclick="openFolder('${cleanBin}')" class="px-2 py-0.5 rounded hover:bg-slate-800 text-slate-400 hover:text-emerald-400 text-[11px] transition flex items-center gap-1">
+                      <i class="fa-regular fa-folder-open text-[10px]"></i> Open
+                    </button>
+                  ` : ''}
+                </div>
+              </div>
+              <div class="font-mono text-xs text-slate-200 break-all select-text bg-[#03060d] p-2 rounded-lg border border-slate-800/60">
+                ${r.binary_path || '<span class="text-slate-600 italic">Not detected in system PATH</span>'}
+              </div>
+            </div>
+          </div>
+
+          <!-- Companions -->
+          ${companionsHtml}
+
+          <!-- Metadata & Origin -->
+          <div class="p-4 rounded-xl bg-[#070b16] border border-slate-800/80 space-y-2 text-xs">
+            <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Inspector Information</div>
+            <div class="text-slate-300 text-[11px] leading-relaxed">${r.description || 'Monitored development tool inspector in workstation environment suite.'}</div>
+            <div class="pt-2 flex flex-wrap items-center gap-3 text-[11px] text-slate-500 font-mono">
+              <span>Tool ID: <strong class="text-slate-300">${r.id}</strong></span>
+              <span>•</span>
+              <span>Installed: <strong class="${r.installed ? 'text-emerald-400' : 'text-slate-400'}">${r.installed ? 'Yes' : 'No'}</strong></span>
+            </div>
+          </div>
+
+          <!-- Collapsible Raw JSON Data -->
+          <details class="text-xs bg-[#070b16] rounded-xl border border-slate-800/80 p-3 group">
+            <summary class="font-bold text-slate-400 hover:text-slate-200 cursor-pointer flex items-center justify-between select-none">
+              <span>View Raw Report (JSON)</span>
+              <span class="text-[10px] text-blue-400 group-open:rotate-180 transition-transform"><i class="fa-solid fa-chevron-down"></i></span>
+            </summary>
+            <div class="mt-3 space-y-2">
+              <div class="flex justify-end">
+                <button onclick="copyToClipboard(JSON.stringify(allReports.find(x => x.id === '${r.id}'), null, 2), 'raw JSON')" class="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-[10px] font-semibold text-slate-300 transition">
+                  Copy JSON
+                </button>
+              </div>
+              <pre class="bg-[#03060d] p-3 rounded-lg border border-slate-800 font-mono text-[10px] text-slate-300 overflow-x-auto custom-scrollbar select-text">${JSON.stringify(r, null, 2)}</pre>
+            </div>
+          </details>
+        </div>
+      `;
+    }
 
     // ==================== TAB 1: ENVIRONMENT & AUDITING ====================
     const DOMAIN_CATEGORIES = [
@@ -1100,6 +1523,79 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
       return cats.includes(cat.toLowerCase());
     }
 
+    // Interactive Metric Stat Filter Cards
+    function toggleStatusFilter(status) {
+      if (status === 'all' || currentStatusFilter === status) {
+        currentStatusFilter = null;
+      } else {
+        currentStatusFilter = status;
+      }
+      updateStatusFilterUI();
+      renderTools();
+    }
+
+    function clearStatusFilter() {
+      currentStatusFilter = null;
+      updateStatusFilterUI();
+      renderTools();
+    }
+
+    function resetAllFilters() {
+      currentCategory = 'all';
+      currentStatusFilter = null;
+      const searchInput = document.getElementById('global-search-input');
+      if (searchInput) searchInput.value = '';
+      try {
+        localStorage.setItem('devtoolkit_last_category', 'all');
+      } catch (e) {}
+      renderCategoryPills();
+      updateStatusFilterUI();
+      renderTools();
+      showToast('Filters reset to default view');
+    }
+
+    function updateStatusFilterUI() {
+      const cardIds = ['all', 'installed', 'healthy', 'warning', 'error', 'not_found'];
+      cardIds.forEach(id => {
+        const el = document.getElementById(`stat-card-${id}`);
+        if (el) {
+          if (currentStatusFilter === id) {
+            el.classList.add('stat-filter-active');
+          } else {
+            el.classList.remove('stat-filter-active');
+          }
+        }
+      });
+
+      const pillContainer = document.getElementById('active-status-pill-container');
+      const pillLabel = document.getElementById('active-status-pill-label');
+      const resetBtn = document.getElementById('reset-filters-btn');
+
+      const labels = {
+        'installed': 'Installed Tools',
+        'healthy': 'Healthy Only',
+        'warning': 'Action Needed',
+        'error': 'Errors Only',
+        'not_found': 'Not Detected'
+      };
+
+      if (currentStatusFilter && labels[currentStatusFilter]) {
+        pillLabel.innerText = `Status: ${labels[currentStatusFilter]}`;
+        pillContainer.classList.remove('hidden');
+        pillContainer.classList.add('flex');
+      } else {
+        pillContainer.classList.add('hidden');
+        pillContainer.classList.remove('flex');
+      }
+
+      const query = (document.getElementById('global-search-input')?.value || '').trim();
+      if (currentStatusFilter !== null || currentCategory !== 'all' || query.length > 0) {
+        resetBtn.classList.remove('hidden');
+      } else {
+        resetBtn.classList.add('hidden');
+      }
+    }
+
     function renderCategoryPills() {
       const container = document.getElementById('category-filters');
       if (!container) return;
@@ -1128,6 +1624,7 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
         localStorage.setItem('devtoolkit_last_category', cat);
       } catch (e) {}
       renderCategoryPills();
+      updateStatusFilterUI();
       renderTools();
     }
 
@@ -1158,17 +1655,21 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
     }
 
     function onSearchChange() {
-      renderTools();
-    }
-
-    function onGlobalSearch() {
+      updateStatusFilterUI();
       renderTools();
     }
 
     function renderTools() {
-      const query = document.getElementById('global-search-input').value.toLowerCase().trim();
+      const query = (document.getElementById('global-search-input')?.value || '').toLowerCase().trim();
       let filtered = allReports.filter(r => {
         const matchesCat = toolMatchesCategory(r, currentCategory);
+        let matchesStatus = true;
+        if (currentStatusFilter === 'installed') {
+          matchesStatus = r.installed === true;
+        } else if (currentStatusFilter) {
+          matchesStatus = r.status === currentStatusFilter;
+        }
+
         const cats = (r.categories && r.categories.length > 0) ? r.categories.map(c => c.toLowerCase()) : [r.category.toLowerCase()];
         const matchesQuery = !query ||
           r.name.toLowerCase().includes(query) ||
@@ -1177,7 +1678,7 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
           (r.version && r.version.toLowerCase().includes(query)) ||
           (r.binary_path && r.binary_path.toLowerCase().includes(query)) ||
           (r.home_path && r.home_path.toLowerCase().includes(query));
-        return matchesCat && matchesQuery;
+        return matchesCat && matchesStatus && matchesQuery;
       });
 
       // Sort logic
@@ -1200,6 +1701,11 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
       } else {
         renderListView(filtered);
       }
+
+      // If drawer is currently open, refresh its content in case audit changed
+      if (activeDrawerToolId) {
+        renderInspectorDrawer(activeDrawerToolId);
+      }
     }
 
     function renderGridView(tools) {
@@ -1207,114 +1713,106 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
       grid.innerHTML = '';
 
       if (tools.length === 0) {
-        grid.innerHTML = '<div class="col-span-full py-20 text-center text-slate-500 text-sm"><i class="fa-solid fa-ghost text-3xl mb-3 block"></i>No matching SDKs, runtimes, or tools found.</div>';
+        grid.innerHTML = `
+          <div class="col-span-full py-16 text-center text-slate-400 glass-card rounded-2xl p-8 border border-slate-800">
+            <i class="fa-solid fa-filter-circle-xmark text-4xl mb-3 text-slate-500 block"></i>
+            <h4 class="text-base font-bold text-white">No Matching Tools or Runtimes</h4>
+            <p class="text-xs text-slate-400 mt-1 max-w-md mx-auto">No tools match your current search query and status filter.</p>
+            <div class="mt-4">
+              <button onclick="resetAllFilters()" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-xs font-bold transition shadow-sm">
+                Reset Search & Filters
+              </button>
+            </div>
+          </div>
+        `;
         return;
       }
 
       tools.forEach(r => {
         const card = document.createElement('div');
-        card.className = 'glass-card rounded-2xl p-5 sm:p-6 flex flex-col justify-between transition-all duration-200 border border-slate-800/80 hover:border-slate-700/90 shadow-xl';
+        card.className = 'glass-card rounded-2xl p-4 sm:p-5 flex flex-col justify-between transition-all duration-200 border border-slate-800/80 hover:border-blue-500/40 hover:bg-[#0e1628] shadow-xl cursor-pointer group';
+        card.onclick = () => openInspectorDrawer(r.id);
 
-        // Paths block with Copy and Open Folder for both ROOT and BINARY (no run button)
-        let pathsHtml = '';
-        if (r.home_path) {
-          const cleanHome = r.home_path.replace(/"/g, '&quot;');
-          pathsHtml += `
-            <div class="bg-[#070b16] p-2.5 rounded-lg border border-slate-800/80 flex items-center justify-between gap-2 min-w-0">
-              <div class="truncate text-slate-300 font-mono text-[11px]" title="ROOT: ${cleanHome}">
-                <span class="text-blue-400 font-sans font-bold text-[10px] uppercase tracking-wider mr-1">ROOT:</span>${r.home_path}
-              </div>
-              <div class="flex items-center gap-1.5 flex-shrink-0">
-                <button onclick="copyToClipboard(this.dataset.path, 'root path')" data-path="${cleanHome}" title="Copy path" class="p-1.5 hover:text-blue-400 text-slate-400 transition"><i class="fa-regular fa-copy text-xs"></i></button>
-                <button onclick="openFolder(this.dataset.path)" data-path="${cleanHome}" title="Open folder" class="p-1.5 hover:text-blue-400 text-slate-400 transition"><i class="fa-regular fa-folder-open text-xs"></i></button>
-              </div>
-            </div>
-          `;
-        }
-        if (r.binary_path && r.binary_path !== r.home_path) {
-          const cleanBin = r.binary_path.replace(/"/g, '&quot;');
-          pathsHtml += `
-            <div class="bg-[#070b16] p-2.5 rounded-lg border border-slate-800/80 flex items-center justify-between gap-2 min-w-0">
-              <div class="truncate text-slate-300 font-mono text-[11px]" title="BINARY: ${cleanBin}">
-                <span class="text-emerald-400 font-sans font-bold text-[10px] uppercase tracking-wider mr-1">BINARY:</span>${r.binary_path}
-              </div>
-              <div class="flex items-center gap-1.5 flex-shrink-0">
-                <button onclick="copyToClipboard(this.dataset.path, 'binary path')" data-path="${cleanBin}" title="Copy binary" class="p-1.5 hover:text-emerald-400 text-slate-400 transition"><i class="fa-regular fa-copy text-xs"></i></button>
-                <button onclick="openFolder(this.dataset.path)" data-path="${cleanBin}" title="Open folder" class="p-1.5 hover:text-emerald-400 text-slate-400 transition"><i class="fa-regular fa-folder-open text-xs"></i></button>
-              </div>
-            </div>
-          `;
-        }
-
-        // Companions block
-        const companionsHtml = (r.companions || []).map(c => `
-          <span class="inline-flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-md ${c.installed ? 'bg-slate-800/90 text-slate-300 border border-slate-700/80' : 'bg-slate-900/60 text-slate-600'}">
-            <i class="fa-solid ${c.installed ? 'fa-check text-emerald-400' : 'fa-xmark text-slate-600'} text-[10px]"></i>
-            <span class="font-medium">${c.name}</span>
-            ${c.version ? '<span class="text-slate-400 font-mono text-[10px]">' + c.version + '</span>' : ''}
-          </span>
-        `).join('');
-
-        // Diagnostics block
-        const diagnosticsHtml = (r.diagnostics || []).map(d => {
-          const cleanCmd = (d.suggested_fix || '').replace(/"/g, '&quot;');
-          return `
-          <div class="mt-3.5 p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs space-y-2.5">
-            <div class="font-medium flex items-start gap-2 leading-snug">
-              <i class="fa-solid fa-triangle-exclamation text-amber-400 mt-0.5 flex-shrink-0"></i>
-              <span>${d.message}</span>
-            </div>
-            ${d.suggested_fix ? `
-              <div class="bg-slate-950 p-2.5 rounded-lg border border-amber-500/20 flex items-center justify-between gap-2 font-mono text-[11px] text-slate-200 min-w-0 mt-1">
-                <code class="truncate">${d.suggested_fix}</code>
-                <button onclick="copyToClipboard(this.dataset.cmd, 'command')" data-cmd="${cleanCmd}" class="px-2.5 py-1 rounded bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 text-[10px] font-bold flex-shrink-0 transition">Copy</button>
-              </div>
-            ` : ''}
-          </div>
-        `}).join('');
-
-        // Multiple categories badges
+        // Multiple categories badges (compact)
         const toolCats = (r.categories && r.categories.length > 0) ? r.categories : [r.category];
-        const categoriesHtml = toolCats.map(c => 
-          `<span class="text-[10px] text-slate-400 uppercase tracking-wider font-mono font-semibold px-2 py-0.5 bg-slate-800/90 rounded border border-slate-700/60">${c}</span>`
-        ).join('');
+        const categoriesHtml = toolCats.slice(0, 2).map(c => 
+          `<span class="text-[9px] text-slate-400 uppercase tracking-wider font-mono font-semibold px-1.5 py-0.5 bg-slate-900 rounded border border-slate-800">${c}</span>`
+        ).join('') + (toolCats.length > 2 ? `<span class="text-[9px] text-slate-500 font-mono">+${toolCats.length - 2}</span>` : '');
+
+        const primaryPath = r.home_path || r.binary_path || '';
+        const cleanPath = primaryPath.replace(/"/g, '&quot;');
+
+        // Companion count pill
+        let companionPill = '';
+        if (r.companions && r.companions.length > 0) {
+          const installedComp = r.companions.filter(c => c.installed).length;
+          companionPill = `
+            <span class="inline-flex items-center gap-1 text-[10px] font-mono text-slate-400 bg-slate-900/80 px-2 py-0.5 rounded border border-slate-800">
+              <i class="fa-solid fa-layer-group text-[9px] text-indigo-400"></i> ${installedComp}/${r.companions.length}
+            </span>
+          `;
+        }
+
+        // Action needed alert strip if diagnostics exist
+        let diagStrip = '';
+        if (r.diagnostics && r.diagnostics.length > 0) {
+          diagStrip = `
+            <span class="inline-flex items-center gap-1 text-[10px] font-semibold text-amber-300 bg-amber-500/15 px-2 py-0.5 rounded border border-amber-500/30 truncate max-w-[140px]" title="${r.diagnostics[0].message}">
+              <i class="fa-solid fa-triangle-exclamation text-[9px]"></i> Action
+            </span>
+          `;
+        }
 
         card.innerHTML = `
           <div>
-            <div class="flex items-start justify-between gap-3 mb-4">
+            <!-- Header: Icon, Name, Version, Status -->
+            <div class="flex items-start justify-between gap-2.5 mb-3">
               <div class="flex items-center gap-3 min-w-0">
-                <div class="w-11 h-11 rounded-xl bg-[#0e1526] border border-slate-700/60 flex items-center justify-center text-lg flex-shrink-0 shadow-inner">
+                <div class="w-10 h-10 rounded-xl bg-[#060a14] border border-slate-800 flex items-center justify-center text-lg flex-shrink-0 group-hover:border-blue-500/40 group-hover:bg-[#0a1224] transition shadow-inner">
                   ${getToolIcon(r.id, r.category)}
                 </div>
                 <div class="min-w-0">
-                  <h3 class="font-bold text-white text-base tracking-tight truncate flex items-center gap-2" title="${r.name}">
+                  <h3 class="font-bold text-white text-sm tracking-tight truncate group-hover:text-blue-300 transition" title="${r.name}">
                     ${r.name}
                   </h3>
-                  <div class="text-xs font-mono font-semibold text-blue-400 mt-0.5 truncate">
+                  <div class="text-[11px] font-mono font-semibold text-blue-400 mt-0.5 truncate">
                     ${r.version ? 'v' + r.version : (r.installed ? '<span class="text-slate-400 font-normal">Installed</span>' : '<span class="text-slate-500 font-normal">Not detected</span>')}
                   </div>
                 </div>
               </div>
-              <div class="flex flex-col items-end gap-1.5 flex-shrink-0">
-                <div class="flex flex-wrap gap-1 justify-end max-w-[150px]">
-                  ${categoriesHtml}
-                </div>
+              <div class="flex-shrink-0">
                 ${getBadge(r.status)}
               </div>
             </div>
 
-            <div class="space-y-2.5 my-3.5 text-xs">
-              ${pathsHtml || '<div class="text-xs text-slate-500 italic p-2.5 bg-[#070b16] rounded-lg border border-slate-800/60">No binary or home path resolved in system</div>'}
-
-              ${r.companions && r.companions.length > 0 ? `
-                <div class="pt-2">
-                  <div class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">COMPANION SUBSYSTEMS:</div>
-                  <div class="flex flex-wrap gap-2">${companionsHtml}</div>
+            <!-- Categories & Primary Path -->
+            <div class="space-y-2 my-2.5 text-xs">
+              <div class="flex items-center gap-1 flex-wrap">
+                ${categoriesHtml}
+              </div>
+              <div class="bg-[#050812] px-2.5 py-1.5 rounded-lg border border-slate-800/80 flex items-center justify-between gap-1.5 min-w-0 text-[11px] font-mono text-slate-400" title="${cleanPath}">
+                <div class="truncate flex items-center gap-1.5">
+                  <i class="fa-solid ${r.home_path ? 'fa-folder text-blue-400' : 'fa-terminal text-emerald-400'} text-[10px] flex-shrink-0"></i>
+                  <span class="truncate">${primaryPath || '<span class="text-slate-600 italic">No path registered</span>'}</span>
                 </div>
-              ` : ''}
-
-              ${diagnosticsHtml}
+                ${primaryPath ? `
+                  <button onclick="event.stopPropagation(); copyToClipboard('${cleanPath}', 'path')" class="p-1 text-slate-500 hover:text-white transition flex-shrink-0" title="Copy path">
+                    <i class="fa-regular fa-copy text-[10px]"></i>
+                  </button>
+                ` : ''}
+              </div>
             </div>
+          </div>
+
+          <!-- Bottom Footer Bar -->
+          <div class="pt-2.5 mt-1 border-t border-slate-800/70 flex items-center justify-between text-xs">
+            <div class="flex items-center gap-1.5 min-w-0">
+              ${companionPill}
+              ${diagStrip}
+            </div>
+            <span class="text-[11px] font-semibold text-blue-400 group-hover:text-blue-300 flex items-center gap-1 flex-shrink-0 transition">
+              Inspect <i class="fa-solid fa-chevron-right text-[9px] group-hover:translate-x-0.5 transition"></i>
+            </span>
           </div>
         `;
         grid.appendChild(card);
@@ -1332,7 +1830,8 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
 
       tools.forEach(r => {
         const tr = document.createElement('tr');
-        tr.className = 'hover:bg-slate-800/40 transition text-slate-300';
+        tr.className = 'hover:bg-slate-800/40 transition text-slate-300 cursor-pointer';
+        tr.onclick = () => openInspectorDrawer(r.id);
         const cleanHome = (r.home_path || '').replace(/"/g, '&quot;');
         const cleanBin = (r.binary_path || '').replace(/"/g, '&quot;');
         const toolCats = (r.categories && r.categories.length > 0) ? r.categories : [r.category];
@@ -1349,8 +1848,7 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
           <td class="py-3 px-4 font-mono text-slate-400 truncate max-w-[180px]" title="${cleanHome}">${r.home_path || '<span class="text-slate-600">—</span>'}</td>
           <td class="py-3 px-4 font-mono text-emerald-400 truncate max-w-[180px]" title="${cleanBin}">${r.binary_path || '<span class="text-slate-600">—</span>'}</td>
           <td class="py-3 px-4 text-right">
-            ${r.home_path ? `<button onclick="openFolder(this.dataset.path)" data-path="${cleanHome}" class="p-1.5 text-slate-400 hover:text-blue-400 transition" title="Open in Explorer"><i class="fa-regular fa-folder-open text-xs"></i></button>` : ''}
-            ${r.binary_path ? `<button onclick="copyToClipboard(this.dataset.path, 'binary')" data-path="${cleanBin}" class="p-1.5 text-slate-400 hover:text-emerald-400 transition" title="Copy binary"><i class="fa-regular fa-copy text-xs"></i></button>` : ''}
+            <button onclick="event.stopPropagation(); openInspectorDrawer('${r.id}')" class="px-2.5 py-1 bg-[#131d36] hover:bg-blue-600 text-blue-300 hover:text-white rounded text-[11px] font-semibold transition border border-blue-500/30">Inspect</button>
           </td>
         `;
         tbody.appendChild(tr);
@@ -1359,7 +1857,7 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
 
     async function fetchAudit() {
       const icon = document.getElementById('rescan-icon');
-      icon.classList.add('fa-spin');
+      if (icon) icon.classList.add('fa-spin');
       try {
         const res = await fetch('/api/audit');
         const data = await res.json();
@@ -1399,18 +1897,58 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
         }
 
         renderCategoryPills();
+        updateStatusFilterUI();
         renderTools();
       } catch (err) {
         showToast('Error auditing environment', true);
       } finally {
-        icon.classList.remove('fa-spin');
+        if (icon) icon.classList.remove('fa-spin');
       }
     }
 
     // ==================== TAB 2: PORT MANAGER ====================
-    function setPortsDevToggle(state) {
-      document.getElementById('ports-dev-toggle').checked = state;
-      fetchPorts();
+    function setPortViewMode(mode) {
+      currentPortView = mode;
+      const flatBtn = document.getElementById('port-view-flat-btn');
+      const groupedBtn = document.getElementById('port-view-grouped-btn');
+      const flatContainer = document.getElementById('ports-flat-container');
+      const groupedContainer = document.getElementById('ports-grouped-container');
+
+      if (mode === 'flat') {
+        flatBtn.className = 'px-2.5 py-1 rounded-md text-xs bg-blue-600/30 text-blue-400 font-semibold transition flex items-center gap-1.5';
+        groupedBtn.className = 'px-2.5 py-1 rounded-md text-xs text-slate-400 hover:text-white font-semibold transition flex items-center gap-1.5';
+        flatContainer.classList.remove('hidden');
+        groupedContainer.classList.add('hidden');
+      } else {
+        flatBtn.className = 'px-2.5 py-1 rounded-md text-xs text-slate-400 hover:text-white font-semibold transition flex items-center gap-1.5';
+        groupedBtn.className = 'px-2.5 py-1 rounded-md text-xs bg-blue-600/30 text-blue-400 font-semibold transition flex items-center gap-1.5';
+        flatContainer.classList.add('hidden');
+        groupedContainer.classList.remove('hidden');
+      }
+      renderPorts();
+    }
+
+    function getPortCategory(port) {
+      const p = parseInt(port, 10);
+      const webPorts = [80, 443, 3000, 3001, 3002, 4000, 4200, 4321, 5000, 5173, 5174, 8000, 8080, 8081, 8888, 9000, 9999];
+      if (webPorts.includes(p)) {
+        return { label: 'Web / HTTP', icon: 'fa-globe', badge: 'bg-blue-500/20 text-blue-300 border-blue-500/30' };
+      }
+      const dbPorts = [3306, 5432, 6379, 27017, 1433, 9042, 1521, 5984, 8529];
+      if (dbPorts.includes(p)) {
+        return { label: 'Database', icon: 'fa-database', badge: 'bg-cyan-500/20 text-cyan-300 border-cyan-500/30' };
+      }
+      const devPorts = [9229, 5005, 5858, 2345, 9003];
+      if (devPorts.includes(p)) {
+        return { label: 'Dev Debug', icon: 'fa-bug', badge: 'bg-purple-500/20 text-purple-300 border-purple-500/30' };
+      }
+      return { label: 'Service', icon: 'fa-network-wired', badge: 'bg-slate-800 text-slate-400 border-slate-700/60' };
+    }
+
+    function isWebPort(port, isDevPort) {
+      const p = parseInt(port, 10);
+      const webPorts = [80, 443, 3000, 3001, 3002, 4000, 4200, 4321, 5000, 5173, 5174, 8000, 8080, 8081, 8888, 9000, 9999];
+      return webPorts.includes(p) || isDevPort;
     }
 
     async function fetchPorts() {
@@ -1428,18 +1966,23 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
         const sideBadge = document.getElementById('side-ports-badge');
         sideBadge.innerText = devCount > 0 ? devCount : allPorts.length;
 
-        renderPortsTable();
+        renderPorts();
       } catch (err) {
         showToast('Error loading sockets', true);
       }
     }
 
-    function renderPortsTable() {
-      const tbody = document.getElementById('ports-table-body');
-      const query = document.getElementById('ports-search-input').value.toLowerCase().trim();
-      tbody.innerHTML = '';
+    function renderPorts() {
+      if (currentPortView === 'flat') {
+        renderPortsTable();
+      } else {
+        renderPortsGrouped();
+      }
+    }
 
-      const filtered = allPorts.filter(p => {
+    function getFilteredPorts() {
+      const query = (document.getElementById('ports-search-input')?.value || '').toLowerCase().trim();
+      return allPorts.filter(p => {
         if (!query) return true;
         return (
           p.port.toString().includes(query) ||
@@ -1448,6 +1991,12 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
           p.address.includes(query)
         );
       });
+    }
+
+    function renderPortsTable() {
+      const tbody = document.getElementById('ports-table-body');
+      tbody.innerHTML = '';
+      const filtered = getFilteredPorts();
 
       if (filtered.length === 0) {
         tbody.innerHTML = `<tr><td colspan="7" class="py-12 text-center text-slate-500 italic">No listening sockets found matching criteria.</td></tr>`;
@@ -1462,13 +2011,16 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
           ? `<span class="inline-flex items-center gap-1 font-mono font-bold text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded border border-blue-500/25">:${p.port}</span>`
           : `<span class="font-mono font-bold text-slate-200">:${p.port}</span>`;
 
-        const tagBadge = p.is_dev_port
-          ? `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-blue-500/20 text-blue-300"><i class="fa-solid fa-code text-[9px]"></i> Dev Port</span>`
-          : `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] text-slate-500 bg-slate-900 border border-slate-800">Service</span>`;
+        const cat = getPortCategory(p.port);
+        const tagBadge = `<span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-semibold border ${cat.badge}"><i class="fa-solid ${cat.icon} text-[9px]"></i> ${cat.label}</span>`;
 
         const statusBadge = p.is_system_critical
-          ? `<span class="text-rose-400 font-medium inline-flex items-center gap-1"><i class="fa-solid fa-lock text-[10px]"></i> System Critical</span>`
+          ? `<span class="text-rose-400 font-medium inline-flex items-center gap-1"><i class="fa-solid fa-shield-halved text-[10px]"></i> Protected OS</span>`
           : `<span class="text-emerald-400 font-medium inline-flex items-center gap-1"><i class="fa-solid fa-user text-[10px]"></i> User Process</span>`;
+
+        const browserBtn = isWebPort(p.port, p.is_dev_port)
+          ? `<a href="http://localhost:${p.port}" target="_blank" class="px-2 py-1 bg-blue-600/20 hover:bg-blue-600/40 text-blue-300 hover:text-white rounded text-[11px] font-semibold transition border border-blue-500/30 inline-flex items-center gap-1" title="Open in browser"><i class="fa-solid fa-arrow-up-right-from-square text-[9px]"></i> Open</a>`
+          : '';
 
         const actionBtn = p.is_system_critical
           ? `<button onclick="openKillModal(${p.port}, '${p.process_name}', ${p.pid}, true)" class="px-2.5 py-1 bg-slate-800 hover:bg-rose-950 text-slate-400 hover:text-rose-300 rounded text-[11px] font-semibold transition border border-slate-700">Protected</button>`
@@ -1481,9 +2033,92 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
           <td class="py-3 px-4 font-mono text-yellow-400">${p.pid}</td>
           <td class="py-3 px-4 font-mono text-slate-400">${p.address}</td>
           <td class="py-3 px-4">${statusBadge}</td>
-          <td class="py-3 px-4 text-right">${actionBtn}</td>
+          <td class="py-3 px-4 text-right">
+            <div class="flex items-center justify-end gap-1.5">
+              ${browserBtn}
+              ${actionBtn}
+            </div>
+          </td>
         `;
         tbody.appendChild(tr);
+      });
+    }
+
+    function renderPortsGrouped() {
+      const container = document.getElementById('ports-grouped-container');
+      container.innerHTML = '';
+      const filtered = getFilteredPorts();
+
+      if (filtered.length === 0) {
+        container.innerHTML = `<div class="glass-card rounded-xl p-12 text-center text-slate-500 italic">No listening sockets found matching criteria.</div>`;
+        return;
+      }
+
+      // Group by process_name + PID
+      const groups = {};
+      filtered.forEach(p => {
+        const key = `${p.process_name} (PID ${p.pid})`;
+        if (!groups[key]) {
+          groups[key] = {
+            process_name: p.process_name,
+            pid: p.pid,
+            is_system_critical: p.is_system_critical,
+            sockets: []
+          };
+        }
+        groups[key].sockets.push(p);
+      });
+
+      Object.values(groups).forEach(g => {
+        const card = document.createElement('div');
+        card.className = 'glass-card rounded-xl p-4 sm:p-5 border border-slate-800 space-y-3.5';
+
+        const killBtn = g.is_system_critical
+          ? `<button onclick="openKillModal(${g.sockets[0].port}, '${g.process_name}', ${g.pid}, true)" class="px-2.5 py-1 bg-slate-800 hover:bg-rose-950 text-slate-400 hover:text-rose-300 rounded text-[11px] font-semibold transition border border-slate-700">Protected</button>`
+          : `<button onclick="openKillModal(${g.sockets[0].port}, '${g.process_name}', ${g.pid}, false)" class="px-2.5 py-1 bg-rose-600/80 hover:bg-rose-600 text-white rounded text-[11px] font-semibold transition shadow-sm">Kill Process</button>`;
+
+        const socketsHtml = g.sockets.map(p => {
+          const cat = getPortCategory(p.port);
+          const browserLink = isWebPort(p.port, p.is_dev_port)
+            ? `<a href="http://localhost:${p.port}" target="_blank" class="text-[10px] text-blue-400 hover:text-blue-300 font-semibold underline flex items-center gap-1 ml-1"><i class="fa-solid fa-arrow-up-right-from-square"></i> Open</a>`
+            : '';
+
+          return `
+            <div class="bg-[#070b16] p-2.5 rounded-lg border border-slate-800/80 flex items-center justify-between gap-2 text-xs">
+              <div class="flex items-center gap-2 min-w-0">
+                <span class="font-mono font-bold ${p.is_dev_port ? 'text-blue-400' : 'text-slate-200'}">:${p.port}</span>
+                <span class="inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[10px] font-semibold border ${cat.badge}">${cat.label}</span>
+                <span class="font-mono text-[10px] text-slate-500 truncate">${p.address}</span>
+              </div>
+              <div class="flex items-center gap-2 flex-shrink-0">
+                ${browserLink}
+              </div>
+            </div>
+          `;
+        }).join('');
+
+        card.innerHTML = `
+          <div class="flex items-center justify-between gap-3 border-b border-slate-800/70 pb-3">
+            <div class="flex items-center gap-2.5 min-w-0">
+              <div class="w-8 h-8 rounded-lg bg-slate-800/80 flex items-center justify-center text-sm font-bold text-indigo-400 flex-shrink-0">
+                <i class="fa-solid fa-microchip"></i>
+              </div>
+              <div class="min-w-0">
+                <div class="font-bold text-white text-sm truncate">${g.process_name}</div>
+                <div class="flex items-center gap-2 text-[10px] text-slate-400 font-mono">
+                  <span>PID: <strong class="text-yellow-400">${g.pid}</strong></span>
+                  <span>•</span>
+                  <span>${g.sockets.length} listening socket(s)</span>
+                </div>
+              </div>
+            </div>
+            <div>${killBtn}</div>
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+            ${socketsHtml}
+          </div>
+        `;
+        container.appendChild(card);
       });
     }
 
@@ -1533,8 +2168,68 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
     }
 
     // ==================== TAB 3: PROJECT AUDITOR ====================
-    function setProjectInput(val) {
+    function getRecentProjects() {
+      try {
+        const list = JSON.parse(localStorage.getItem('devtoolkit_recent_projects') || '[]');
+        return Array.isArray(list) ? list : [];
+      } catch (e) {
+        return [];
+      }
+    }
+
+    function addRecentProject(path) {
+      if (!path || path === '.') return;
+      try {
+        let list = getRecentProjects().filter(p => p !== path);
+        list.unshift(path);
+        if (list.length > 4) list = list.slice(0, 4);
+        localStorage.setItem('devtoolkit_recent_projects', JSON.stringify(list));
+        renderRecentProjects();
+      } catch (e) {}
+    }
+
+    function clearRecentProjects() {
+      try {
+        localStorage.removeItem('devtoolkit_recent_projects');
+        renderRecentProjects();
+        showToast('Cleared recent projects history');
+      } catch (e) {}
+    }
+
+    function renderRecentProjects() {
+      const container = document.getElementById('project-recent-chips');
+      if (!container) return;
+      const recents = getRecentProjects();
+      if (recents.length === 0) {
+        container.innerHTML = '';
+        return;
+      }
+      container.innerHTML = recents.map(p => {
+        const cleanP = p.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+        return `
+          <button onclick="setAndAuditProject('${cleanP}')" class="px-2 py-0.5 rounded bg-slate-800/80 hover:bg-slate-700 text-slate-300 font-mono text-[11px] truncate max-w-[180px] transition border border-slate-700/60" title="${p}">
+            ${p}
+          </button>
+        `;
+      }).join('') + `
+        <button onclick="clearRecentProjects()" class="text-slate-500 hover:text-rose-400 p-1 transition" title="Clear recent paths">
+          <i class="fa-regular fa-trash-can text-[10px]"></i>
+        </button>
+      `;
+    }
+
+    function setAndAuditProject(val) {
       document.getElementById('project-path-input').value = val;
+      runProjectAudit();
+    }
+
+    function copyAllProjectActions() {
+      if (!currentProjectActions || currentProjectActions.length === 0) {
+        showToast('No actions available to copy');
+        return;
+      }
+      const scriptText = currentProjectActions.join('\n');
+      copyToClipboard(scriptText, 'all setup commands');
     }
 
     async function runProjectAudit() {
@@ -1560,6 +2255,7 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
         }
 
         const data = await res.json();
+        addRecentProject(data.project_path);
         resultsContainer.classList.remove('hidden');
 
         document.getElementById('rep-project-name').innerText = data.project_name;
@@ -1567,14 +2263,39 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
 
         const typesContainer = document.getElementById('rep-detected-types');
         typesContainer.innerHTML = (data.detected_types || []).map(t =>
-          `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-500/20 text-blue-300 border border-blue-500/30">${t}</span>`
+          `<span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-500/20 text-blue-300 border border-blue-500/30 uppercase tracking-wider">${t}</span>`
         ).join('');
+
+        // Readiness Score Calculation & Scorecard
+        const totalChecks = (data.checks || []).length;
+        const satisfiedChecks = (data.checks || []).filter(c => c.satisfied).length;
+        const missingChecks = totalChecks - satisfiedChecks;
+        const scorePct = totalChecks > 0 ? Math.round((satisfiedChecks / totalChecks) * 100) : 100;
+
+        const scorePctEl = document.getElementById('rep-score-pct');
+        const scoreBarEl = document.getElementById('rep-score-bar');
+        scorePctEl.innerText = `${scorePct}%`;
+        scoreBarEl.style.width = `${scorePct}%`;
+
+        if (scorePct === 100) {
+          scorePctEl.className = 'text-2xl font-black text-emerald-400';
+          scoreBarEl.className = 'h-full bg-emerald-500 rounded-full transition-all duration-500';
+        } else if (scorePct >= 60) {
+          scorePctEl.className = 'text-2xl font-black text-amber-400';
+          scoreBarEl.className = 'h-full bg-amber-500 rounded-full transition-all duration-500';
+        } else {
+          scorePctEl.className = 'text-2xl font-black text-rose-400';
+          scoreBarEl.className = 'h-full bg-rose-500 rounded-full transition-all duration-500';
+        }
+
+        document.getElementById('rep-satisfied-count').innerText = `${satisfiedChecks} satisfied`;
+        document.getElementById('rep-missing-count').innerText = `${missingChecks} missing`;
 
         const badgeEl = document.getElementById('rep-status-badge');
         if (data.ready_to_build) {
-          badgeEl.innerHTML = '<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30"><i class="fa-solid fa-check"></i> READY TO BUILD</span>';
+          badgeEl.innerHTML = '<span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30"><i class="fa-solid fa-check"></i> READY TO BUILD</span>';
         } else {
-          badgeEl.innerHTML = '<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold bg-rose-500/20 text-rose-300 border border-rose-500/30"><i class="fa-solid fa-triangle-exclamation"></i> PREREQUISITES MISSING</span>';
+          badgeEl.innerHTML = '<span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-rose-500/20 text-rose-300 border border-rose-500/30"><i class="fa-solid fa-triangle-exclamation"></i> PREREQS MISSING</span>';
         }
 
         const tbody = document.getElementById('project-checks-tbody');
@@ -1595,16 +2316,21 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
           tbody.appendChild(tr);
         });
 
+        // Recommended actions
+        currentProjectActions = data.suggested_actions || [];
         const actionsCard = document.getElementById('project-actions-card');
         const actionsList = document.getElementById('project-actions-list');
-        if (data.suggested_actions && data.suggested_actions.length > 0) {
+        if (currentProjectActions.length > 0) {
           actionsCard.classList.remove('hidden');
-          actionsList.innerHTML = data.suggested_actions.map(act => `
-            <div class="flex items-center justify-between p-2.5 rounded-lg bg-slate-950/80 border border-amber-500/20 text-xs">
-              <div class="font-mono text-slate-200 truncate mr-2"><code>${act}</code></div>
-              <button onclick="copyToClipboard('${act.replace(/\\\\/g, '\\\\\\\\')}', 'command')" class="px-2.5 py-1 rounded bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 text-[11px] font-semibold transition flex-shrink-0">Copy</button>
-            </div>
-          `).join('');
+          actionsList.innerHTML = currentProjectActions.map(act => {
+            const cleanCmd = act.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+            return `
+              <div class="flex items-center justify-between p-2.5 rounded-lg bg-slate-950/80 border border-amber-500/20 text-xs">
+                <div class="font-mono text-slate-200 truncate mr-2"><code>${act}</code></div>
+                <button onclick="copyToClipboard('${cleanCmd}', 'command')" class="px-2.5 py-1 rounded bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 text-[11px] font-semibold transition flex-shrink-0">Copy</button>
+              </div>
+            `;
+          }).join('');
         } else {
           actionsCard.classList.add('hidden');
         }
@@ -1722,11 +2448,15 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
 
     // Keyboard Shortcuts Listeners
     window.addEventListener('keydown', (e) => {
-      // Don't intercept if user is typing in an input
       const activeTag = document.activeElement ? document.activeElement.tagName.toLowerCase() : '';
       const isInput = activeTag === 'input' || activeTag === 'textarea';
 
       if (e.key === 'Escape') {
+        closeExportMenu();
+        if (activeDrawerToolId) {
+          closeInspectorDrawer();
+          return;
+        }
         closeKillModal();
         const help = document.getElementById('help-modal');
         if (!help.classList.contains('hidden')) help.classList.add('hidden');
@@ -1768,7 +2498,7 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
     // Initialize Default View
     loadConfig();
     fetchAudit();
-    setProjectInput('.');
+    setAndAuditProject('.');
   </script>
 </body>
 </html>

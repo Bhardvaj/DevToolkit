@@ -262,30 +262,31 @@ The desktop interface (`EMBEDDED_UI_HTML` in `devtoolkit/server/app.py`) is styl
 
 ### Views & Navigation
 1. **Environment & Diagnostics (`view-env`)**:
-   - Dynamic domain category pills (`All`, `Runtimes`, `IDEs & Editors`, `Build & Tools`, `VCS & Git`, `Mobile & SDKs`, `Containers`, `AI & ML`) with live counters, icon badges, and persistent selection via `localStorage`.
-   - Grid / List view toggle.
-   - Sorting by *Severity*, *Name*, *Category*, and *Status*.
-   - Rich glassmorphic tool cards with root path, binary path, companion chips, and native Explorer launch buttons.
+   - **Interactive Stat Metric Filter Cards**: 6 top metric cards (*Audited Tools*, *Installed*, *Healthy*, *Action Needed*, *Critical Errors*, *Not Found*) double as one-click filters with active rings and reset pills.
+   - **Slide-Over Detail Drawer (Inspector)**: Smooth right-side drawer displaying complete path locations with "Copy" and native "Open in Explorer" actions, full health diagnostics, companion matrix, and raw JSON export.
+   - **Uniform Compact Cards**: Clean, balanced grid cards with branded icons, version tags, multi-category chips, primary path snippets, and mini companion counters.
+   - **Export Report Menu**: Top toolbar dropdown offering 1-click Markdown table export (clipboard), JSON summary copy, and direct `.md` report download.
+   - **Category Pills & Sorting**: Dynamic domain category filtering combined seamlessly with status filtering and multi-attribute sorting.
 2. **Port Manager (`view-ports`)**:
-   - Total sockets, developer ports, and system-protected counters.
-   - Developer port filter toggle and live socket search.
-   - Sockets table with kill modal and operating system critical process safeguards.
+   - **Socket Classification & Badging**: Automatic port categorization (*Web / HTTP*, *Database*, *Dev Debug*, *Service*) with distinctive color coding.
+   - **1-Click Browser Launch**: "Open in Browser" button (`http://localhost:<port>`) for active web and developer ports.
+   - **Process Grouping View Toggle**: Switch between flat sockets table and grouped process cards showing all ports held by each process PID.
+   - **Process Safeguards**: Interactive kill process modal with OS-critical process warnings and force flags.
 3. **Project Workstation Auditor (`view-project`)**:
-   - Workspace directory path picker with quick preset (`.`).
-   - Framework detection tags and **READY TO BUILD** status badge.
-   - Prerequisites checklist table.
-   - Recommended setup command list with 1-click copy.
+   - **Visual Readiness Scorecard**: Animated readiness gauge (0-100%) with satisfied vs. missing breakdown counters and detected manifest tags.
+   - **Recent Projects History**: Preserves recently scanned workspace directories in browser `localStorage` for instant 1-click re-scanning.
+   - **1-Click Fix Scripting**: Prominent "Copy All Fix Commands" button that generates a combined setup script for missing requirements.
+   - **Prerequisites Checklist**: Clear requirement matrix showing detected versions vs expected constraints.
 4. **Settings & Preferences (`view-settings`)**:
    - Layer-4 Monitored Search Directories management (add/remove custom search roots).
-   - System hardware specifications (OS, Architecture, Host Machine, Python runtime, Uptime, PATH entry count).
+   - System hardware specifications (OS, Architecture, Host Machine, Python runtime, PATH entry count).
 
 ### Native Desktop Keyboard Accelerators
 - `Ctrl + K`: Focus global search input.
-- `R` or `Ctrl + R`: Rescan active view.
+- `R`: Rescan active view.
 - `1`, `2`, `3`, `4`: Instant tab navigation.
-- `F`: Apply all safe environment variable fixes.
 - `?`: Toggle keyboard shortcuts cheat sheet.
-- `Esc`: Close modals or blur active search input.
+- `Esc`: Close Slide-Over Inspector Drawer, Kill Modal, Help Modal, or blur search.
 
 ---
 
