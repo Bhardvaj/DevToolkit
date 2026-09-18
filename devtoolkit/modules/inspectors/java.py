@@ -138,8 +138,8 @@ class JavaInspector(BaseInspector):
             metadata={"JAVA_HOME": java_home_env},
         )
 
-    def deep_inspect(self, runner: SafeRunner) -> DeepTelemetryReport:
-        base_rep = self.inspect(runner)
+    def deep_inspect(self, runner: SafeRunner, base_report: Optional[ToolReport] = None) -> DeepTelemetryReport:
+        base_rep = base_report if base_report is not None else self.inspect(runner)
         trace: list[str] = [f"Base inspection complete. installed={base_rep.installed}"]
         instances: list[DiscoveredInstance] = []
         seen_paths: set[str] = set()

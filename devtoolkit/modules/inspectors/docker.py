@@ -1,12 +1,17 @@
-"""Docker & Containerization Environment Inspector."""
-
 import re
+import sys
+from datetime import datetime, timezone
 from pathlib import Path
+from typing import Optional
 from devtoolkit.core.base import BaseInspector
+from devtoolkit.core.inventory import OSInventory
 from devtoolkit.core.models import (
     CompanionTool,
+    DeepTelemetryReport,
     DiagnosticIssue,
     DiagnosticLevel,
+    DiscoveredInstance,
+    EnvVarStatus,
     HealthStatus,
     ToolReport,
 )
@@ -101,8 +106,8 @@ class DockerInspector(BaseInspector):
             metadata={"daemon_running": daemon_running},
         )
 
-    def deep_inspect(self, runner: SafeRunner) -> DeepTelemetryReport:
-        base_rep = self.inspect(runner)
+    def deep_inspect(self, runner: SafeRunner, base_report: Optional[ToolReport] = None) -> DeepTelemetryReport:
+        base_rep = base_report if base_report is not None else self.inspect(runner)
         trace: list[str] = [f"Base inspection complete. installed={base_rep.installed}"]
         instances: list[DiscoveredInstance] = []
         seen_paths: set[str] = set()

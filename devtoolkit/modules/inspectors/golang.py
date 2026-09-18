@@ -3,7 +3,7 @@ import re
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
+from typing import Any, Optional
 
 from devtoolkit.core.base import BaseInspector
 from devtoolkit.core.inventory import OSInventory
@@ -24,45 +24,61 @@ class GoInspector(BaseInspector):
     id = "golang"
     name = "Go"
     category = "runtime"
-    categories = ["runtime", "compiler"]
-    description = "Go compiler runtime, GOPATH, and GOROOT environment"
+    categories = ["runtime", "backend"]
+    description = "Go Programming Language runtime and compiler"
 
     def inspect(self, runner: SafeRunner) -> ToolReport:
-        go_bin = runner.resolve_binary("go")
+        go_bin = runner.find_binary("go")
         if not go_bin:
             return ToolReport(
                 id=self.id,
                 name=self.name,
                 category=self.category,
                 categories=self.categories,
+                description=self.description,
                 installed=False,
                 status=HealthStatus.NOT_FOUND,
+                diagnostics=[DiagnosticIssue(level=DiagnosticLevel.ERROR, message="Go compiler is not installed", suggested_fix="Install Go from https://go.dev/dl/")],
             )
 
-        # Output format: "go version go1.22.4 windows/amd64"
-        res = runner.run_command([str(go_bin), "version"])
+        res = runner.run_command(["go", "version"])
         version = None
         if res.ok and res.stdout:
-            m = re.search(r"go version go([0-9.]+)", res.stdout)
-            version = m.group(1) if m else res.stdout
+            # "go version go1.22.1 windows/amd64"
+            m = re.search(r"go(\d+\.\d+(\.\d+)?)", res.stdout)
+            if m:
+                version = m.group(1)
 
-        companions = []
-        diagnostics = []
+        # Inspect env vars
+        env_res = runner.run_command(["go", "env", "-json"])
+        gopath = None
+        goroot = None
+        if env_res.ok and env_res.stdout:
+            try:
+                env_data = json.loads(env_res.stdout)
+                gopath = env_data.get("GOPATH")
+                goroot = env_data.get("GOROOT")
+            except Exception:
+                pass
 
-        # Check Go env for GOPATH and GOROOT
-        gopath_res = runner.run_command([str(go_bin), "env", "GOPATH"])
-        goroot_res = runner.run_command([str(go_bin), "env", "GOROOT"])
-
-        gopath = gopath_res.stdout.strip() if gopath_res.ok else runner.read_env("GOPATH")
-        goroot = goroot_res.stdout.strip() if goroot_res.ok else runner.read_env("GOROOT")
-
+        diagnostics: list[DiagnosticIssue] = []
         status = HealthStatus.HEALTHY
+        if not gopath:
+            diagnostics.append(DiagnosticIssue(level=DiagnosticLevel.WARNING, message="GOPATH is not defined", suggested_fix="export GOPATH=$HOME/go"))
+            status = HealthStatus.WARNING
+
+        # Companions
+        companions = []
+        for c in ["gopls", "golangci-lint", "dlv"]:
+            cb = runner.find_binary(c)
+            companions.append(CompanionTool(name=c, installed=cb is not None, binary_path=str(cb) if cb else None))
 
         return ToolReport(
             id=self.id,
             name=self.name,
             category=self.category,
             categories=self.categories,
+            description=self.description,
             installed=True,
             version=version,
             binary_path=str(go_bin),
@@ -73,8 +89,8 @@ class GoInspector(BaseInspector):
             metadata={"GOPATH": gopath, "GOROOT": goroot},
         )
 
-    def deep_inspect(self, runner: SafeRunner) -> DeepTelemetryReport:
-        base_rep = self.inspect(runner)
+    def deep_inspect(self, runner: SafeRunner, base_report: Optional[ToolReport] = None) -> DeepTelemetryReport:
+        base_rep = base_report if base_report is not None else self.inspect(runner)
         trace: list[str] = [f"Base inspection complete. installed={base_rep.installed}"]
         instances: list[DiscoveredInstance] = []
         seen_paths: set[str] = set()
@@ -201,3 +217,6 @@ class GoInspector(BaseInspector):
             raw_dumps=raw_dumps,
             discovery_trace=trace,
         )
+
+
+GolangInspector = GoInspector

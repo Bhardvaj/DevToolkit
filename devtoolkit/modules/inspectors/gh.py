@@ -2,13 +2,16 @@
 
 import re
 from pathlib import Path
-from typing import List
+from typing import List, Optional
 
 from devtoolkit.core.base import BaseInspector
 from devtoolkit.core.models import (
     CompanionTool,
+    DeepTelemetryReport,
     DiagnosticIssue,
     DiagnosticLevel,
+    DiscoveredInstance,
+    EnvVarStatus,
     HealthStatus,
     ToolReport,
 )
@@ -98,3 +101,131 @@ class GitHubCLIInspector(BaseInspector):
             diagnostics=diagnostics,
             metadata={"authenticated": is_authenticated, "account": account_name},
         )
+
+    def deep_inspect(self, runner: SafeRunner, base_report: Optional[ToolReport] = None) -> DeepTelemetryReport:
+        if base_report is None:
+            base_report = self.inspect(runner)
+        from datetime import datetime
+        raw_dumps = {}
+        trace = ["Starting GitHub CLI deep inspection probe"]
+        instances: List[DiscoveredInstance] = []
+        env_vars: List[EnvVarStatus] = []
+        detailed_diag: List[DiagnosticIssue] = list(base_report.diagnostics)
+        remediations: List[str] = []
+
+        seen_bins = set()
+
+        # Primary resolved binary
+        if base_report.binary_path:
+            p_bin = Path(base_report.binary_path)
+            seen_bins.add(str(p_bin).lower())
+            instances.append(
+                DiscoveredInstance(
+                    path=str(p_bin.parent),
+                    binary_path=str(p_bin),
+                    version=base_report.version,
+                    source="Active PATH",
+                    is_active=True,
+                    details=f"Active GitHub CLI ({base_report.metadata.get('account') or 'logged out'})",
+                )
+            )
+
+        # Multi-instance discovery across PATH
+        for g_bin in runner.resolve_all_binaries("gh"):
+            if str(g_bin).lower() not in seen_bins:
+                seen_bins.add(str(g_bin).lower())
+                is_act = bool(base_report.binary_path and str(g_bin).lower() == str(base_report.binary_path).lower())
+                ver_str = None
+                res_v = runner.run_command([str(g_bin), "--version"], timeout=2.0)
+                if res_v.ok and res_v.stdout:
+                    m = re.search(r"gh version\s+([\d\.]+)", res_v.stdout)
+                    ver_str = m.group(1) if m else None
+                instances.append(
+                    DiscoveredInstance(
+                        path=str(g_bin.parent),
+                        binary_path=str(g_bin),
+                        version=ver_str,
+                        source="Alternate PATH",
+                        is_active=is_act,
+                        details="Alternate gh CLI executable in PATH",
+                    )
+                )
+
+        trace.append(f"Discovered {len(instances)} gh CLI instances")
+
+        # 2. Environment Variables Alignment
+        gh_tok = runner.read_env("GH_TOKEN") or runner.read_env("GITHUB_TOKEN")
+        env_vars.append(
+            EnvVarStatus(
+                name="GH_TOKEN",
+                value="[REDACTED]" if gh_tok else None,
+                status="aligned" if gh_tok else "missing",
+                target_path=None,
+                message="Active auth token configured via environment" if gh_tok else "Unset (authentication uses system credential helper)",
+            )
+        )
+
+        gh_cfg = runner.read_env("GH_CONFIG_DIR")
+        env_vars.append(
+            EnvVarStatus(
+                name="GH_CONFIG_DIR",
+                value=gh_cfg,
+                status="aligned" if gh_cfg else "missing",
+                target_path=gh_cfg,
+                message="Custom configuration directory" if gh_cfg else "Default (%APPDATA%/GitHub CLI or ~/.config/gh)",
+            )
+        )
+
+        gh_host = runner.read_env("GH_HOST")
+        env_vars.append(
+            EnvVarStatus(
+                name="GH_HOST",
+                value=gh_host,
+                status="aligned" if gh_host else "missing",
+                target_path=None,
+                message=f"Configured enterprise host: {gh_host}" if gh_host else "Default (github.com)",
+            )
+        )
+
+        # 3. CLI Telemetry Dumps
+        gh_exec = base_report.binary_path or "gh"
+        res_ver = runner.run_command([gh_exec, "--version"], timeout=2.5)
+        if res_ver.ok and res_ver.stdout:
+            raw_dumps["gh --version"] = res_ver.stdout.strip()
+
+        res_auth = runner.run_command([gh_exec, "auth", "status"], timeout=3.0)
+        out_auth = f"{res_auth.stdout}\n{res_auth.stderr}".strip()
+        if out_auth:
+            raw_dumps["gh auth status"] = out_auth
+
+        res_ext = runner.run_command([gh_exec, "extension", "list"], timeout=2.5)
+        if res_ext.ok and res_ext.stdout:
+            raw_dumps["gh extension list"] = res_ext.stdout.strip()
+
+        res_cfg_list = runner.run_command([gh_exec, "config", "list"], timeout=2.0)
+        if res_cfg_list.ok and res_cfg_list.stdout:
+            raw_dumps["gh config list"] = res_cfg_list.stdout.strip()
+
+        if not base_report.metadata.get("authenticated"):
+            remediations.append("gh auth login")
+        remediations.append("gh auth setup-git")
+
+        trace.append("Completed GitHub CLI deep telemetry probes")
+
+        return DeepTelemetryReport(
+            tool_id=self.id,
+            timestamp=datetime.now().isoformat(),
+            probe_latency_ms=0,
+            instances=instances,
+            env_vars=env_vars,
+            telemetry={
+                "authenticated": base_report.metadata.get("authenticated", False),
+                "account": base_report.metadata.get("account"),
+                "home_path": base_report.home_path,
+            },
+            raw_dumps=raw_dumps,
+            detailed_diagnostics=detailed_diag,
+            remediation_commands=remediations,
+            discovery_trace=trace,
+        )
+

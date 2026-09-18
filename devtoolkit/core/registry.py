@@ -220,7 +220,8 @@ class PluginRegistry:
         import time
         start = time.perf_counter()
         try:
-            report = inspector.deep_inspect(self.runner)
+            base_rep = inspector.inspect(self.runner)
+            report = inspector.deep_inspect(self.runner, base_report=base_rep)
         except Exception as e:
             report = DeepTelemetryReport(
                 tool_id=tool_id,

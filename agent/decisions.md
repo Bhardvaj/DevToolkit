@@ -120,4 +120,20 @@ This file tracks major architectural choices, technical decisions, and trade-off
   - Multi-instance conflicts and path shadowing are immediately visible and actionable.
   - Safe user control: no automatic system mutations without explicit terminal review.
 
+---
+
+## ADR-0010: Complete Multi-Instance Discovery & Deep Inspection Coverage Across All 22 Developer Tools
+- **Date**: 2026-09-18
+- **Status**: Accepted
+- **Context**: Batch 1 delivered deep inspection for 8 core runtime tools (Python, Node.js, Git, Docker, Java, Go, Rust, .NET). The remaining 14 tools (Android SDK, Android Studio, Flutter, VS Code, Kubectl, Terraform, GitHub CLI, Ollama, CMake, C/C++ Compiler, CUDA, PHP, Bun, SQLite) required the same level of granular multi-instance discovery (PATH vs portable extracts vs IDE-bundled tools), environment variable auditing, and diagnostic sub-command telemetry without slowing down application startup.
+- **Decision**:
+  1. Implement `deep_inspect(self, runner: SafeRunner, base_report: Optional[ToolReport] = None)` across all 14 Batch 2 inspectors.
+  2. Maintain a unified signature standard across all 22 tools accepting `runner` as first argument and optional `base_report` to avoid redundant baseline re-inspection.
+  3. Support multi-binary resolution via `SafeRunner.resolve_all_binaries` detecting precedence and classifying active PATH vs standby/portable instances.
+  4. Ensure zero automatic system modifications: all remediation advice remains copyable terminal commands with clipboard buttons.
+- **Consequences**:
+  - 100% of all 22 supported tools now have deep telemetry, multi-instance discovery, and environment alignment matrices.
+  - Consistent developer experience across the entire workstation suite.
+  - Complete error resilience across all inspectors confirmed by automated testing suite.
+
 

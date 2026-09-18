@@ -44,9 +44,10 @@ class SafeRunner:
         cmd: List[str],
         timeout: Optional[float] = None,
         env: Optional[Dict[str, str]] = None,
+        timeout_seconds: Optional[float] = None,
     ) -> CommandResult:
         """Run a command with guaranteed timeout and non-blocking capture."""
-        effective_timeout = timeout if timeout is not None else self.default_timeout
+        effective_timeout = timeout if timeout is not None else (timeout_seconds if timeout_seconds is not None else self.default_timeout)
         
         # Merge custom env with os.environ
         run_env = os.environ.copy()
@@ -135,6 +136,9 @@ class SafeRunner:
                     return p.resolve()
 
         return None
+
+    # Alias for convenience across inspectors
+    find_binary = resolve_binary
 
     def resolve_all_binaries(
         self,

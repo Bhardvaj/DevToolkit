@@ -90,8 +90,55 @@ def test_get_tool_deep_endpoint_valid():
     assert rep.probe_latency_ms >= 0
 
 
+def test_registry_deep_inspection_batch2():
+    """Verify registry can run deep inspection on Batch 2 tools."""
+    registry = PluginRegistry()
+    batch2_tools = [
+        "android",
+        "android_studio",
+        "flutter",
+        "vscode",
+        "bun",
+        "gh",
+        "cmake",
+        "ollama",
+        "kubectl",
+        "terraform",
+        "c_compiler",
+        "php",
+        "cuda",
+        "sqlite",
+    ]
+
+    for tool_id in batch2_tools:
+        inspector = registry.get_inspector(tool_id)
+        assert inspector is not None, f"Inspector for {tool_id} should be registered"
+
+        deep_rep = registry.run_deep_inspection(tool_id)
+        assert deep_rep is not None, f"Deep report for {tool_id} should not be None"
+        assert deep_rep.tool_id == tool_id
+        assert deep_rep.probe_latency_ms >= 0
+        assert isinstance(deep_rep.instances, list)
+        assert isinstance(deep_rep.env_vars, list)
+        assert isinstance(deep_rep.discovery_trace, list)
+        assert len(deep_rep.discovery_trace) > 0
+
+
+def test_all_22_inspectors_have_deep_inspection():
+    """Verify all 22 registered inspectors in DevToolkit have custom deep inspection implementations."""
+    registry = PluginRegistry()
+    inspectors = registry.list_inspectors()
+    assert len(inspectors) == 22, f"Expected 22 inspectors, found {len(inspectors)}"
+
+    for insp in inspectors:
+        # Verify the inspector has a callable deep_inspect method
+        assert hasattr(insp, "deep_inspect"), f"{insp.id} must have deep_inspect method"
+        assert callable(insp.deep_inspect)
+
+
 def test_get_tool_deep_endpoint_404():
     """Verify get_tool_deep raises HTTPException 404 for unknown tool."""
     with pytest.raises(HTTPException) as exc_info:
         get_tool_deep("nonexistent_tool_xyz")
     assert exc_info.value.status_code == 404
+

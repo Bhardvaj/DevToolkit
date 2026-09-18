@@ -23,9 +23,9 @@ class BaseInspector(ABC):
         """Run safe discovery probes and return a structured ToolReport."""
         raise NotImplementedError
 
-    def deep_inspect(self, runner: SafeRunner) -> DeepTelemetryReport:
+    def deep_inspect(self, runner: SafeRunner, base_report: Optional[ToolReport] = None) -> DeepTelemetryReport:
         """Run safe deep domain inspection probes. Subclasses can override for rich telemetry."""
-        base_rep = self.inspect(runner)
+        base_rep = base_report if base_report is not None else self.inspect(runner)
         instances: list[DiscoveredInstance] = []
         trace: list[str] = [f"Base inspection completed with status={base_rep.status.value}"]
 

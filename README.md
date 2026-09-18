@@ -22,7 +22,8 @@
   - Top breadcrumbs bar with instant global search (`Ctrl+K`), rescan, and 1-click Markdown/JSON report export.
   - Interactive metric stat cards with 2px progress tracks (*Audited Tools*, *Installed*, *Healthy*, *Action Needed*, *Critical Errors*, *Not Found*).
   - Progressive Server-Sent Events (SSE) streaming with skeleton shimmers for sub-50ms instant first paint.
-  - 🔬 **Standardized 7-Zone Deep Tool Inspection**:
+  - 🔬 **Standardized 7-Zone Deep Tool Inspection Across All 22 Tools**:
+    - Complete multi-instance detection, environment variable matrices, and diagnostic sub-command telemetry across all 22 supported SDKs, runtimes, and developer tools.
     - **Zone 1: Identity & Health Header**: Tool icon, name, category, health status, and live probe latency in ms.
     - **Zone 2: Primary Runtime & Quick Access**: Active binary path, 1-click "Open in Explorer", copy path, and discovery source badge.
     - **Zone 3: Multi-Instance & Precedence Discovery**: Detects all runtime instances via `where.exe`, classifying `Active (PATH)` vs. `Alternate` standby installations.

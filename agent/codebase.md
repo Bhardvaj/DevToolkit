@@ -84,7 +84,7 @@ DevToolkit/
 ├── .github/
 │   └── workflows/
 │       └── build.yml                  # GitHub Actions CI for test, packaging & release
-└── tests/                             # Automated test suite (56 passing unit tests)
+└── tests/                             # Automated test suite (58 passing unit tests)
     ├── test_batch1_inspectors.py      # Tests for Batch 1 inspectors (VS Code, .NET, Bun, GH, CMake, Ollama)
     ├── test_batch2_inspectors.py      # Tests for Batch 2 inspectors (Kubectl, Terraform, C++, PHP, CUDA, SQLite)
     ├── test_config.py                 # Tests for user configuration and custom search paths
@@ -127,7 +127,7 @@ DevToolkit/
 - `SafeRunner.resolve_all_binaries(name: str) -> List[Path]`: Resolves all occurrences of a binary executable in PATH precedence order using native `where.exe` on Windows (and `which -a` on Unix), deduplicating symlinks and case variations.
 
 ### Base Inspector Deep Inspection ([`devtoolkit/core/base.py`](file:///d:/UtilitySoftware/devtoolkit/core/base.py))
-- `BaseInspector.deep_inspect(base_report: ToolReport, runner: SafeRunner) -> DeepTelemetryReport`: Default implementation builds instances from `resolve_all_binaries` and checks known env vars. Specialized inspectors override this to run diagnostic CLI sub-commands and verify multi-path alignment.
+- `BaseInspector.deep_inspect(self, runner: SafeRunner, base_report: Optional[ToolReport] = None) -> DeepTelemetryReport`: Standard signature across all 22 inspectors. Builds instances from `resolve_all_binaries`, evaluates monitored env vars, and executes diagnostic sub-commands with non-blocking timeouts.
 
 ### Plugin Registry Coordinator ([`devtoolkit/core/registry.py`](file:///d:/UtilitySoftware/devtoolkit/core/registry.py))
 - `PluginRegistry.run_deep_inspection(tool_id: str) -> Optional[DeepTelemetryReport]`: Executes deep inspection on-demand for a single tool with non-blocking timeouts and attaches execution latency.

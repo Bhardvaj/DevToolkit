@@ -229,6 +229,90 @@ In addition to baseline non-blocking discovery, DevToolkit provides on-demand de
   - **CLI Diagnostics**: Executes `dotnet --info` and `dotnet --list-sdks`.
   - **Remediations**: Generates copyable commands to set `DOTNET_ROOT` or configure target framework runtimes.
 
+- **Android SDK (`android`)**:
+  - **Multi-Instance Precedence**: Scans active `adb` binary, SDK platforms, build-tools, and emulator executables across PATH, `%LOCALAPPDATA%\Android\Sdk`, and custom monitored roots.
+  - **Environment Alignment**: Audits `ANDROID_HOME`, `ANDROID_SDK_ROOT`, and `ANDROID_AVD_HOME`.
+  - **CLI Diagnostics**: Executes `adb version` and tests connected USB/virtual devices (`adb devices -l`).
+  - **Remediations**: Generates copyable PowerShell command to set `ANDROID_HOME` or add `platform-tools` to PATH.
+
+- **Android Studio (`android_studio`)**:
+  - **Multi-Instance Precedence**: Scans active Studio installs, Canary/Preview builds, and bundled JetBrains Runtime (`jbr`).
+  - **Environment Alignment**: Evaluates `STUDIO_JDK`, `JDK_HOME`, and `JAVA_HOME`.
+  - **CLI Diagnostics**: Audits Android SDK directory settings and bundled build-tools version.
+  - **Remediations**: Generates copyable commands to align Studio JDK variables.
+
+- **Flutter SDK (`flutter`)**:
+  - **Multi-Instance Precedence**: Discovers active `flutter.bat` vs git clone or zip extracts.
+  - **Environment Alignment**: Audits `FLUTTER_ROOT` and `PUB_CACHE`.
+  - **CLI Diagnostics**: Parses `flutter --version`, git channel (`stable`, `beta`), engine revision, and Dart SDK cache.
+  - **Remediations**: Generates copyable commands to update Flutter channels or repair pub cache.
+
+- **Visual Studio Code (`vscode`)**:
+  - **Multi-Instance Precedence**: Scans active `code.cmd`, portable zip extracts, and VS Code Insiders (`code-insiders`).
+  - **Environment Alignment**: Evaluates `VSCODE_PORTABLE` and `VSCODE_GIT_ASKPASS_NODE`.
+  - **CLI Diagnostics**: Checks CLI terminal registration and extensions directory.
+  - **Remediations**: Generates copyable commands to add VS Code to system PATH.
+
+- **Kubernetes CLI (`kubectl`)**:
+  - **Multi-Instance Precedence**: Discovers all `kubectl` binaries in PATH order.
+  - **Environment Alignment**: Audits `KUBECONFIG` path and active context.
+  - **CLI Diagnostics**: Executes `kubectl version --client -o json` and reads cluster URL.
+  - **Remediations**: Generates copyable commands to initialize `~/.kube/config`.
+
+- **Terraform / OpenTofu (`terraform`)**:
+  - **Multi-Instance Precedence**: Discovers `terraform` and `tofu` binaries across PATH and custom roots.
+  - **Environment Alignment**: Audits `TF_CLI_CONFIG_FILE` and `TF_PLUGIN_CACHE_DIR`.
+  - **CLI Diagnostics**: Dumps provider plugin cache status and active engine flavor (HashiCorp vs OpenTofu).
+  - **Remediations**: Generates copyable commands to initialize provider cache directories.
+
+- **GitHub CLI (`gh`)**:
+  - **Multi-Instance Precedence**: Discovers `gh` binaries and extensions.
+  - **Environment Alignment**: Checks `GH_TOKEN`, `GITHUB_TOKEN`, and `GH_CONFIG_DIR`.
+  - **CLI Diagnostics**: Runs `gh auth status` and captures logged-in user account.
+  - **Remediations**: Generates copyable commands to authenticate (`gh auth login`).
+
+- **Ollama Local AI (`ollama`)**:
+  - **Multi-Instance Precedence**: Discovers `ollama` binaries.
+  - **Environment Alignment**: Audits `OLLAMA_HOST` and `OLLAMA_MODELS`.
+  - **CLI Diagnostics**: Runs `ollama list` and models storage utilization check.
+  - **Remediations**: Generates copyable commands to start daemon or pull models.
+
+- **CMake (`cmake`)**:
+  - **Multi-Instance Precedence**: Discovers `cmake` and companion `ninja` build tools.
+  - **Environment Alignment**: Audits `CMAKE_GENERATOR` and `CMAKE_BUILD_PARALLEL_LEVEL`.
+  - **CLI Diagnostics**: Tests compiler generator compatibility.
+  - **Remediations**: Generates copyable commands to install Ninja or configure generators.
+
+- **C/C++ Compiler (`c_compiler`)**:
+  - **Multi-Instance Precedence**: Discovers `gcc`, `g++`, `clang`, `clang++`, and `cl.exe`.
+  - **Environment Alignment**: Evaluates toolchain roots (`MinGW`, `LLVM`, `MSVC`).
+  - **CLI Diagnostics**: Executes `--version` and parses target OS architecture.
+  - **Remediations**: Generates copyable commands to install MinGW or LLVM.
+
+- **NVIDIA CUDA Toolkit (`cuda`)**:
+  - **Multi-Instance Precedence**: Discovers `nvcc.exe` compiler and `nvidia-smi.exe`.
+  - **Environment Alignment**: Audits `CUDA_PATH`, `CUDA_HOME`, and versioned `CUDA_PATH_V*` variables.
+  - **CLI Diagnostics**: Runs `nvidia-smi` to extract GPU product name, driver version, and compute capability.
+  - **Remediations**: Generates copyable commands to align `CUDA_PATH` with the installed toolkit.
+
+- **PHP & Composer (`php`)**:
+  - **Multi-Instance Precedence**: Discovers `php` and `composer` binaries.
+  - **Environment Alignment**: Audits `PHP_INI_SCAN_DIR` and `COMPOSER_HOME`.
+  - **CLI Diagnostics**: Runs `php -m` to enumerate loaded extensions (curl, openssl, mbstring, pdo).
+  - **Remediations**: Generates copyable commands to enable missing extensions in `php.ini`.
+
+- **Bun (`bun`)**:
+  - **Multi-Instance Precedence**: Discovers `bun` runtime binaries.
+  - **Environment Alignment**: Audits `BUN_INSTALL` path.
+  - **CLI Diagnostics**: Evaluates global package directory and Bun runtime version.
+  - **Remediations**: Generates copyable commands to install Bun packages or align path.
+
+- **SQLite (`sqlite`)**:
+  - **Multi-Instance Precedence**: Discovers `sqlite3` CLI binaries.
+  - **Environment Alignment**: Checks system PATH configuration.
+  - **CLI Diagnostics**: Queries compile-time options and database engine version.
+  - **Remediations**: Generates copyable commands to install SQLite CLI tool.
+
 ---
 
 ## 4. Workstation Utility Modules

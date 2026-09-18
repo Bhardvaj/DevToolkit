@@ -1,14 +1,18 @@
 """C/C++ Compiler & Native Build Toolchain Inspector."""
 
 import re
+import sys
 from pathlib import Path
-from typing import List
+from typing import List, Optional
 
 from devtoolkit.core.base import BaseInspector
 from devtoolkit.core.models import (
     CompanionTool,
+    DeepTelemetryReport,
     DiagnosticIssue,
     DiagnosticLevel,
+    DiscoveredInstance,
+    EnvVarStatus,
     HealthStatus,
     ToolReport,
 )
@@ -96,3 +100,129 @@ class CCompilerInspector(BaseInspector):
             diagnostics=diagnostics,
             metadata={"compiler_flavor": "gcc" if primary_bin == gcc_bin else "clang"},
         )
+
+    def deep_inspect(self, runner: SafeRunner, base_report: Optional[ToolReport] = None) -> DeepTelemetryReport:
+        if base_report is None:
+            base_report = self.inspect(runner)
+        from datetime import datetime
+        raw_dumps = {}
+        trace = ["Starting C/C++ compiler toolchain deep inspection probe"]
+        instances: List[DiscoveredInstance] = []
+        env_vars: List[EnvVarStatus] = []
+        detailed_diag: List[DiagnosticIssue] = list(base_report.diagnostics)
+        remediations: List[str] = []
+
+        seen_bins = set()
+
+        # Primary resolved binary
+        if base_report.binary_path:
+            p_bin = Path(base_report.binary_path)
+            seen_bins.add(str(p_bin).lower())
+            instances.append(
+                DiscoveredInstance(
+                    path=str(p_bin.parent),
+                    binary_path=str(p_bin),
+                    version=base_report.version,
+                    source="Active PATH",
+                    is_active=True,
+                    details=f"Active C compiler ({p_bin.name})",
+                )
+            )
+
+        # Multi-instance discovery across PATH for compiler toolchains
+        compiler_names = ["gcc", "clang", "cl", "g++", "clang++"]
+        for c_name in compiler_names:
+            for bin_p in runner.resolve_all_binaries(c_name):
+                if str(bin_p).lower() not in seen_bins:
+                    seen_bins.add(str(bin_p).lower())
+                    is_act = bool(base_report.binary_path and str(bin_p).lower() == str(base_report.binary_path).lower())
+                    ver_str = None
+                    res_v = runner.run_command([str(bin_p), "--version"], timeout=2.0)
+                    if res_v.ok and res_v.stdout:
+                        m = re.search(r"(?:gcc|clang version|MSVC)\s+.*?([\d\.]+)", res_v.stdout, re.IGNORECASE)
+                        ver_str = m.group(1) if m else None
+                    instances.append(
+                        DiscoveredInstance(
+                            path=str(bin_p.parent),
+                            binary_path=str(bin_p),
+                            version=ver_str,
+                            source="PATH",
+                            is_active=is_act,
+                            details=f"Discovered compiler toolchain binary ({c_name})",
+                        )
+                    )
+
+        # Check MSYS2 default directory
+        if sys.platform == "win32":
+            msys_cand = Path("C:/msys64/ucrt64/bin/gcc.exe")
+            if msys_cand.is_file() and str(msys_cand).lower() not in seen_bins:
+                seen_bins.add(str(msys_cand).lower())
+                instances.append(
+                    DiscoveredInstance(
+                        path=str(msys_cand.parent),
+                        binary_path=str(msys_cand),
+                        version=None,
+                        source="MSYS2 UCRT64",
+                        is_active=False,
+                        details="MSYS2 modern C/C++ compiler toolchain",
+                    )
+                )
+
+        trace.append(f"Discovered {len(instances)} C/C++ compiler instances")
+
+        # 2. Environment Variables Alignment
+        cc_val = runner.read_env("CC")
+        env_vars.append(
+            EnvVarStatus(
+                name="CC",
+                value=cc_val,
+                status="aligned" if cc_val else "missing",
+                target_path=base_report.binary_path,
+                message=f"Configured C compiler: {cc_val}" if cc_val else "Unset (tools discover compiler from PATH)",
+            )
+        )
+
+        cxx_val = runner.read_env("CXX")
+        env_vars.append(
+            EnvVarStatus(
+                name="CXX",
+                value=cxx_val,
+                status="aligned" if cxx_val else "missing",
+                target_path=None,
+                message=f"Configured C++ compiler: {cxx_val}" if cxx_val else "Unset (tools discover compiler from PATH)",
+            )
+        )
+
+        # 3. CLI Telemetry Dumps
+        primary_exec = base_report.binary_path or "gcc"
+        res_ver = runner.run_command([primary_exec, "--version"], timeout=2.0)
+        if res_ver.ok and res_ver.stdout:
+            raw_dumps[f"{Path(primary_exec).name} --version"] = res_ver.stdout.strip()
+
+        res_mach = runner.run_command([primary_exec, "-dumpmachine"], timeout=2.0)
+        if res_mach.ok and res_mach.stdout:
+            raw_dumps["Target Machine (-dumpmachine)"] = res_mach.stdout.strip()
+
+        res_v = runner.run_command([primary_exec, "-v"], timeout=2.0)
+        out_v = f"{res_v.stdout}\n{res_v.stderr}".strip()
+        if out_v:
+            raw_dumps["Compiler Specs (-v)"] = out_v
+
+        trace.append("Completed C/C++ compiler toolchain deep telemetry probes")
+
+        return DeepTelemetryReport(
+            tool_id=self.id,
+            timestamp=datetime.now().isoformat(),
+            probe_latency_ms=0,
+            instances=instances,
+            env_vars=env_vars,
+            telemetry={
+                "compiler_flavor": base_report.metadata.get("compiler_flavor"),
+                "home_path": base_report.home_path,
+            },
+            raw_dumps=raw_dumps,
+            detailed_diagnostics=detailed_diag,
+            remediation_commands=remediations,
+            discovery_trace=trace,
+        )
+
