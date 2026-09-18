@@ -379,19 +379,16 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
   <div class="flex flex-1 overflow-hidden">
 
     <!-- LEFT FIXED VERTICAL SIDEBAR -->
-    <aside class="w-56 sm:w-64 bg-sidebarBg border-r border-slate-800/80 flex flex-col p-3 sm:p-3.5 select-none flex-shrink-0 z-20">
-      <div class="space-y-4">
+    <aside class="w-56 sm:w-64 bg-sidebarBg border-r border-slate-800/80 flex flex-col justify-between p-3 sm:p-3.5 select-none flex-shrink-0 z-20">
+      <div class="space-y-4 flex-1 overflow-y-auto custom-scrollbar pr-0.5">
         <!-- Brand Header -->
         <div class="flex items-center gap-3 px-1.5 pt-1">
           <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white shadow-lg shadow-blue-500/25 flex-shrink-0">
             <i class="fa-solid fa-bolt text-lg"></i>
           </div>
           <div class="min-w-0">
-            <div class="flex items-center gap-2">
-              <h1 class="text-base font-black tracking-tight text-white truncate">DevToolkit</h1>
-              <span class="text-[10px] font-mono px-1.5 py-0.2 rounded bg-indigo-500/20 text-indigo-300 font-semibold border border-indigo-500/30 flex-shrink-0">v0.2.0</span>
-            </div>
-            <div class="text-[11px] text-slate-400 font-medium truncate" id="side-os-info">Windows 11 (x64)</div>
+            <h1 class="text-base font-black tracking-tight text-white truncate">DevToolkit</h1>
+            <div class="text-[11px] text-slate-400 font-medium truncate" id="side-os-info">Detecting OS...</div>
           </div>
         </div>
 
@@ -399,7 +396,7 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
         <div class="bg-[#0e1526] border border-slate-800/90 rounded-lg px-3 py-1.5 flex items-center text-xs min-w-0">
           <span class="flex items-center gap-2 text-slate-300 font-medium text-[11px] truncate">
             <span class="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_6px_#34d399] flex-shrink-0"></span>
-            Host: <span id="side-host-name" class="text-white font-semibold truncate">DEXTER-2</span>
+            Host: <span id="side-host-name" class="text-white font-semibold truncate">Detecting...</span>
           </span>
         </div>
 
@@ -440,6 +437,34 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
                 <i class="fa-solid fa-gear flex-shrink-0"></i>
                 <span class="truncate">Settings</span>
               </div>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- SIDEBAR FOOTER: Software & Runtime Info -->
+      <div class="pt-3 border-t border-slate-800/80 mt-auto flex-shrink-0">
+        <div class="p-2.5 rounded-xl bg-[#070a13]/80 border border-slate-800/80 space-y-2">
+          <div class="flex items-center justify-between text-xs">
+            <span class="text-slate-300 font-semibold flex items-center gap-1.5 truncate">
+              <i class="fa-solid fa-cube text-blue-400 text-xs flex-shrink-0"></i>
+              <span class="truncate">DevToolkit</span>
+            </span>
+            <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 font-semibold border border-indigo-500/30 flex-shrink-0" id="side-app-version">v0.2.0</span>
+          </div>
+          <div class="flex items-center justify-between text-[11px] text-slate-400 font-mono">
+            <span class="text-slate-500 flex items-center gap-1">
+              <i class="fa-brands fa-python text-amber-400 text-[10px]"></i> Python
+            </span>
+            <span id="side-python-version" class="text-slate-300">...</span>
+          </div>
+          <div class="flex items-center justify-between text-[10px] text-slate-500 pt-1 border-t border-slate-800/60 font-sans">
+            <span class="flex items-center gap-1 text-emerald-400 font-medium">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+              Runtime Active
+            </span>
+            <button onclick="toggleHelpModal()" class="text-slate-400 hover:text-white transition flex items-center gap-1" title="View Diagnostics & Shortcuts (?)">
+              <i class="fa-solid fa-circle-question text-[10px]"></i> Help
             </button>
           </div>
         </div>
@@ -1085,6 +1110,19 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
         <div class="flex items-center justify-between p-2 rounded-lg bg-slate-950/70 border border-slate-800">
           <span class="text-slate-300">Close Modal / Blur Search</span>
           <kbd class="px-2 py-0.5 rounded bg-slate-800 text-blue-300 font-mono text-[11px] border border-slate-700">Esc</kbd>
+        </div>
+      </div>
+
+      <!-- Workstation Telemetry -->
+      <div class="p-3 rounded-xl bg-slate-950/80 border border-slate-800 space-y-1.5 text-xs">
+        <div class="text-[10px] font-bold text-slate-500 tracking-wider uppercase flex items-center gap-1.5">
+          <i class="fa-solid fa-server text-blue-400"></i> Workstation Telemetry
+        </div>
+        <div class="grid grid-cols-2 gap-2 text-[11px] font-mono">
+          <div><span class="text-slate-500">OS:</span> <span id="sys-os" class="text-slate-300">...</span></div>
+          <div><span class="text-slate-500">Arch:</span> <span id="sys-arch" class="text-slate-300">...</span></div>
+          <div><span class="text-slate-500">Host:</span> <span id="sys-host" class="text-slate-300">...</span></div>
+          <div><span class="text-slate-500">Python:</span> <span id="sys-python" class="text-slate-300">...</span></div>
         </div>
       </div>
 
@@ -2837,10 +2875,36 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
       try {
         const res = await fetch('/api/system');
         const sys = await res.json();
-        document.getElementById('sys-os').innerText = `${sys.os_name} ${sys.os_release}`;
-        document.getElementById('sys-arch').innerText = sys.arch;
-        document.getElementById('sys-host').innerText = sys.hostname;
-        document.getElementById('sys-python').innerText = sys.python_version || 'Active';
+
+        // Dynamically update Sidebar OS info & Host name
+        const sideOs = document.getElementById('side-os-info');
+        if (sideOs) {
+          sideOs.innerText = `${sys.os_name} ${sys.os_release} (${sys.arch})`;
+          sideOs.title = `${sys.os_name} ${sys.os_release} ${sys.os_version} [${sys.arch}]`;
+        }
+        const sideHost = document.getElementById('side-host-name');
+        if (sideHost) {
+          sideHost.innerText = sys.hostname;
+          sideHost.title = sys.hostname;
+        }
+        const sideAppVer = document.getElementById('side-app-version');
+        if (sideAppVer && sys.app_version) {
+          sideAppVer.innerText = `v${sys.app_version}`;
+        }
+        const sidePyVer = document.getElementById('side-python-version');
+        if (sidePyVer) {
+          sidePyVer.innerText = sys.python_version || 'Active';
+        }
+
+        // Workstation Telemetry in Help modal
+        const sysOs = document.getElementById('sys-os');
+        if (sysOs) sysOs.innerText = `${sys.os_name} ${sys.os_release}`;
+        const sysArch = document.getElementById('sys-arch');
+        if (sysArch) sysArch.innerText = sys.arch;
+        const sysHost = document.getElementById('sys-host');
+        if (sysHost) sysHost.innerText = sys.hostname;
+        const sysPython = document.getElementById('sys-python');
+        if (sysPython) sysPython.innerText = sys.python_version || 'Active';
       } catch (e) {
         console.error('Error loading system info:', e);
       }
@@ -2906,6 +2970,7 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
 
     // Initialize Default View
     loadConfig();
+    loadSystemInfo();
     fetchPorts(false);
     fetchAudit();
     const projInput = document.getElementById('project-path-input');

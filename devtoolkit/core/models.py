@@ -59,6 +59,7 @@ class SystemInfo(BaseModel):
     arch: str
     hostname: str
     python_version: str
+    app_version: str = "0.2.0"
     uptime: Optional[str] = None
     path_count: Optional[int] = None
     git_user_name: Optional[str] = None

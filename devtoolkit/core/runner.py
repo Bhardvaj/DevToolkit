@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Dict, List, Optional
 from pydantic import BaseModel
 
+from devtoolkit import __version__
 from devtoolkit.core.models import SystemInfo
 
 
@@ -208,6 +209,7 @@ class SafeRunner:
             arch=platform.machine(),
             hostname=platform.node(),
             python_version=platform.python_version(),
+            app_version=__version__,
             uptime=uptime_str or "Up 1d",
             path_count=path_count or 42,
             git_user_name=git_name or "Developer",

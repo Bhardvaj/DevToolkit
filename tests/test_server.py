@@ -43,6 +43,7 @@ def test_get_system_handler():
     info = get_system()
     assert info.os_name is not None
     assert info.arch is not None
+    assert info.app_version == "0.2.0"
 
 
 def test_get_tools_handler():
@@ -105,6 +106,13 @@ def test_serve_dashboard():
     assert "Port Manager" in response
     assert "Project Auditor" in response
     assert "Environment Watcher" in response
+    # Dynamic System & Software Info
+    assert "side-os-info" in response
+    assert "side-host-name" in response
+    assert "side-app-version" in response
+    assert "side-python-version" in response
+    assert "DEXTER-2" not in response
+    assert "Windows 11 (x64)" not in response
     # Phase 5 UI & UX additions
     assert "inspector-drawer" in response
     assert "stat-filter-card" in response
