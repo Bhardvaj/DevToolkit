@@ -2976,6 +2976,29 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
     const projInput = document.getElementById('project-path-input');
     if (projInput) projInput.value = '';
     renderRecentProjects();
+
+    // Deep Link & Query Param Support
+    try {
+      const urlParams = new URLSearchParams(window.location.search);
+      const initialTab = urlParams.get('tab');
+      if (initialTab && ['env', 'ports', 'project', 'settings'].includes(initialTab)) {
+        switchTab(initialTab);
+      }
+      const initialAudit = urlParams.get('audit');
+      if (initialAudit) {
+        setAndAuditProject(initialAudit);
+      }
+      const initialDrawer = urlParams.get('drawer');
+      if (initialDrawer) {
+        setTimeout(() => openInspectorDrawer(initialDrawer), 1200);
+      }
+      const initialHelp = urlParams.get('help');
+      if (initialHelp === 'true' || initialHelp === '1') {
+        toggleHelpModal();
+      }
+    } catch (e) {
+      console.error('Deep link parsing error:', e);
+    }
   </script>
 </body>
 </html>
