@@ -57,6 +57,9 @@ class ProjectAuditRequest(BaseModel):
     path: str
 
 
+class SelectFolderRequest(BaseModel):
+    initial_path: Optional[str] = None
+
 
 @app.get("/api/config")
 def get_config():
@@ -149,6 +152,65 @@ def open_folder(req: OpenFolderRequest):
         subprocess.run(["xdg-open", target])
 
     return {"status": "ok", "opened": target}
+
+
+@app.post("/api/action/select-folder")
+def post_select_folder(req: Optional[SelectFolderRequest] = None):
+    initial = (req.initial_path or "").strip().strip('"').strip("'") if req else ""
+    if initial == ".":
+        initial = str(Path(".").resolve())
+
+    if sys.platform == "win32":
+        try:
+            clean_initial = initial.replace("'", "''")
+            ps_script = f"""
+Add-Type -AssemblyName System.Windows.Forms
+$dialog = New-Object System.Windows.Forms.FolderBrowserDialog
+$dialog.Description = 'Select project folder for DevToolkit'
+$dialog.ShowNewFolderButton = $true
+if ('{clean_initial}' -and (Test-Path '{clean_initial}')) {{
+    $dialog.SelectedPath = '{clean_initial}'
+}}
+$form = New-Object System.Windows.Forms.Form
+$form.TopMost = $true
+if ($dialog.ShowDialog($form) -eq [System.Windows.Forms.DialogResult]::OK) {{
+    [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+    Write-Output $dialog.SelectedPath
+}}
+"""
+            res = subprocess.run(
+                ["powershell", "-NoProfile", "-WindowStyle", "Hidden", "-Command", ps_script],
+                capture_output=True,
+                text=True,
+                timeout=60,
+                creationflags=0x08000000,
+            )
+            selected = res.stdout.strip()
+            if selected:
+                return {"status": "ok", "path": str(Path(selected).resolve())}
+            return {"status": "cancelled", "path": None}
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
+    elif sys.platform == "darwin":
+        try:
+            cmd = ["osascript", "-e", 'POSIX path of (choose folder with prompt "Select project folder")']
+            res = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
+            selected = res.stdout.strip()
+            if selected:
+                return {"status": "ok", "path": str(Path(selected).resolve())}
+            return {"status": "cancelled", "path": None}
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
+    else:
+        for prog in [["zenity", "--file-selection", "--directory", "--title=Select project folder"], ["kdialog", "--getexistingdirectory"]]:
+            try:
+                res = subprocess.run(prog, capture_output=True, text=True, timeout=60)
+                selected = res.stdout.strip()
+                if selected:
+                    return {"status": "ok", "path": str(Path(selected).resolve())}
+            except Exception:
+                continue
+        return {"status": "cancelled", "path": None}
 
 
 @app.get("/api/ports", response_model=List[PortInfo])
@@ -401,10 +463,14 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
 
         <!-- Global Search Bar & Actions -->
         <div class="flex items-center gap-2 sm:gap-3 flex-shrink-0">
-          <div class="relative w-36 sm:w-64 md:w-80 lg:w-96" id="top-search-wrapper">
-            <i class="fa-solid fa-search absolute left-3 top-2.5 text-xs text-slate-400"></i>
-            <input type="text" id="global-search-input" oninput="onSearchChange()" placeholder="Search SDK, runtime, path..." class="w-full pl-8 pr-14 sm:pr-16 py-1.5 bg-[#070a13] border border-slate-800/90 rounded-lg text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 transition font-sans" />
-            <kbd class="absolute right-2 top-2 px-1.5 py-0.5 rounded bg-slate-800/80 border border-slate-700/80 text-[10px] font-mono text-slate-400 hidden sm:inline">Ctrl+K</kbd>
+          <div class="relative w-36 sm:w-64 md:w-80 lg:w-96 flex items-center" id="top-search-wrapper">
+            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400 text-xs">
+              <i class="fa-solid fa-search"></i>
+            </div>
+            <input type="text" id="global-search-input" oninput="onSearchChange()" placeholder="Search SDK, runtime, path..." class="w-full pl-9 pr-16 py-1.5 bg-[#070a13] border border-slate-800/90 rounded-lg text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 transition font-sans" />
+            <div class="absolute inset-y-0 right-0 pr-2 flex items-center pointer-events-none">
+              <kbd class="px-1.5 py-0.5 rounded bg-slate-800/90 border border-slate-700/80 text-[10px] font-mono text-slate-400 hidden sm:inline leading-none shadow-sm">Ctrl+K</kbd>
+            </div>
           </div>
 
           <button onclick="refreshActiveTab()" id="rescan-btn" class="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3.5 py-1.5 bg-[#0e1526] hover:bg-[#131d36] text-slate-200 border border-slate-700/80 rounded-lg text-xs font-semibold transition shadow-sm flex-shrink-0">
@@ -666,9 +732,14 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
               </button>
             </div>
 
-            <div class="relative w-full sm:w-72">
-              <i class="fa-solid fa-search absolute left-3 top-2.5 text-xs text-slate-400"></i>
-              <input type="text" id="ports-search-input" oninput="renderPorts()" placeholder="Filter port, process, PID..." class="w-full pl-8 pr-3 py-1.5 bg-[#070a13] border border-slate-800/90 rounded-lg text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 transition" />
+            <div class="relative w-full sm:w-72 flex items-center">
+              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400 text-xs">
+                <i class="fa-solid fa-search"></i>
+              </div>
+              <input type="text" id="ports-search-input" oninput="renderPorts()" placeholder="Filter port, process, PID..." class="w-full pl-9 pr-16 py-1.5 bg-[#070a13] border border-slate-800/90 rounded-lg text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 transition font-sans" />
+              <div class="absolute inset-y-0 right-0 pr-2 flex items-center pointer-events-none">
+                <kbd class="px-1.5 py-0.5 rounded bg-slate-800/90 border border-slate-700/80 text-[10px] font-mono text-slate-400 hidden sm:inline leading-none shadow-sm">Ctrl+K</kbd>
+              </div>
             </div>
           </div>
 
@@ -715,11 +786,20 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
             </div>
 
             <div class="flex flex-col sm:flex-row items-center gap-2 pt-2">
-              <div class="relative flex-1 w-full">
-                <i class="fa-regular fa-folder absolute left-3 top-3 text-xs text-slate-400"></i>
-                <input type="text" id="project-path-input" placeholder="e.g. D:\\UtilitySoftware or D:\\Dev\\my-app" class="w-full pl-8 pr-3 py-2 bg-[#070a13] border border-slate-700/80 rounded-lg text-xs font-mono text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 transition" />
+              <div class="relative flex-1 w-full flex items-center">
+                <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 text-xs">
+                  <i class="fa-regular fa-folder"></i>
+                </div>
+                <input type="text" id="project-path-input" onkeydown="if(event.key==='Enter') runProjectAudit()" placeholder="e.g. D:\\UtilitySoftware or D:\\Dev\\my-app" class="w-full pl-9 pr-20 py-2 bg-[#070a13] border border-slate-700/80 rounded-lg text-xs font-mono text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 transition" />
+                <div class="absolute inset-y-0 right-0 pr-2.5 flex items-center pointer-events-none">
+                  <kbd class="px-1.5 py-0.5 rounded bg-slate-800/90 border border-slate-700/80 text-[10px] font-mono text-slate-400 hidden sm:inline leading-none shadow-sm">Enter ↵</kbd>
+                </div>
               </div>
-              <button onclick="runProjectAudit()" id="btn-audit-project" class="w-full sm:w-auto px-5 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-xs font-bold transition flex items-center justify-center gap-2 shadow-sm">
+              <button onclick="browseProjectFolder()" id="btn-browse-project" class="w-full sm:w-auto px-3.5 py-2 bg-[#0e1526] hover:bg-[#131d36] text-slate-200 hover:text-white border border-slate-700/80 rounded-lg text-xs font-semibold transition flex items-center justify-center gap-2 shadow-sm flex-shrink-0 active:scale-95" title="Open Explorer to select project folder">
+                <i class="fa-regular fa-folder-open text-blue-400 text-xs" id="browse-folder-icon"></i>
+                <span>Browse...</span>
+              </button>
+              <button onclick="runProjectAudit()" id="btn-audit-project" class="w-full sm:w-auto px-5 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-xs font-bold transition flex items-center justify-center gap-2 shadow-sm flex-shrink-0 active:scale-95">
                 <i class="fa-solid fa-wand-magic-sparkles" id="audit-project-icon"></i>
                 <span>Scan Project</span>
               </button>
@@ -822,8 +902,17 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
             <div>
               <label class="block text-xs font-semibold text-slate-300 mb-1.5">Add Custom Root Directory</label>
               <div class="flex items-center gap-2">
-                <input type="text" id="settings-path-input" placeholder="e.g. D:\\Dev or /opt/custom_sdks" class="flex-1 bg-[#070a13] border border-slate-700/80 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-500 font-mono focus:outline-none focus:border-blue-500" />
-                <button onclick="submitSearchPath()" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-xs font-bold transition flex items-center gap-1.5 shadow-sm">
+                <div class="relative flex-1 flex items-center">
+                  <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 text-xs">
+                    <i class="fa-regular fa-folder"></i>
+                  </div>
+                  <input type="text" id="settings-path-input" onkeydown="if(event.key==='Enter') submitSearchPath()" placeholder="e.g. D:\\Dev or /opt/custom_sdks" class="w-full pl-9 pr-3 py-2 bg-[#070a13] border border-slate-700/80 rounded-lg text-xs text-white placeholder-slate-500 font-mono focus:outline-none focus:border-blue-500 transition" />
+                </div>
+                <button onclick="browseSettingsFolder()" id="btn-browse-settings" class="px-3.5 py-2 bg-[#0e1526] hover:bg-[#131d36] text-slate-200 hover:text-white border border-slate-700/80 rounded-lg text-xs font-semibold transition flex items-center gap-1.5 shadow-sm active:scale-95 flex-shrink-0" title="Open Explorer to select folder">
+                  <i class="fa-regular fa-folder-open text-blue-400 text-xs"></i>
+                  <span>Browse...</span>
+                </button>
+                <button onclick="submitSearchPath()" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-xs font-bold transition flex items-center gap-1.5 shadow-sm flex-shrink-0 active:scale-95">
                   <i class="fa-solid fa-plus"></i>
                   <span>Add Path</span>
                 </button>
@@ -2486,6 +2575,39 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
       runProjectAudit();
     }
 
+    async function browseProjectFolder() {
+      const btn = document.getElementById('btn-browse-project');
+      const icon = document.getElementById('browse-folder-icon');
+      const input = document.getElementById('project-path-input');
+      const originalIcon = icon ? icon.className : 'fa-regular fa-folder-open text-blue-400 text-xs';
+
+      try {
+        if (icon) icon.className = 'fa-solid fa-spinner fa-spin text-blue-400 text-xs';
+        if (btn) btn.disabled = true;
+
+        const currentVal = input ? input.value.trim() : '';
+        const res = await fetch('/api/action/select-folder', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ initial_path: currentVal || '.' })
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          if (data.status === 'ok' && data.path) {
+            input.value = data.path;
+            showToast(`Selected: ${data.path}`);
+            runProjectAudit();
+          }
+        }
+      } catch (err) {
+        console.error('Failed to select folder:', err);
+      } finally {
+        if (icon) icon.className = originalIcon;
+        if (btn) btn.disabled = false;
+      }
+    }
+
     function copyAllProjectActions() {
       if (!currentProjectActions || currentProjectActions.length === 0) {
         showToast('No actions available to copy');
@@ -2690,6 +2812,27 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
       }
     }
 
+    async function browseSettingsFolder() {
+      const input = document.getElementById('settings-path-input');
+      try {
+        const currentVal = input ? input.value.trim() : '';
+        const res = await fetch('/api/action/select-folder', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ initial_path: currentVal || '' })
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          if (data.status === 'ok' && data.path) {
+            input.value = data.path;
+          }
+        }
+      } catch (err) {
+        console.error('Failed to select settings folder:', err);
+      }
+    }
+
     async function loadSystemInfo() {
       try {
         const res = await fetch('/api/system');
@@ -2735,6 +2878,9 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
         } else if (activeTab === 'ports') {
           const portsSearch = document.getElementById('ports-search-input');
           if (portsSearch) portsSearch.focus();
+        } else if (activeTab === 'project') {
+          const projInput = document.getElementById('project-path-input');
+          if (projInput) projInput.focus();
         }
         return;
       }
@@ -2763,7 +2909,7 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
     fetchPorts(false);
     fetchAudit();
     const projInput = document.getElementById('project-path-input');
-    if (projInput) projInput.value = '.';
+    if (projInput) projInput.value = '';
     renderRecentProjects();
   </script>
 </body>

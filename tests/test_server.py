@@ -17,6 +17,8 @@ from devtoolkit.server.app import (
     post_audit_project,
     KillPortRequest,
     ProjectAuditRequest,
+    SelectFolderRequest,
+    post_select_folder,
 )
 
 
@@ -30,6 +32,7 @@ def test_server_routes_registered():
     assert "/api/config/search-paths" in route_paths
     assert "/api/action/open-folder" in route_paths
     assert "/api/action/apply-fix" in route_paths
+    assert "/api/action/select-folder" in route_paths
     assert "/api/ports" in route_paths
     assert "/api/ports/kill" in route_paths
     assert "/api/project/audit" in route_paths
@@ -113,6 +116,10 @@ def test_serve_dashboard():
     assert "toggleStatusFilter" in response
     assert "ports-refresh-icon" in response
     assert "skeleton-shimmer" in response
+    assert "btn-browse-project" in response
+    assert "btn-browse-settings" in response
+    assert "browseProjectFolder" in response
+    assert "browseSettingsFolder" in response
 
 
 def test_stream_audit_handler():
@@ -126,4 +133,24 @@ def test_apply_fix_handler():
     res = post_apply_fix(ApplyFixRequest(command="npm install -g example-cli"))
     assert res["status"] in ("info", "ok")
     assert "npm install" in res["message"]
+
+
+def test_select_folder_handler(monkeypatch):
+    import subprocess
+    from collections import namedtuple
+
+    MockResult = namedtuple("MockResult", ["stdout", "returncode"])
+
+    # Test cancelled / empty selection
+    monkeypatch.setattr(subprocess, "run", lambda *args, **kwargs: MockResult(stdout="", returncode=0))
+    res = post_select_folder(SelectFolderRequest(initial_path="."))
+    assert res["status"] == "cancelled"
+    assert res["path"] is None
+
+    # Test successful selection
+    monkeypatch.setattr(subprocess, "run", lambda *args, **kwargs: MockResult(stdout=r"C:\TestProject", returncode=0))
+    res = post_select_folder(SelectFolderRequest(initial_path="C:\\"))
+    assert res["status"] == "ok"
+    assert "TestProject" in res["path"]
+
 
