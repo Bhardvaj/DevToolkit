@@ -85,3 +85,36 @@ def test_signature_cmake(tmp_path):
 
     assert is_cmake(cmake_dir) is True
 
+
+def test_signature_cuda(tmp_path):
+    from devtoolkit.core.signatures import is_cuda_toolkit
+    cuda_dir = tmp_path / "custom_cuda"
+    cuda_dir.mkdir()
+    (cuda_dir / "bin").mkdir()
+    (cuda_dir / "bin" / "nvcc.exe").write_text("dummy", encoding="utf-8")
+    (cuda_dir / "include").mkdir()
+
+    assert is_cuda_toolkit(cuda_dir) is True
+
+
+def test_signature_php(tmp_path):
+    from devtoolkit.core.signatures import is_php_sdk
+    php_dir = tmp_path / "custom_php"
+    php_dir.mkdir()
+    (php_dir / "php.exe").write_text("dummy", encoding="utf-8")
+    (php_dir / "ext").mkdir()
+
+    assert is_php_sdk(php_dir) is True
+
+
+def test_signature_mingw(tmp_path):
+    from devtoolkit.core.signatures import is_mingw
+    mingw_dir = tmp_path / "custom_mingw"
+    mingw_dir.mkdir()
+    (mingw_dir / "bin").mkdir()
+    (mingw_dir / "bin" / "gcc.exe").write_text("dummy", encoding="utf-8")
+    (mingw_dir / "include").mkdir()
+
+    assert is_mingw(mingw_dir) is True
+
+

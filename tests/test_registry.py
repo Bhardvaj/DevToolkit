@@ -6,7 +6,7 @@ from devtoolkit.core.registry import PluginRegistry
 def test_plugin_registry_discovery():
     registry = PluginRegistry()
     inspectors = registry.list_inspectors()
-    assert len(inspectors) >= 16
+    assert len(inspectors) >= 22
 
     tool_ids = {i.id for i in inspectors}
     assert "node" in tool_ids
@@ -24,6 +24,12 @@ def test_plugin_registry_discovery():
     assert "gh" in tool_ids
     assert "cmake" in tool_ids
     assert "ollama" in tool_ids
+    assert "kubectl" in tool_ids
+    assert "terraform" in tool_ids
+    assert "c_compiler" in tool_ids
+    assert "php" in tool_ids
+    assert "cuda" in tool_ids
+    assert "sqlite" in tool_ids
 
 
 def test_plugin_registry_audit_filtering():
@@ -31,6 +37,10 @@ def test_plugin_registry_audit_filtering():
     summary = registry.run_audit(categories=["vcs"])
     assert summary.total_tools == 2
     assert {r.id for r in summary.reports} == {"git", "gh"}
+
+    summary_db = registry.run_audit(categories=["database"])
+    assert summary_db.total_tools == 1
+    assert summary_db.reports[0].id == "sqlite"
 
     summary_tools = registry.run_audit(tool_ids=["node", "python"])
     assert summary_tools.total_tools == 2

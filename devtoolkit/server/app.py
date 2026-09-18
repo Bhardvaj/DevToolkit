@@ -1037,8 +1037,9 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
       { id: 'build', label: 'Build & Tools', icon: 'fa-screwdriver-wrench', match: ['build', 'tools', 'compiler'] },
       { id: 'vcs', label: 'VCS & Git', icon: 'fa-code-branch', match: ['vcs', 'scm', 'cli'] },
       { id: 'mobile', label: 'Mobile & SDKs', icon: 'fa-mobile-screen', match: ['mobile', 'sdk'] },
-      { id: 'container', label: 'Containers', icon: 'fa-box', match: ['container', 'devops', 'cloud'] },
-      { id: 'ai', label: 'AI & ML', icon: 'fa-brain', match: ['ai', 'ml'] },
+      { id: 'container', label: 'Cloud & Containers', icon: 'fa-cloud', match: ['container', 'devops', 'cloud', 'iac'] },
+      { id: 'database', label: 'Databases', icon: 'fa-database', match: ['database', 'cache', 'sql'] },
+      { id: 'ai', label: 'AI & ML', icon: 'fa-brain', match: ['ai', 'ml', 'hardware'] },
     ];
 
     function getToolIcon(id, category) {
@@ -1058,10 +1059,18 @@ EMBEDDED_UI_HTML = r"""<!DOCTYPE html>
       if (id === 'gh') return '<i class="fa-brands fa-github text-white"></i>';
       if (id === 'cmake') return '<i class="fa-solid fa-screwdriver-wrench text-rose-400"></i>';
       if (id === 'ollama') return '<i class="fa-solid fa-brain text-purple-400"></i>';
+      if (id === 'kubectl') return '<i class="fa-solid fa-dharmachakra text-blue-400"></i>';
+      if (id === 'terraform') return '<i class="fa-solid fa-layer-group text-purple-400"></i>';
+      if (id === 'c_compiler') return '<i class="fa-solid fa-c text-blue-500"></i>';
+      if (id === 'php') return '<i class="fa-brands fa-php text-indigo-400"></i>';
+      if (id === 'cuda') return '<i class="fa-solid fa-microchip text-emerald-400"></i>';
+      if (id === 'sqlite') return '<i class="fa-solid fa-database text-cyan-400"></i>';
       if (category === 'runtime') return '<i class="fa-solid fa-terminal text-blue-400"></i>';
       if (category === 'ide') return '<i class="fa-solid fa-code text-indigo-400"></i>';
       if (category === 'build') return '<i class="fa-solid fa-screwdriver-wrench text-amber-400"></i>';
       if (category === 'ai') return '<i class="fa-solid fa-brain text-purple-400"></i>';
+      if (category === 'database') return '<i class="fa-solid fa-database text-cyan-400"></i>';
+      if (category === 'cloud') return '<i class="fa-solid fa-cloud text-sky-400"></i>';
       return '<i class="fa-solid fa-cube text-slate-400"></i>';
     }
 

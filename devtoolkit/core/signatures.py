@@ -137,6 +137,39 @@ def is_cmake(path: Path) -> bool:
         return False
 
 
+def is_cuda_toolkit(path: Path) -> bool:
+    """Check if directory is an NVIDIA CUDA Toolkit installation."""
+    try:
+        nvcc_name = "nvcc.exe" if sys.platform == "win32" else "nvcc"
+        has_bin = (path / "bin" / nvcc_name).is_file()
+        has_inc = (path / "include").is_dir()
+        return has_bin and has_inc
+    except Exception:
+        return False
+
+
+def is_php_sdk(path: Path) -> bool:
+    """Check if directory is a PHP runtime installation."""
+    try:
+        php_name = "php.exe" if sys.platform == "win32" else "php"
+        has_bin = (path / php_name).is_file()
+        has_ext = (path / "ext").is_dir() or (path / "php.ini").is_file() or (path / "lib").is_dir()
+        return has_bin and has_ext
+    except Exception:
+        return False
+
+
+def is_mingw(path: Path) -> bool:
+    """Check if directory is a MinGW / GCC C/C++ compiler installation."""
+    try:
+        gcc_name = "gcc.exe" if sys.platform == "win32" else "gcc"
+        has_bin = (path / "bin" / gcc_name).is_file()
+        has_inc = (path / "include").is_dir() or (path / "lib").is_dir()
+        return has_bin and has_inc
+    except Exception:
+        return False
+
+
 SIGNATURE_CHECKERS = {
     "android": is_android_sdk,
     "java": is_jdk,
@@ -147,6 +180,9 @@ SIGNATURE_CHECKERS = {
     "dotnet": is_dotnet_sdk,
     "vscode": is_vscode,
     "cmake": is_cmake,
+    "cuda": is_cuda_toolkit,
+    "php": is_php_sdk,
+    "c_compiler": is_mingw,
 }
 
 

@@ -150,7 +150,7 @@ The discovery engine dynamically resolves tool roots, binaries, and companion SD
 
 ## 3. Tool Inspector Catalog & Diagnostics
 
-DevToolkit includes 16 native inspectors located in `devtoolkit/modules/inspectors/`:
+DevToolkit includes 22 native inspectors located in `devtoolkit/modules/inspectors/`:
 
 | Tool ID | Inspector Name | Category | Primary Detection Vectors | Key Diagnostics & Companion Checks |
 | :--- | :--- | :--- | :--- | :--- |
@@ -162,7 +162,13 @@ DevToolkit includes 16 native inspectors located in `devtoolkit/modules/inspecto
 | `dotnet` | .NET SDK & Runtime | `runtime` | `dotnet.exe`, `DOTNET_ROOT`, Program Files | Probes installed SDKs (`--list-sdks`), runtimes (`--list-runtimes`), `msbuild`, and `nuget`. |
 | `bun` | Bun Runtime | `runtime` | `bun.exe`, `BUN_INSTALL`, `%USERPROFILE%\.bun` | Audits fast JS/TS runtime, `bunx` companion, and PATH inclusion. |
 | `cmake` | CMake Build System | `build` | `cmake.exe`, PATH, Content Signature | Probes build generator, companion `ninja`, `ctest`, and `cpack`. |
+| `c_compiler` | C/C++ Compiler | `build` | `gcc.exe`, `clang.exe`, PATH, Content Signature | Audits native compilers (`gcc`, `clang`, `g++`, `clang++`), `make`, and debuggers (`gdb`/`lldb`). |
 | `ollama` | Ollama Local AI | `ai` | `ollama.exe`, `%LOCALAPPDATA%\Programs\Ollama` | Audits local LLM inference daemon (:11434), installed models list, and `OLLAMA_MODELS`. |
+| `cuda` | NVIDIA CUDA Toolkit | `ai` | `nvcc.exe`, `CUDA_PATH`, `nvidia-smi` | Audits GPU device model, driver version, and `nvcc` native CUDA compiler presence. |
+| `kubectl` | Kubernetes CLI | `container` | `kubectl.exe`, PATH | Probes client version, cluster current context, `KUBECONFIG`, `helm`, and `minikube`. |
+| `terraform` | Terraform | `cloud` | `terraform.exe`, PATH | Probes Terraform version and `tofu` (OpenTofu) compatibility. |
+| `php` | PHP & Composer | `runtime` | `php.exe`, PATH, Content Signature | Audits PHP interpreter and Composer package manager. |
+| `sqlite` | SQLite Database | `database` | `sqlite3.exe`, PATH | Audits SQLite serverless database engine CLI. |
 | `docker` | Docker Engine | `container` | `docker.exe`, Docker Desktop | Queries Docker daemon pipe `\\.\pipe\docker_engine`. Checks for `docker-compose`. |
 | `golang` | Go Programming Language | `runtime` | `go.exe`, `GOROOT`, Registry | Checks `GOPATH`, compiler build version. |
 | `rust` | Rust Toolchain | `runtime` | `rustc.exe`, `cargo.exe`, rustup | Audits cargo package manager and active toolchain. |

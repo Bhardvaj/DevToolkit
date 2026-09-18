@@ -131,3 +131,75 @@ def test_ollama_inspector():
     assert report.id == "ollama"
     assert "ai" in report.categories
 
+
+def test_kubectl_inspector():
+    from devtoolkit.modules.inspectors.kubectl import KubectlInspector
+    runner = SafeRunner()
+    inspector = KubectlInspector()
+    report = inspector.inspect(runner)
+
+    assert isinstance(report, ToolReport)
+    assert report.id == "kubectl"
+    assert "container" in report.categories
+    assert "cloud" in report.categories
+
+
+def test_terraform_inspector():
+    from devtoolkit.modules.inspectors.terraform import TerraformInspector
+    runner = SafeRunner()
+    inspector = TerraformInspector()
+    report = inspector.inspect(runner)
+
+    assert isinstance(report, ToolReport)
+    assert report.id == "terraform"
+    assert "cloud" in report.categories
+    assert "iac" in report.categories
+
+
+def test_c_compiler_inspector():
+    from devtoolkit.modules.inspectors.c_compiler import CCompilerInspector
+    runner = SafeRunner()
+    inspector = CCompilerInspector()
+    report = inspector.inspect(runner)
+
+    assert isinstance(report, ToolReport)
+    assert report.id == "c_compiler"
+    assert "build" in report.categories
+    assert "compiler" in report.categories
+
+
+def test_php_inspector():
+    from devtoolkit.modules.inspectors.php import PHPInspector
+    runner = SafeRunner()
+    inspector = PHPInspector()
+    report = inspector.inspect(runner)
+
+    assert isinstance(report, ToolReport)
+    assert report.id == "php"
+    assert "runtime" in report.categories
+    assert "web" in report.categories
+
+
+def test_cuda_inspector():
+    from devtoolkit.modules.inspectors.cuda import CudaInspector
+    runner = SafeRunner()
+    inspector = CudaInspector()
+    report = inspector.inspect(runner)
+
+    assert isinstance(report, ToolReport)
+    assert report.id == "cuda"
+    assert "ai" in report.categories
+    assert "hardware" in report.categories
+
+
+def test_sqlite_inspector():
+    from devtoolkit.modules.inspectors.sqlite import SQLiteInspector
+    runner = SafeRunner()
+    inspector = SQLiteInspector()
+    report = inspector.inspect(runner)
+
+    assert isinstance(report, ToolReport)
+    assert report.id == "sqlite"
+    assert "database" in report.categories
+
+

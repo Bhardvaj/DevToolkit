@@ -214,25 +214,27 @@ from devtoolkit.core.base import BaseInspector
 from devtoolkit.core.models import ToolReport, HealthStatus
 from devtoolkit.core.runner import SafeRunner
 
-class BunInspector(BaseInspector):
-    id = "bun"
-    name = "Bun Runtime"
+class DenoInspector(BaseInspector):
+    id = "deno"
+    name = "Deno Runtime"
     category = "runtime"
-    description = "Fast all-in-one JavaScript runtime, bundler, and package manager"
+    categories = ["runtime", "web"]
+    description = "Secure JavaScript and TypeScript runtime"
 
     def inspect(self, runner: SafeRunner) -> ToolReport:
-        bun_bin = runner.resolve_binary("bun")
-        if not bun_bin:
+        deno_bin = runner.resolve_binary("deno")
+        if not deno_bin:
             return ToolReport(id=self.id, name=self.name, category=self.category, installed=False)
 
-        res = runner.run_command([str(bun_bin), "--version"])
+        res = runner.run_command([str(deno_bin), "--version"])
         return ToolReport(
             id=self.id,
             name=self.name,
             category=self.category,
+            categories=self.categories,
             installed=True,
-            version=res.stdout if res.ok else None,
-            binary_path=str(bun_bin),
+            version=res.stdout.split()[1] if res.ok and len(res.stdout.split()) > 1 else None,
+            binary_path=str(deno_bin),
             status=HealthStatus.HEALTHY if res.ok else HealthStatus.WARNING,
         )
 ```
