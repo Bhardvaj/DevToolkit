@@ -1,0 +1,163 @@
+body {
+      background-color: #08090C;
+      color: #F3F4F6;
+      font-family: 'Geist', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+    code, kbd, .font-mono {
+      font-family: 'JetBrains Mono', monospace;
+      font-feature-settings: "tnum" 1;
+    }
+    .card-pro, .glass-card {
+      background-color: #0E1015;
+      border: 1px solid #1F2430;
+      border-radius: 6px;
+      transition: all 0.18s ease-in-out;
+    }
+    .card-pro:hover, .glass-card:hover {
+      border-color: #2E3446;
+    }
+    .btn-primary-pro {
+      background-color: #10B981;
+      color: #08090C;
+      font-weight: 600;
+      border-radius: 4px;
+      transition: all 0.15s ease-in-out;
+    }
+    .btn-primary-pro:hover {
+      background-color: #059669;
+      color: #08090C;
+    }
+    .btn-primary-pro:active {
+      transform: scale(0.98);
+    }
+    .btn-secondary-pro {
+      background-color: #141721;
+      border: 1px solid #1F2430;
+      color: #F3F4F6;
+      font-weight: 500;
+      border-radius: 4px;
+      transition: all 0.15s ease-in-out;
+    }
+    .btn-secondary-pro:hover {
+      border-color: #2E3446;
+      background-color: #1A1E2B;
+      color: #FFFFFF;
+    }
+    .btn-secondary-pro:active {
+      transform: scale(0.98);
+    }
+    .btn-destructive {
+      background-color: rgba(239, 68, 68, 0.12);
+      border: 1px solid rgba(239, 68, 68, 0.35);
+      color: #EF4444;
+      border-radius: 4px;
+      font-weight: 600;
+      transition: all 0.15s ease-in-out;
+    }
+    .btn-destructive:hover {
+      background-color: #EF4444;
+      border-color: #EF4444;
+      color: #FFFFFF;
+    }
+    .input-pro {
+      background-color: #0E1015;
+      border: 1px solid #1F2430;
+      color: #F3F4F6;
+      border-radius: 4px;
+      transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+    }
+    .input-pro:focus {
+      outline: none;
+      border-color: #10B981;
+      box-shadow: 0 0 0 1px #10B981;
+    }
+    .kbd-pro {
+      background-color: #141721;
+      border: 1px solid #1F2430;
+      color: #94A3B8;
+      font-family: 'JetBrains Mono', monospace;
+      font-feature-settings: "tnum" 1;
+      border-radius: 4px;
+      padding: 1px 5px;
+      font-size: 10px;
+      line-height: 1.2;
+    }
+    .modal-pro {
+      background-color: #141721;
+      border: 1px solid #2E3446;
+      border-radius: 8px;
+      box-shadow: 0 12px 32px -4px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.04) inset;
+    }
+    .modal-backdrop {
+      background: rgba(8, 9, 12, 0.82);
+      backdrop-filter: blur(8px);
+    }
+    .custom-scrollbar::-webkit-scrollbar { width: 5px; height: 5px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: #1F2430; border-radius: 4px; }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #2E3446; }
+    .nav-active {
+      background-color: #141721;
+      color: #FFFFFF;
+      border: 1px solid rgba(16, 185, 129, 0.35);
+      box-shadow: inset 2px 0 0 #10B981;
+    }
+    .nav-inactive {
+      color: #94A3B8;
+      border: 1px solid transparent;
+    }
+    .nav-inactive:hover {
+      color: #F3F4F6;
+      background-color: #141721;
+      border-color: #1F2430;
+    }
+    .cat-active {
+      background-color: #141721;
+      color: #FFFFFF;
+      border-color: rgba(16, 185, 129, 0.6);
+      box-shadow: inset 0 -1px 0 #10B981;
+    }
+    .cat-inactive {
+      color: #94A3B8;
+      border-color: #1F2430;
+      background-color: #0E1015;
+    }
+    .cat-inactive:hover {
+      color: #F3F4F6;
+      background-color: #141721;
+      border-color: #2E3446;
+    }
+    .stat-filter-card {
+      cursor: pointer;
+      transition: all 0.18s ease-in-out;
+      border: 1px solid #1F2430;
+      background-color: #0E1015;
+      border-radius: 6px;
+    }
+    .stat-filter-card:hover {
+      border-color: #2E3446;
+      background-color: #141721;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.45);
+    }
+    .stat-filter-active {
+      border-color: #10B981 !important;
+      background: #141721 !important;
+      box-shadow: 0 0 0 1px #10B981, 0 4px 16px rgba(16, 185, 129, 0.18) !important;
+    }
+    .drawer-panel {
+      transform: translateX(100%);
+      transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .drawer-panel.open {
+      transform: translateX(0);
+    }
+    @keyframes shimmer {
+      0% { background-position: -200% 0; }
+      100% { background-position: 200% 0; }
+    }
+    .skeleton-shimmer {
+      background: linear-gradient(90deg, rgba(255,255,255,0.02) 25%, rgba(255,255,255,0.07) 50%, rgba(255,255,255,0.02) 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.8s infinite;
+    }

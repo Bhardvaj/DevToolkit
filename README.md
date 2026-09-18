@@ -13,13 +13,24 @@
 
 ## 🚀 Key Features
 
-- 🖥️ **Modern Vertical Navigation Desktop UI**:
+- 🖥️ **Google Stitch Precision Desktop UI**:
   - Native PC software ergonomics (`h-screen overflow-hidden` container, smooth independent scrolling, native window wrapper).
+  - Dark Obsidian elevation hierarchy (`#08090C`, `#0E1015`, `#141721`) with sharp `#1F2430` micro-borders.
+  - Typography powered by Google `Geist` (structural UI) and `JetBrains Mono` (tabular numbers for paths, PIDs, ports, and versions).
+  - Crisp geometric rules: 4px `rounded` corners across all buttons, inputs, tags, and chips with zero pill shapes.
   - Left fixed sidebar with Workspace Hub, real-time watcher status, active PATH entry count, and host telemetry.
-  - Top breadcrumbs bar with instant global search (`Ctrl+K`) and live rescan.
-  - Horizontal metric cards with progress underlines: *Audited Tools*, *Installed*, *Healthy (Optimal)*, *Action Needed*, *Critical Errors*, *Not Found*.
-  - Category filter pills with dynamic count badges, Grid/List view switcher, and multi-field sorting (*Severity*, *Name*, *Category*, *Status*).
-  - Dark glassmorphic tool cards with root/binary paths, 1-click copy, folder explorer launch, and 1-click **Apply System Fix** buttons.
+  - Top breadcrumbs bar with instant global search (`Ctrl+K`), rescan, and 1-click Markdown/JSON report export.
+  - Interactive metric stat cards with 2px progress tracks (*Audited Tools*, *Installed*, *Healthy*, *Action Needed*, *Critical Errors*, *Not Found*).
+  - Progressive Server-Sent Events (SSE) streaming with skeleton shimmers for sub-50ms instant first paint.
+  - Slide-over Inspector Drawer with full path copying, Explorer launch, 1-click remediation, companion matrix, and raw JSON.
+  - Modern Port Manager with Web/Database/Debug categorization, browser opening, process grouping, and protected OS safeguards.
+  - Visual Project Auditor with readiness gauge, recent project history chips, and native Windows folder browser picker.
+
+- 🏗️ **Modular Clean Architecture (Phase 6.1)**:
+  - Decoupled server design: slim FastAPI application orchestrator (~70 lines).
+  - Domain-specific APIRouters: `routes/system.py`, `routes/audit.py`, `routes/ports.py`, `routes/project.py`, `routes/actions.py`.
+  - Clean frontend static assets (`devtoolkit/server/static/`) separating `index.html`, `styles.css`, and `app.js` with full syntax highlighting and live development reload.
+  - Robust 3-layer template loader (`devtoolkit/server/ui.py`) delivering single-payload offline-capable HTML with zero runtime delay.
 
 - 🔍 **4-Layer Generalized Discovery Pipeline (Zero Hardcoded Paths)**:
   - **Layer 1: Standard PATH & Environment Resolution**: Evaluates runtime binaries and official environment flags (`JAVA_HOME`, `ANDROID_HOME`, `DOCKER_HOST`, etc.).

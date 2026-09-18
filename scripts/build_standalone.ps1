@@ -95,6 +95,7 @@ $EntryScript = Join-Path $WorkspaceRoot "devtoolkit\cli\main.py"
     --hidden-import "devtoolkit.modules.inspectors" `
     --hidden-import "devtoolkit.modules.utilities" `
     --collect-submodules "devtoolkit" `
+    --collect-data "devtoolkit" `
     --hidden-import "webview" `
     --hidden-import "webview.platforms" `
     --hidden-import "webview.platforms.winforms" `

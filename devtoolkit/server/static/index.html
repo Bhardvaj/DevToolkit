@@ -1,0 +1,819 @@
+<!DOCTYPE html>
+<html lang="en" class="dark h-full">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DevToolkit ⚡ Workstation Suite</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            canvas: '#08090C',
+            surface1: '#0E1015',
+            surface2: '#141721',
+            borderSubtle: '#1F2430',
+            borderStrong: '#2E3446',
+            emeraldAccent: '#10B981',
+            cyanAccent: '#06B6D4',
+            violetAccent: '#8B5CF6',
+            amberAccent: '#F59E0B',
+            crimsonAccent: '#EF4444',
+            textMain: '#F3F4F6',
+            textMuted: '#94A3B8',
+            textDim: '#475569'
+          },
+          fontFamily: {
+            sans: ['Geist', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace']
+          }
+        }
+      }
+    }
+  </script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <style>
+/* __INLINE_STYLES__ */
+</style>
+</head>
+<body class="h-full w-full bg-[#08090C] text-[#F3F4F6] font-sans select-none overflow-hidden flex flex-col">
+
+  <!-- Main Viewport Layout: Sidebar + Main Area -->
+  <div class="flex flex-1 overflow-hidden">
+
+    <!-- LEFT FIXED VERTICAL SIDEBAR -->
+    <aside class="w-56 sm:w-64 bg-[#0E1015] border-r border-[#1F2430] flex flex-col justify-between p-3 sm:p-3.5 select-none flex-shrink-0 z-20">
+      <div class="space-y-4 flex-1 overflow-y-auto custom-scrollbar pr-0.5">
+        <!-- Brand Header -->
+        <div class="flex items-center gap-3 px-1 pt-1">
+          <div class="w-8 h-8 rounded bg-[#141721] border border-[#1F2430] flex items-center justify-center text-[#10B981] shadow flex-shrink-0">
+            <i class="fa-solid fa-bolt text-sm"></i>
+          </div>
+          <div class="min-w-0">
+            <h1 class="text-sm font-semibold tracking-tight text-[#F3F4F6] truncate">DevToolkit</h1>
+            <div class="text-[11px] text-[#94A3B8] font-mono truncate" id="side-os-info">Detecting OS...</div>
+          </div>
+        </div>
+
+        <!-- Host Card -->
+        <div class="bg-[#141721] border border-[#1F2430] rounded px-2.5 py-1.5 flex items-center text-xs min-w-0">
+          <span class="flex items-center gap-2 text-[#94A3B8] font-medium text-[11px] truncate">
+            <span class="w-1.5 h-1.5 rounded-full bg-[#10B981] shadow-[0_0_6px_#10B981] flex-shrink-0"></span>
+            Host: <span id="side-host-name" class="text-[#F3F4F6] font-mono font-semibold truncate">Detecting...</span>
+          </span>
+        </div>
+
+        <!-- Navigation Group: WORKSPACE HUB -->
+        <div>
+          <div class="text-[10px] font-mono font-semibold text-[#475569] tracking-wider uppercase px-2 mb-1.5 mt-3">WORKSPACE HUB</div>
+          <div class="space-y-1">
+            <button onclick="switchTab('env')" id="nav-btn-env" class="w-full flex items-center justify-between px-2.5 py-2 rounded text-xs font-medium transition nav-active">
+              <div class="flex items-center gap-2.5 truncate">
+                <i class="fa-solid fa-table-cells-large text-xs flex-shrink-0 text-[#10B981]"></i>
+                <span class="truncate">Environment</span>
+              </div>
+            </button>
+
+            <button onclick="switchTab('ports')" id="nav-btn-ports" class="w-full flex items-center justify-between px-2.5 py-2 rounded text-xs font-medium transition nav-inactive">
+              <div class="flex items-center gap-2.5 truncate">
+                <i class="fa-solid fa-network-wired text-xs flex-shrink-0"></i>
+                <span class="truncate">Port Manager</span>
+              </div>
+              <span id="side-ports-badge" class="px-1.5 py-0.2 rounded text-[10px] font-mono font-semibold bg-[#06B6D41A] text-[#06B6D4] border border-[#06B6D440] flex-shrink-0">0</span>
+            </button>
+
+            <button onclick="switchTab('project')" id="nav-btn-project" class="w-full flex items-center justify-between px-2.5 py-2 rounded text-xs font-medium transition nav-inactive">
+              <div class="flex items-center gap-2.5 truncate">
+                <i class="fa-solid fa-code-branch text-xs flex-shrink-0"></i>
+                <span class="truncate">Project Auditor</span>
+              </div>
+            </button>
+          </div>
+        </div>
+
+        <!-- Navigation Group: PREFERENCES -->
+        <div>
+          <div class="text-[10px] font-mono font-semibold text-[#475569] tracking-wider uppercase px-2 mb-1.5 mt-4">PREFERENCES</div>
+          <div class="space-y-1">
+            <button onclick="switchTab('settings')" id="nav-btn-settings" class="w-full flex items-center justify-between px-2.5 py-2 rounded text-xs font-medium transition nav-inactive">
+              <div class="flex items-center gap-2.5 truncate">
+                <i class="fa-solid fa-gear text-xs flex-shrink-0"></i>
+                <span class="truncate">Settings</span>
+              </div>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- SIDEBAR FOOTER: Software & Runtime Info -->
+      <div class="pt-3 border-t border-[#1F2430] mt-auto flex-shrink-0">
+        <div class="p-2.5 rounded-md bg-[#141721] border border-[#1F2430] space-y-2">
+          <div class="flex items-center justify-between text-xs">
+            <span class="text-[#F3F4F6] font-medium flex items-center gap-1.5 truncate">
+              <i class="fa-solid fa-cube text-[#06B6D4] text-xs flex-shrink-0"></i>
+              <span class="truncate">DevToolkit</span>
+            </span>
+            <span class="text-[10px] font-mono px-1.5 py-0.2 rounded bg-[#8B5CF61A] text-[#8B5CF6] font-semibold border border-[#8B5CF640] flex-shrink-0" id="side-app-version">v0.2.0</span>
+          </div>
+          <div class="flex items-center justify-between text-[11px] text-[#94A3B8] font-mono">
+            <span class="text-[#475569] flex items-center gap-1">
+              <i class="fa-brands fa-python text-[#F59E0B] text-[10px]"></i> Python
+            </span>
+            <span id="side-python-version" class="text-[#F3F4F6]">...</span>
+          </div>
+          <div class="flex items-center justify-between text-[10px] text-[#94A3B8] pt-1.5 border-t border-[#1F2430] font-sans">
+            <span class="flex items-center gap-1.5 text-[#10B981] font-medium">
+              <span class="w-1.5 h-1.5 rounded-full bg-[#10B981] animate-pulse"></span>
+              Runtime Active
+            </span>
+            <button onclick="toggleHelpModal()" class="text-[#94A3B8] hover:text-[#F3F4F6] transition flex items-center gap-1" title="View Diagnostics & Shortcuts (?)">
+              <i class="fa-solid fa-circle-question text-[10px]"></i> Help
+            </button>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- RIGHT MAIN CONTENT PANEL -->
+    <div class="flex-1 flex flex-col overflow-hidden bg-[#08090C] min-w-0">
+
+      <!-- Top Header: Breadcrumbs + Global Search + Actions -->
+      <header class="h-12 px-4 sm:px-5 border-b border-[#1F2430] flex items-center justify-between bg-[#08090C]/95 backdrop-blur-md flex-shrink-0 z-10 gap-3">
+        <!-- Breadcrumbs -->
+        <div class="flex items-center gap-2 text-xs text-[#94A3B8] font-medium select-none min-w-0 truncate">
+          <span class="text-[#475569] font-mono flex-shrink-0">toolkit</span>
+          <span class="text-[#2E3446] flex-shrink-0">/</span>
+          <span class="flex items-center gap-1.5 text-[#F3F4F6] font-semibold truncate" id="top-breadcrumb">
+            <span class="w-1.5 h-1.5 rounded-full bg-[#10B981] shadow-[0_0_6px_#10B981] flex-shrink-0"></span>
+            Environment & Diagnostics
+          </span>
+        </div>
+
+        <!-- Global Search Bar & Actions -->
+        <div class="flex items-center gap-2 sm:gap-2.5 flex-shrink-0">
+          <div class="relative w-36 sm:w-64 md:w-80 lg:w-96 flex items-center" id="top-search-wrapper">
+            <div class="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none text-[#94A3B8] text-xs">
+              <i class="fa-solid fa-search"></i>
+            </div>
+            <input type="text" id="global-search-input" oninput="onSearchChange()" placeholder="Search SDK, runtime, path..." class="input-pro w-full pl-8 pr-16 py-1 text-xs text-[#F3F4F6] placeholder-[#475569] font-sans" />
+            <div class="absolute inset-y-0 right-0 pr-2 flex items-center pointer-events-none">
+              <kbd class="kbd-pro hidden sm:inline">Ctrl+K</kbd>
+            </div>
+          </div>
+
+          <button onclick="refreshActiveTab()" id="rescan-btn" class="btn-secondary-pro flex items-center gap-1.5 px-2.5 sm:px-3 py-1 text-xs font-medium flex-shrink-0">
+            <i class="fa-solid fa-rotate text-xs" id="rescan-icon"></i>
+            <span class="hidden sm:inline">Rescan</span>
+            <span class="text-[10px] font-mono text-[#94A3B8]" id="rescan-timer">(now)</span>
+          </button>
+
+          <!-- Export Dropdown -->
+          <div class="relative inline-block text-left" id="export-dropdown-wrapper">
+            <button onclick="toggleExportMenu()" id="export-btn" class="btn-secondary-pro flex items-center gap-1.5 px-2.5 sm:px-3 py-1 text-xs font-medium flex-shrink-0" title="Export Environment Audit Report">
+              <i class="fa-solid fa-file-export text-xs text-[#06B6D4]"></i>
+              <span class="hidden md:inline">Export</span>
+              <i class="fa-solid fa-chevron-down text-[9px] text-[#94A3B8]"></i>
+            </button>
+            <div id="export-menu" class="hidden absolute right-0 mt-1 w-48 rounded-md bg-[#141721] border border-[#2E3446] shadow-2xl z-50 py-1 text-xs text-[#94A3B8]">
+              <button onclick="exportReport('md')" class="w-full text-left px-3 py-1.5 hover:bg-[#1A1E2B] hover:text-[#F3F4F6] flex items-center gap-2 transition">
+                <i class="fa-solid fa-clipboard text-[#06B6D4]"></i> Copy Markdown Table
+              </button>
+              <button onclick="exportReport('json')" class="w-full text-left px-3 py-1.5 hover:bg-[#1A1E2B] hover:text-[#F3F4F6] flex items-center gap-2 transition">
+                <i class="fa-solid fa-code text-[#8B5CF6]"></i> Copy JSON Summary
+              </button>
+              <button onclick="exportReport('download')" class="w-full text-left px-3 py-1.5 hover:bg-[#1A1E2B] hover:text-[#F3F4F6] flex items-center gap-2 transition border-t border-[#1F2430] mt-0.5 pt-1.5">
+                <i class="fa-solid fa-download text-[#10B981]"></i> Download Report (.md)
+              </button>
+            </div>
+          </div>
+
+          <button onclick="toggleHelpModal()" class="p-1.5 hover:bg-[#141721] text-[#94A3B8] hover:text-[#F3F4F6] rounded transition flex-shrink-0" title="Shortcuts & Help (?)">
+            <i class="fa-regular fa-circle-question text-sm"></i>
+          </button>
+        </div>
+      </header>
+
+      <!-- Scrollable Main Content -->
+      <main class="flex-1 overflow-y-auto p-4 sm:p-6 space-y-5 sm:space-y-6 custom-scrollbar">
+
+        <!-- ==================== VIEW 1: ENVIRONMENT AUDITOR ==================== -->
+        <div id="view-env" class="space-y-5">
+
+          <!-- 6 Horizontal Interactive Stat Filter Cards -->
+          <div class="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-3" id="stats-container">
+            <!-- 1. Audited Tools -->
+            <div onclick="toggleStatusFilter('all')" id="stat-card-all" class="card-pro stat-filter-card p-3 sm:p-3.5 flex flex-col justify-between relative overflow-hidden min-w-0" title="Click to show all tools">
+              <div class="flex items-center justify-between gap-1 text-xs text-[#94A3B8] font-medium min-w-0">
+                <span class="truncate">Audited Tools</span>
+                <i class="fa-regular fa-pen-to-square text-[10px] text-[#475569] flex-shrink-0"></i>
+              </div>
+              <div class="flex items-baseline justify-between gap-2 my-2 min-w-0">
+                <div class="text-xl sm:text-2xl font-bold font-mono text-[#F3F4F6] tracking-tight leading-none flex-shrink-0" id="stat-total">10</div>
+                <div class="text-[10px] text-[#94A3B8] font-mono truncate text-right">100% total</div>
+              </div>
+              <div class="w-full h-0.5 rounded-full bg-[#1F2430] overflow-hidden">
+                <div class="h-full bg-[#94A3B8] rounded-full w-full"></div>
+              </div>
+            </div>
+
+            <!-- 2. Installed -->
+            <div onclick="toggleStatusFilter('installed')" id="stat-card-installed" class="card-pro stat-filter-card p-3 sm:p-3.5 flex flex-col justify-between relative overflow-hidden min-w-0" title="Click to filter installed tools">
+              <div class="flex items-center justify-between gap-1 text-xs text-[#94A3B8] font-medium min-w-0">
+                <span class="truncate">Installed</span>
+                <span class="w-1.5 h-1.5 rounded-full bg-[#10B981] shadow-[0_0_6px_#10B981] flex-shrink-0"></span>
+              </div>
+              <div class="flex items-baseline justify-between gap-2 my-2 min-w-0">
+                <div class="text-xl sm:text-2xl font-bold font-mono text-[#F3F4F6] tracking-tight leading-none flex-shrink-0" id="stat-installed">—</div>
+                <div class="text-[10px] text-[#10B981] font-mono truncate text-right" id="stat-coverage">— coverage</div>
+              </div>
+              <div class="w-full h-0.5 rounded-full bg-[#1F2430] overflow-hidden">
+                <div class="h-full bg-[#10B981] rounded-full transition-all duration-500" id="stat-installed-bar" style="width: 70%"></div>
+              </div>
+            </div>
+
+            <!-- 3. Healthy -->
+            <div onclick="toggleStatusFilter('healthy')" id="stat-card-healthy" class="card-pro stat-filter-card p-3 sm:p-3.5 flex flex-col justify-between relative overflow-hidden min-w-0" title="Click to filter healthy tools">
+              <div class="flex items-center justify-between gap-1 text-xs text-[#94A3B8] font-medium min-w-0">
+                <span class="truncate">Healthy</span>
+                <span class="text-[9px] font-mono px-1 py-0.2 rounded bg-[#10B9811A] text-[#10B981] font-semibold border border-[#10B98140] flex-shrink-0">Optimal</span>
+              </div>
+              <div class="flex items-baseline justify-between gap-2 my-2 min-w-0">
+                <div class="text-xl sm:text-2xl font-bold font-mono text-[#F3F4F6] tracking-tight leading-none flex-shrink-0" id="stat-healthy">—</div>
+                <div class="text-[10px] text-[#10B981] font-mono truncate text-right">Ready to build</div>
+              </div>
+              <div class="w-full h-0.5 rounded-full bg-[#1F2430] overflow-hidden">
+                <div class="h-full bg-[#10B981] rounded-full transition-all duration-500" id="stat-healthy-bar" style="width: 60%"></div>
+              </div>
+            </div>
+
+            <!-- 4. Action Needed -->
+            <div onclick="toggleStatusFilter('warning')" id="stat-card-warning" class="card-pro stat-filter-card p-3 sm:p-3.5 flex flex-col justify-between relative overflow-hidden min-w-0" title="Click to filter tools with action needed">
+              <div class="flex items-center justify-between gap-1 text-xs text-[#94A3B8] font-medium min-w-0">
+                <span class="truncate">Action Needed</span>
+                <span class="w-1.5 h-1.5 rounded-full bg-[#F59E0B] shadow-[0_0_6px_#F59E0B] flex-shrink-0"></span>
+              </div>
+              <div class="flex items-baseline justify-between gap-2 my-2 min-w-0">
+                <div class="text-xl sm:text-2xl font-bold font-mono text-[#F3F4F6] tracking-tight leading-none flex-shrink-0" id="stat-warning">—</div>
+                <div class="text-[10px] text-[#F59E0B] font-mono truncate text-right">Path & Var</div>
+              </div>
+              <div class="w-full h-0.5 rounded-full bg-[#1F2430] overflow-hidden">
+                <div class="h-full bg-[#F59E0B] rounded-full transition-all duration-500" id="stat-warning-bar" style="width: 20%"></div>
+              </div>
+            </div>
+
+            <!-- 5. Critical Errors -->
+            <div onclick="toggleStatusFilter('error')" id="stat-card-error" class="card-pro stat-filter-card p-3 sm:p-3.5 flex flex-col justify-between relative overflow-hidden min-w-0" title="Click to filter tools with errors">
+              <div class="flex items-center justify-between gap-1 text-xs text-[#94A3B8] font-medium min-w-0">
+                <span class="truncate">Critical Errors</span>
+                <span class="w-1.5 h-1.5 rounded-full bg-[#EF4444] flex-shrink-0"></span>
+              </div>
+              <div class="flex items-baseline justify-between gap-2 my-2 min-w-0">
+                <div class="text-xl sm:text-2xl font-bold font-mono text-[#F3F4F6] tracking-tight leading-none flex-shrink-0" id="stat-error">—</div>
+                <div class="text-[10px] text-[#94A3B8] font-mono truncate text-right">No crash flags</div>
+              </div>
+              <div class="w-full h-0.5 rounded-full bg-[#1F2430] overflow-hidden">
+                <div class="h-full bg-[#EF4444] rounded-full transition-all duration-500" id="stat-error-bar" style="width: 0%"></div>
+              </div>
+            </div>
+
+            <!-- 6. Not Found -->
+            <div onclick="toggleStatusFilter('not_found')" id="stat-card-not_found" class="card-pro stat-filter-card p-3 sm:p-3.5 flex flex-col justify-between relative overflow-hidden min-w-0" title="Click to filter undetected tools">
+              <div class="flex items-center justify-between gap-1 text-xs text-[#94A3B8] font-medium min-w-0">
+                <span class="truncate">Not Found</span>
+                <span class="w-1.5 h-1.5 rounded-full bg-[#475569] flex-shrink-0"></span>
+              </div>
+              <div class="flex items-baseline justify-between gap-2 my-2 min-w-0">
+                <div class="text-xl sm:text-2xl font-bold font-mono text-[#F3F4F6] tracking-tight leading-none flex-shrink-0" id="stat-missing">—</div>
+                <div class="text-[10px] text-[#475569] font-mono truncate text-right">Unconfigured</div>
+              </div>
+              <div class="w-full h-0.5 rounded-full bg-[#1F2430] overflow-hidden">
+                <div class="h-full bg-[#475569] rounded-full transition-all duration-500" id="stat-missing-bar" style="width: 30%"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Category Filter Pills + Status Pill + Layout Toggle & Sort Bar -->
+          <div class="flex flex-col sm:flex-row items-center justify-between gap-2.5 bg-[#0E1015] p-2 rounded-md border border-[#1F2430]">
+            <!-- Left: Filter Pills with Counts & Active Status Pill -->
+            <div class="flex items-center gap-2 overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0 custom-scrollbar">
+              <div class="flex items-center gap-1.5" id="category-filters">
+                <!-- Dynamically populated by renderCategoryPills() -->
+              </div>
+
+              <!-- Active Status Filter Indicator Pill -->
+              <div id="active-status-pill-container" class="hidden items-center gap-1.5 pl-2 border-l border-[#1F2430]">
+                <span id="active-status-pill" class="px-2 py-0.5 rounded text-xs font-mono font-semibold bg-[#10B9811A] text-[#10B981] border border-[#10B98140] flex items-center gap-1.5">
+                  <span id="active-status-pill-label">Filter: Action Needed</span>
+                  <button onclick="clearStatusFilter()" class="hover:text-white p-0.5" title="Clear status filter"><i class="fa-solid fa-xmark text-[10px]"></i></button>
+                </span>
+              </div>
+
+              <button id="reset-filters-btn" onclick="resetAllFilters()" class="hidden px-2 py-0.5 text-[11px] font-mono font-semibold text-[#EF4444] hover:text-white bg-[#EF444415] hover:bg-[#EF4444] border border-[#EF444440] rounded transition flex items-center gap-1 flex-shrink-0">
+                <i class="fa-solid fa-filter-circle-xmark text-[10px]"></i> Reset
+              </button>
+            </div>
+
+            <!-- Right: Layout Switcher & Sort Selector -->
+            <div class="flex items-center gap-2 w-full sm:w-auto justify-end flex-shrink-0">
+              <div class="flex items-center bg-[#08090C] border border-[#1F2430] rounded p-0.5">
+                <button onclick="setLayout('grid')" id="layout-grid-btn" class="p-1 rounded text-xs bg-[#141721] text-[#10B981] border border-[#10B98140] transition" title="Grid Layout">
+                  <i class="fa-solid fa-table-cells-large"></i>
+                </button>
+                <button onclick="setLayout('list')" id="layout-list-btn" class="p-1 rounded text-xs text-[#94A3B8] hover:text-[#F3F4F6] transition" title="List Layout">
+                  <i class="fa-solid fa-list-ul"></i>
+                </button>
+              </div>
+
+              <select id="sort-select" onchange="onSortChange()" class="bg-[#08090C] border border-[#1F2430] rounded px-2.5 py-1 text-xs text-[#94A3B8] focus:outline-none focus:border-[#10B981] cursor-pointer font-sans">
+                <option value="severity">Sort: Severity</option>
+                <option value="name">Sort: Name</option>
+                <option value="category">Sort: Category</option>
+                <option value="status">Sort: Status</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Active Custom Search Paths Banner -->
+          <div id="search-paths-banner" class="hidden text-xs bg-[#0E1015] border border-[#06B6D440] rounded-md px-3.5 py-2 flex items-center justify-between">
+            <div class="flex items-center gap-2 truncate mr-3">
+              <i class="fa-solid fa-folder-tree text-[#06B6D4] flex-shrink-0"></i>
+              <span class="text-[#94A3B8] flex-shrink-0">Custom Monitored Directories:</span>
+              <span id="banner-paths-list" class="font-mono text-[#06B6D4] truncate"></span>
+            </div>
+            <button onclick="switchTab('settings')" class="text-[#06B6D4] hover:text-white font-medium text-xs flex-shrink-0">Manage Paths &rarr;</button>
+          </div>
+
+          <!-- Tools Container: Grid View with standard gap-4 -->
+          <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4" id="tools-grid"></div>
+
+          <!-- Tools Container: List View -->
+          <div id="tools-list-container" class="hidden card-pro overflow-hidden shadow-xl">
+            <div class="overflow-x-auto">
+              <table class="w-full text-left text-xs">
+                <thead class="bg-[#08090C] text-[#94A3B8] uppercase tracking-wider text-[10px] border-b border-[#1F2430] font-mono font-semibold">
+                  <tr>
+                    <th class="py-2.5 px-3.5">Tool</th>
+                    <th class="py-2.5 px-3.5">Category</th>
+                    <th class="py-2.5 px-3.5">Status</th>
+                    <th class="py-2.5 px-3.5">Version</th>
+                    <th class="py-2.5 px-3.5">Home / Root Path</th>
+                    <th class="py-2.5 px-3.5">Binary Path</th>
+                    <th class="py-2.5 px-3.5 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="tools-list-tbody" class="divide-y divide-[#1F2430] font-sans"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- ==================== VIEW 2: PORT MANAGER ==================== -->
+        <div id="view-ports" class="space-y-5 hidden">
+          <!-- Port Stats -->
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div class="card-pro p-3.5 flex items-center gap-3">
+              <div class="w-9 h-9 rounded bg-[#06B6D41A] text-[#06B6D4] border border-[#06B6D440] flex items-center justify-center font-bold text-base flex-shrink-0">
+                <i class="fa-solid fa-satellite-dish"></i>
+              </div>
+              <div>
+                <div class="text-xs text-[#94A3B8] font-medium">Listening Sockets</div>
+                <div class="text-xl font-bold font-mono text-[#F3F4F6] mt-0.5" id="stat-ports-total">—</div>
+              </div>
+            </div>
+            <div class="card-pro p-3.5 flex items-center gap-3">
+              <div class="w-9 h-9 rounded bg-[#10B9811A] text-[#10B981] border border-[#10B98140] flex items-center justify-center font-bold text-base flex-shrink-0">
+                <i class="fa-solid fa-code"></i>
+              </div>
+              <div>
+                <div class="text-xs text-[#94A3B8] font-medium">Developer Ports Active</div>
+                <div class="text-xl font-bold font-mono text-[#10B981] mt-0.5" id="stat-ports-dev">—</div>
+              </div>
+            </div>
+            <div class="card-pro p-3.5 flex items-center gap-3">
+              <div class="w-9 h-9 rounded bg-[#141721] text-[#94A3B8] border border-[#1F2430] flex items-center justify-center font-bold text-base flex-shrink-0">
+                <i class="fa-solid fa-shield-halved"></i>
+              </div>
+              <div>
+                <div class="text-xs text-[#94A3B8] font-medium">System Protected</div>
+                <div class="text-xl font-bold font-mono text-[#94A3B8] mt-0.5" id="stat-ports-crit">—</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Ports Filter Bar -->
+          <div class="flex flex-col sm:flex-row items-center justify-between gap-2.5 bg-[#0E1015] p-2.5 rounded-md border border-[#1F2430]">
+            <div class="flex items-center gap-2.5 w-full sm:w-auto flex-wrap">
+              <label class="inline-flex items-center gap-2 cursor-pointer text-xs font-medium text-[#F3F4F6] bg-[#141721] px-2.5 py-1 rounded border border-[#1F2430] hover:border-[#2E3446] transition">
+                <input type="checkbox" id="ports-dev-toggle" onchange="fetchPorts(false)" class="rounded-[3px] border-[#2E3446] bg-[#0E1015] text-[#10B981] focus:ring-0 focus:ring-offset-0 w-3.5 h-3.5" />
+                <span>Developer Ports Only</span>
+              </label>
+
+              <!-- View Mode Toggle: Flat Table vs Grouped by Process -->
+              <div class="flex items-center bg-[#08090C] border border-[#1F2430] rounded p-0.5">
+                <button onclick="setPortViewMode('flat')" id="port-view-flat-btn" class="px-2.5 py-1 rounded text-xs bg-[#141721] text-[#10B981] border border-[#10B98140] font-medium transition flex items-center gap-1.5" title="Flat Sockets Table">
+                  <i class="fa-solid fa-list"></i>
+                  <span class="hidden sm:inline">Flat View</span>
+                </button>
+                <button onclick="setPortViewMode('grouped')" id="port-view-grouped-btn" class="px-2.5 py-1 rounded text-xs text-[#94A3B8] hover:text-[#F3F4F6] font-medium transition flex items-center gap-1.5" title="Group by Process">
+                  <i class="fa-solid fa-layer-group"></i>
+                  <span class="hidden sm:inline">By Process</span>
+                </button>
+              </div>
+
+              <button onclick="fetchPorts(true)" id="btn-refresh-ports" class="btn-secondary-pro px-3 py-1 text-xs font-medium transition flex items-center gap-1.5">
+                <i id="ports-refresh-icon" class="fa-solid fa-rotate text-xs"></i>
+                <span>Refresh</span>
+              </button>
+            </div>
+
+            <div class="relative w-full sm:w-72 flex items-center">
+              <div class="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none text-[#94A3B8] text-xs">
+                <i class="fa-solid fa-search"></i>
+              </div>
+              <input type="text" id="ports-search-input" oninput="renderPorts()" placeholder="Filter port, process, PID..." class="input-pro w-full pl-8 pr-16 py-1 text-xs text-[#F3F4F6] placeholder-[#475569] font-sans" />
+              <div class="absolute inset-y-0 right-0 pr-2 flex items-center pointer-events-none">
+                <kbd class="kbd-pro hidden sm:inline">Ctrl+K</kbd>
+              </div>
+            </div>
+          </div>
+
+          <!-- Mode 1: Flat Ports Table -->
+          <div id="ports-flat-container" class="card-pro overflow-hidden shadow-xl">
+            <div class="overflow-x-auto">
+              <table class="w-full text-left text-xs">
+                <thead class="bg-[#08090C] text-[#94A3B8] uppercase tracking-wider text-[10px] border-b border-[#1F2430] font-mono font-semibold">
+                  <tr>
+                    <th class="py-2.5 px-3.5">Port</th>
+                    <th class="py-2.5 px-3.5">Classification</th>
+                    <th class="py-2.5 px-3.5">Process Name</th>
+                    <th class="py-2.5 px-3.5">PID</th>
+                    <th class="py-2.5 px-3.5">Address</th>
+                    <th class="py-2.5 px-3.5">Status</th>
+                    <th class="py-2.5 px-3.5 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="ports-table-body" class="divide-y divide-[#1F2430] font-sans"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Mode 2: Grouped by Process Cards -->
+          <div id="ports-grouped-container" class="space-y-3.5 hidden">
+            <!-- Dynamically populated by renderPortsGrouped() -->
+          </div>
+        </div>
+
+        <!-- ==================== VIEW 3: PROJECT AUDITOR ==================== -->
+        <div id="view-project" class="space-y-5 hidden">
+          <!-- Selection Card -->
+          <div class="card-pro p-5 sm:p-6 space-y-4">
+            <div class="flex items-start justify-between gap-4">
+              <div>
+                <h2 class="text-base font-semibold text-[#F3F4F6] flex items-center gap-2">
+                  <i class="fa-solid fa-folder-tree text-[#10B981]"></i>
+                  Project Workstation Readiness Auditor
+                </h2>
+                <p class="text-xs text-[#94A3B8] mt-1">
+                  Select any workspace directory or project repository to verify if your workstation satisfies its SDK, runtime, compiler, and manifest requirements.
+                </p>
+              </div>
+            </div>
+
+            <div class="flex flex-col sm:flex-row items-center gap-2 pt-1">
+              <div class="relative flex-1 w-full flex items-center">
+                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-[#94A3B8] text-xs">
+                  <i class="fa-regular fa-folder"></i>
+                </div>
+                <input type="text" id="project-path-input" onkeydown="if(event.key==='Enter') runProjectAudit()" placeholder="e.g. D:\\UtilitySoftware or D:\\Dev\\my-app" class="input-pro w-full pl-8 pr-20 py-2 text-xs font-mono text-[#F3F4F6] placeholder-[#475569]" />
+                <div class="absolute inset-y-0 right-0 pr-2 flex items-center pointer-events-none">
+                  <kbd class="kbd-pro hidden sm:inline">Enter ↵</kbd>
+                </div>
+              </div>
+              <button onclick="browseProjectFolder()" id="btn-browse-project" class="btn-secondary-pro w-full sm:w-auto px-3.5 py-2 text-xs font-medium flex items-center justify-center gap-2 flex-shrink-0" title="Open Explorer to select project folder">
+                <i class="fa-regular fa-folder-open text-[#06B6D4] text-xs" id="browse-folder-icon"></i>
+                <span>Browse...</span>
+              </button>
+              <button onclick="runProjectAudit()" id="btn-audit-project" class="btn-primary-pro w-full sm:w-auto px-5 py-2 text-xs font-semibold flex items-center justify-center gap-2 shadow-sm flex-shrink-0">
+                <i class="fa-solid fa-wand-magic-sparkles" id="audit-project-icon"></i>
+                <span>Scan Project</span>
+              </button>
+            </div>
+
+            <!-- Quick Presets & Recent History -->
+            <div class="flex flex-wrap items-center gap-2 text-[11px] text-[#94A3B8] pt-1">
+              <span class="text-[#475569] font-mono">Quick Presets:</span>
+              <button onclick="setAndAuditProject('.')" class="btn-secondary-pro text-[11px] font-mono px-2 py-0.5 rounded">Current Workspace (.)</button>
+              <div id="project-recent-chips" class="flex flex-wrap items-center gap-1.5"></div>
+            </div>
+          </div>
+
+          <!-- Audit Results Container -->
+          <div id="project-results-container" class="space-y-4 hidden">
+            <!-- Header Card & Visual Readiness Scorecard -->
+            <div id="project-header-card" class="card-pro p-5 sm:p-6 flex flex-col lg:flex-row lg:items-center justify-between gap-5">
+              <div class="space-y-1.5 min-w-0">
+                <div class="flex flex-wrap items-center gap-2">
+                  <h3 class="text-lg font-bold text-[#F3F4F6] tracking-tight" id="rep-project-name">—</h3>
+                  <div id="rep-detected-types" class="flex flex-wrap gap-1.5"></div>
+                </div>
+                <p class="text-xs font-mono text-[#94A3B8] truncate max-w-xl" id="rep-project-path">—</p>
+              </div>
+
+              <!-- Readiness Scorecard Gauge -->
+              <div class="flex items-center gap-4 bg-[#08090C] p-3.5 rounded border border-[#1F2430] flex-shrink-0">
+                <div class="text-center min-w-[65px]">
+                  <div class="text-2xl font-bold font-mono" id="rep-score-pct">100%</div>
+                  <div class="text-[9px] uppercase tracking-wider font-mono font-semibold text-[#475569]">Readiness</div>
+                </div>
+                <div class="w-32 hidden sm:block">
+                  <div class="h-1.5 rounded-full bg-[#1F2430] overflow-hidden">
+                    <div id="rep-score-bar" class="h-full bg-[#10B981] rounded-full transition-all duration-500" style="width: 100%"></div>
+                  </div>
+                  <div class="flex justify-between text-[10px] font-mono text-[#94A3B8] mt-1">
+                    <span id="rep-satisfied-count">0 satisfied</span>
+                    <span id="rep-missing-count">0 missing</span>
+                  </div>
+                </div>
+                <div id="rep-status-badge" class="flex-shrink-0"></div>
+              </div>
+            </div>
+
+            <!-- Requirements Checklist Table -->
+            <div class="card-pro overflow-hidden shadow-xl">
+              <div class="px-4 py-2.5 bg-[#08090C] border-b border-[#1F2430] flex items-center justify-between">
+                <h4 class="text-xs font-mono font-semibold text-[#F3F4F6] uppercase tracking-wider flex items-center gap-2">
+                  <i class="fa-solid fa-list-check text-[#10B981]"></i>
+                  Prerequisites Checklist
+                </h4>
+              </div>
+              <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs">
+                  <thead class="bg-[#08090C]/60 text-[#94A3B8] uppercase tracking-wider text-[10px] border-b border-[#1F2430] font-mono font-semibold">
+                    <tr>
+                      <th class="py-2 px-3.5">Status</th>
+                      <th class="py-2 px-3.5">Requirement</th>
+                      <th class="py-2 px-3.5">Expected</th>
+                      <th class="py-2 px-3.5">Detected</th>
+                      <th class="py-2 px-3.5">Diagnostic Details</th>
+                    </tr>
+                  </thead>
+                  <tbody id="project-checks-tbody" class="divide-y divide-[#1F2430] font-sans"></tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- Recommended Setup Actions -->
+            <div id="project-actions-card" class="rounded-md p-4 space-y-3 hidden border border-[#F59E0B40] bg-[#F59E0B0A]">
+              <div class="flex items-center justify-between gap-2 flex-wrap">
+                <h4 class="text-xs font-semibold text-[#F59E0B] uppercase tracking-wider flex items-center gap-2 font-mono">
+                  <i class="fa-solid fa-lightbulb"></i>
+                  Recommended Setup Commands
+                </h4>
+                <button onclick="copyAllProjectActions()" class="btn-secondary-pro text-[#F59E0B] border-[#F59E0B40] px-2.5 py-1 text-xs font-medium flex items-center gap-1.5">
+                  <i class="fa-regular fa-copy"></i>
+                  <span>Copy All Fix Commands</span>
+                </button>
+              </div>
+              <div id="project-actions-list" class="space-y-2"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ==================== VIEW 4: SETTINGS & SEARCH ROOTS ==================== -->
+        <div id="view-settings" class="space-y-5 hidden">
+          <!-- Monitored Search Roots Card -->
+          <div class="card-pro p-5 sm:p-6 space-y-4">
+            <div class="flex items-center gap-3">
+              <div class="w-8 h-8 rounded bg-[#10B9811A] text-[#10B981] border border-[#10B98140] flex items-center justify-center font-bold flex-shrink-0">
+                <i class="fa-solid fa-folder-tree"></i>
+              </div>
+              <div>
+                <h2 class="text-sm font-semibold text-[#F3F4F6]">Monitored Search Directories (Layer 4)</h2>
+                <p class="text-xs text-[#94A3B8]">Configure root directories where DevToolkit recursively probes for SDKs by structural signature.</p>
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-xs font-medium text-[#94A3B8] mb-1.5">Add Custom Root Directory</label>
+              <div class="flex items-center gap-2">
+                <div class="relative flex-1 flex items-center">
+                  <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-[#94A3B8] text-xs">
+                    <i class="fa-regular fa-folder"></i>
+                  </div>
+                  <input type="text" id="settings-path-input" onkeydown="if(event.key==='Enter') submitSearchPath()" placeholder="e.g. D:\\Dev or /opt/custom_sdks" class="input-pro w-full pl-8 pr-3 py-1.5 text-xs text-[#F3F4F6] placeholder-[#475569] font-mono" />
+                </div>
+                <button onclick="browseSettingsFolder()" id="btn-browse-settings" class="btn-secondary-pro px-3.5 py-1.5 text-xs font-medium flex items-center gap-1.5 flex-shrink-0" title="Open Explorer to select folder">
+                  <i class="fa-regular fa-folder-open text-[#06B6D4] text-xs"></i>
+                  <span>Browse...</span>
+                </button>
+                <button onclick="submitSearchPath()" class="btn-primary-pro px-4 py-1.5 text-xs font-semibold flex items-center gap-1.5 flex-shrink-0">
+                  <i class="fa-solid fa-plus"></i>
+                  <span>Add Path</span>
+                </button>
+              </div>
+              <div class="mt-2 flex items-center gap-2">
+                <span class="text-[11px] text-[#475569] font-mono">Quick Suggestions:</span>
+                <button onclick="fillSettingsPath('D:\\\\Dev')" class="btn-secondary-pro text-[11px] font-mono px-2 py-0.5 rounded">+ D:\Dev</button>
+                <button onclick="fillSettingsPath('C:\\\\Dev')" class="btn-secondary-pro text-[11px] font-mono px-2 py-0.5 rounded">+ C:\Dev</button>
+              </div>
+            </div>
+
+            <div>
+              <h3 class="text-[10px] font-mono font-semibold text-[#475569] uppercase tracking-wider mb-2">Active Monitored Directories</h3>
+              <div id="settings-paths-list" class="space-y-1.5 max-h-48 overflow-y-auto custom-scrollbar"></div>
+            </div>
+
+            <div class="p-3.5 rounded bg-[#06B6D410] border border-[#06B6D430] text-xs text-[#06B6D4] space-y-1">
+              <div class="font-semibold flex items-center gap-1.5"><i class="fa-solid fa-shield-halved"></i> Generalized Content Signature Discovery</div>
+              <p class="text-[#94A3B8] text-[11px]">DevToolkit avoids hardcoded paths. When you add a root folder, it recursively detects binary signatures (e.g. <code>platform-tools/adb.exe</code> or <code>bin/javac.exe</code>) regardless of naming conventions.</p>
+            </div>
+          </div>
+
+          <!-- Workstation System Specs Card -->
+          <div class="card-pro p-5 sm:p-6 space-y-3">
+            <h3 class="text-sm font-semibold text-[#F3F4F6] flex items-center gap-2">
+              <i class="fa-solid fa-microchip text-[#94A3B8]"></i>
+              Workstation System Overview
+            </h3>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 text-xs">
+              <div class="p-3 rounded bg-[#08090C] border border-[#1F2430]">
+                <div class="text-[#475569] font-mono text-[10px] uppercase">Operating System</div>
+                <div class="font-medium text-[#F3F4F6] mt-1" id="sys-os">—</div>
+              </div>
+              <div class="p-3 rounded bg-[#08090C] border border-[#1F2430]">
+                <div class="text-[#475569] font-mono text-[10px] uppercase">Architecture</div>
+                <div class="font-medium text-[#F3F4F6] mt-1" id="sys-arch">—</div>
+              </div>
+              <div class="p-3 rounded bg-[#08090C] border border-[#1F2430]">
+                <div class="text-[#475569] font-mono text-[10px] uppercase">Host Machine</div>
+                <div class="font-mono text-[#F3F4F6] mt-1 truncate" id="sys-host">—</div>
+              </div>
+              <div class="p-3 rounded bg-[#08090C] border border-[#1F2430]">
+                <div class="text-[#475569] font-mono text-[10px] uppercase">Python Runtime</div>
+                <div class="font-mono text-[#10B981] mt-1 truncate" id="sys-python">—</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </main>
+
+      <!-- PERSISTENT BOTTOM STATUS BAR -->
+      <footer class="h-8 px-4 sm:px-5 bg-[#08090C] border-t border-[#1F2430] text-[11px] text-[#94A3B8] flex items-center justify-between flex-shrink-0 z-20 select-none font-mono">
+        <div class="flex items-center gap-2 sm:gap-2.5 truncate">
+          <span class="flex items-center gap-1.5 truncate">
+            <span class="w-1.5 h-1.5 rounded-full bg-[#10B981] shadow-[0_0_6px_#10B981] flex-shrink-0"></span>
+            Environment Watcher: <strong class="text-[#F3F4F6] font-medium truncate">Active</strong>
+          </span>
+          <span class="text-[#2E3446] hidden sm:inline">|</span>
+          <span class="hidden sm:inline">PATH Entries: <strong class="text-[#F3F4F6]" id="status-path-count">25</strong></span>
+          <span class="text-[#2E3446] hidden md:inline">|</span>
+          <span class="hidden md:inline">RAM Footprint: <strong class="text-[#F3F4F6]" id="status-ram-count">114 MB</strong></span>
+        </div>
+
+        <div class="flex items-center gap-2 sm:gap-3 flex-shrink-0 font-sans">
+          <button onclick="refreshActiveTab()" class="hover:text-[#F3F4F6] transition flex items-center gap-1 text-[#94A3B8]">
+            <kbd class="kbd-pro">R</kbd>
+            <span class="hidden sm:inline text-[11px]">Rescan</span>
+          </button>
+          <button onclick="toggleHelpModal()" class="hover:text-[#F3F4F6] transition flex items-center gap-1 text-[#94A3B8]">
+            <kbd class="kbd-pro">?</kbd>
+            <span class="text-[11px]">Help</span>
+          </button>
+        </div>
+      </footer>
+
+    </div>
+  </div>
+
+  <!-- SLIDE-OVER DETAIL DRAWER (INSPECTOR) -->
+  <div id="inspector-drawer" class="fixed inset-0 z-50 overflow-hidden hidden" aria-labelledby="slide-over-title" role="dialog" aria-modal="true">
+    <div id="inspector-backdrop" onclick="closeInspectorDrawer()" class="fixed inset-0 modal-backdrop transition-opacity duration-300 opacity-0"></div>
+    <div class="fixed inset-y-0 right-0 max-w-full flex pl-6 sm:pl-10 pointer-events-none">
+      <div id="inspector-panel" class="w-screen max-w-xl bg-[#0E1015] border-l border-[#1F2430] shadow-2xl flex flex-col drawer-panel pointer-events-auto z-10">
+        <!-- Content dynamically rendered by renderInspectorDrawer() -->
+        <div id="inspector-content" class="flex-1 flex flex-col overflow-hidden"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 1: TERMINATE PROCESS ON PORT -->
+  <div id="kill-modal" class="fixed inset-0 modal-backdrop z-50 flex items-center justify-center p-4 hidden">
+    <div class="modal-pro max-w-md w-full p-5 space-y-4">
+      <div class="flex items-center gap-3 text-[#EF4444]">
+        <div class="w-9 h-9 rounded bg-[#EF44441A] border border-[#EF444440] flex items-center justify-center font-bold text-base flex-shrink-0">
+          <i class="fa-solid fa-triangle-exclamation"></i>
+        </div>
+        <div>
+          <h3 class="text-sm font-semibold text-[#F3F4F6]">Terminate Process on Port</h3>
+          <p class="text-xs text-[#94A3B8]">This action will immediately stop the occupying process.</p>
+        </div>
+      </div>
+
+      <div class="bg-[#08090C] p-3 rounded border border-[#1F2430] text-xs space-y-1.5 font-mono">
+        <div class="flex justify-between"><span class="text-[#475569]">Port:</span> <span class="text-[#06B6D4] font-bold" id="modal-kill-port">:—</span></div>
+        <div class="flex justify-between"><span class="text-[#475569]">Process:</span> <span class="text-[#F3F4F6]" id="modal-kill-name">—</span></div>
+        <div class="flex justify-between"><span class="text-[#475569]">PID:</span> <span class="text-[#F59E0B]" id="modal-kill-pid">—</span></div>
+      </div>
+
+      <div id="modal-kill-warning" class="hidden p-3 rounded bg-[#EF444410] border border-[#EF444430] text-[#EF4444] text-xs space-y-1.5">
+        <div class="font-semibold flex items-center gap-1.5"><i class="fa-solid fa-triangle-exclamation"></i> Operating System Warning</div>
+        <p class="text-[11px] text-[#94A3B8]">This process is classified as system-critical. Force terminating it may disrupt system services or cause a reboot.</p>
+        <label class="flex items-center gap-2 cursor-pointer pt-1">
+          <input type="checkbox" id="modal-force-checkbox" class="rounded-[3px] border-[#EF4444] text-[#EF4444] focus:ring-0 w-3.5 h-3.5 bg-[#08090C]" />
+          <span class="text-[11px] font-semibold text-[#EF4444]">I understand the risk, force terminate</span>
+        </label>
+      </div>
+
+      <div class="flex justify-end gap-2 pt-2 border-t border-[#1F2430]">
+        <button onclick="closeKillModal()" class="btn-secondary-pro px-3.5 py-1.5 text-xs font-medium">Cancel</button>
+        <button onclick="submitKillPort()" id="btn-confirm-kill" class="btn-destructive px-3.5 py-1.5 text-xs flex items-center gap-1.5">
+          <i class="fa-solid fa-power-off text-xs"></i>
+          <span>Kill Process</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 2: KEYBOARD SHORTCUTS & HELP -->
+  <div id="help-modal" class="fixed inset-0 modal-backdrop z-50 flex items-center justify-center p-4 hidden">
+    <div class="modal-pro max-w-lg w-full p-5 space-y-4">
+      <div class="flex items-center justify-between border-b border-[#1F2430] pb-3">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded bg-[#10B9811A] text-[#10B981] border border-[#10B98140] flex items-center justify-center font-bold">
+            <i class="fa-solid fa-keyboard"></i>
+          </div>
+          <div>
+            <h3 class="text-sm font-semibold text-[#F3F4F6]">DevToolkit Shortcuts & Navigation</h3>
+            <p class="text-[11px] text-[#94A3B8]">Native desktop keyboard accelerators</p>
+          </div>
+        </div>
+        <button onclick="toggleHelpModal()" class="text-[#94A3B8] hover:text-[#F3F4F6] transition p-1"><i class="fa-solid fa-xmark text-sm"></i></button>
+      </div>
+
+      <div class="space-y-1.5 text-xs">
+        <div class="flex items-center justify-between p-2 rounded bg-[#08090C] border border-[#1F2430]">
+          <span class="text-[#F3F4F6]">Focus Global Search</span>
+          <kbd class="kbd-pro">Ctrl + K</kbd>
+        </div>
+        <div class="flex items-center justify-between p-2 rounded bg-[#08090C] border border-[#1F2430]">
+          <span class="text-[#F3F4F6]">Rescan Environment & Sockets</span>
+          <kbd class="kbd-pro">R</kbd>
+        </div>
+        <div class="flex items-center justify-between p-2 rounded bg-[#08090C] border border-[#1F2430]">
+          <span class="text-[#F3F4F6]">Switch to Environment Tab</span>
+          <kbd class="kbd-pro">1</kbd>
+        </div>
+        <div class="flex items-center justify-between p-2 rounded bg-[#08090C] border border-[#1F2430]">
+          <span class="text-[#F3F4F6]">Switch to Port Manager Tab</span>
+          <kbd class="kbd-pro">2</kbd>
+        </div>
+        <div class="flex items-center justify-between p-2 rounded bg-[#08090C] border border-[#1F2430]">
+          <span class="text-[#F3F4F6]">Switch to Project Auditor Tab</span>
+          <kbd class="kbd-pro">3</kbd>
+        </div>
+        <div class="flex items-center justify-between p-2 rounded bg-[#08090C] border border-[#1F2430]">
+          <span class="text-[#F3F4F6]">Switch to Settings Tab</span>
+          <kbd class="kbd-pro">4</kbd>
+        </div>
+        <div class="flex items-center justify-between p-2 rounded bg-[#08090C] border border-[#1F2430]">
+          <span class="text-[#F3F4F6]">Close Modal / Blur Search</span>
+          <kbd class="kbd-pro">Esc</kbd>
+        </div>
+      </div>
+
+      <!-- Workstation Telemetry -->
+      <div class="p-3 rounded bg-[#08090C] border border-[#1F2430] space-y-1.5 text-xs">
+        <div class="text-[10px] font-mono font-semibold text-[#475569] tracking-wider uppercase flex items-center gap-1.5">
+          <i class="fa-solid fa-server text-[#06B6D4]"></i> Workstation Telemetry
+        </div>
+        <div class="grid grid-cols-2 gap-2 text-[11px] font-mono">
+          <div><span class="text-[#475569]">OS:</span> <span id="sys-os" class="text-[#F3F4F6]">...</span></div>
+          <div><span class="text-[#475569]">Arch:</span> <span id="sys-arch" class="text-[#F3F4F6]">...</span></div>
+          <div><span class="text-[#475569]">Host:</span> <span id="sys-host" class="text-[#F3F4F6]">...</span></div>
+          <div><span class="text-[#475569]">Python:</span> <span id="sys-python" class="text-[#10B981]">...</span></div>
+        </div>
+      </div>
+
+      <div class="pt-2 border-t border-[#1F2430] flex justify-end">
+        <button onclick="toggleHelpModal()" class="btn-primary-pro px-4 py-1.5 text-xs font-semibold">Got it</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST NOTIFICATION -->
+  <div id="toast" class="fixed bottom-10 right-6 px-3.5 py-2 rounded bg-[#0E1015] border border-[#10B981] text-[#10B981] text-xs font-mono shadow-2xl transform translate-y-20 opacity-0 transition duration-300 flex items-center gap-2 z-50">
+    <i class="fa-solid fa-check" id="toast-icon"></i> <span id="toast-msg">Success</span>
+  </div>
+
+  <!-- CLIENT-SIDE SCRIPT LOGIC -->
+  <script>
+/* __INLINE_SCRIPTS__ */
+</script>
+</body>
+</html>

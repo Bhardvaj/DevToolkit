@@ -249,16 +249,44 @@ def default_callback(
 
 ---
 
-## 6. Desktop UI Architecture & PC Software Ergonomics
+## 6. Desktop UI Architecture & Modular Server Design
 
-The desktop interface (`EMBEDDED_UI_HTML` in `devtoolkit/server/app.py`) is styled with Tailwind CSS, custom glassmorphism styling, and FontAwesome 6 icons.
+DevToolkit implements a clean, modular server architecture decoupled into domain routers, isolated Pydantic request models, dedicated frontend static assets, and an asset-resolving template engine:
+
+### Module Organization
+```
+devtoolkit/server/
+├── __init__.py                 # Clean package re-exports (app, launch_ui, run_server)
+├── app.py                      # Slim FastAPI application orchestrator (~130 lines)
+├── models.py                   # Pydantic schemas (OpenFolderRequest, SearchPathRequest, etc.)
+├── ui.py                       # Template engine with 3-layer asset resolution
+├── static/                     # Dedicated frontend assets (full syntax highlighting)
+│   ├── __init__.py             # Python package marker for importlib.resources
+│   ├── index.html              # Clean semantic HTML markup (head, sidebar, header, 4 views, drawer, modals)
+│   ├── styles.css              # CSS stylesheets (.card-pro, .btn-primary-pro, animations, custom scrollbars)
+│   └── app.js                  # Client JavaScript (state, EventSource stream, renderers, keyboard shortcuts)
+└── routes/
+    ├── __init__.py             # Main API router aggregating all route modules
+    ├── system.py               # /api/system, /api/config, /api/config/search-paths
+    ├── audit.py                # /api/audit, /api/audit/stream, /api/tools
+    ├── ports.py                # /api/ports, /api/ports/kill
+    ├── project.py              # /api/project/audit
+    └── actions.py              # /api/action/open-folder, /api/action/select-folder, /api/action/apply-fix
+```
+
+### Template Loading & Packaging Heuristics (`devtoolkit/server/ui.py`)
+The template engine uses a robust 3-tier resolution strategy:
+1. `importlib.resources`: Standard Python 3.9+ package traversal.
+2. `sys._MEIPASS`: PyInstaller temporary bundle directory resolution for single-file executables.
+3. Local filesystem fallback relative to `__file__`.
+At serve time, `get_dashboard_html()` inlines `styles.css` and `app.js` into placeholders inside `index.html` to deliver an instantaneous, single-payload document requiring zero extra HTTP round-trips and ensuring 100% offline capability. In development mode, changes to HTML/CSS/JS are reflected immediately upon page refresh.
 
 ### Viewport Topology
-- Container: `h-screen w-screen overflow-hidden flex flex-col bg-[#070a13]`
-- Fixed Sidebar: `w-64 bg-[#0a0f1d] border-r border-slate-800/80 flex flex-col justify-between p-3.5`
-- Top Header: `h-14 px-6 border-b border-slate-800/80 flex items-center justify-between bg-[#090d19]/90`
+- Container: `h-screen w-screen overflow-hidden flex flex-col bg-[#08090C]`
+- Fixed Sidebar: `w-64 bg-[#0E1015] border-r border-[#1F2430] flex flex-col justify-between p-3.5`
+- Top Header: `h-14 px-6 border-b border-[#1F2430] flex items-center justify-between bg-[#08090C]`
 - Scrollable Content Area: `flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar`
-- Fixed Bottom Status Bar: `h-9 px-5 bg-[#080d18] border-t border-slate-800/80 flex items-center justify-between`
+- Fixed Bottom Status Bar: `h-9 px-5 bg-[#08090C] border-t border-[#1F2430] flex items-center justify-between`
 
 ### Views & Navigation
 1. **Environment & Diagnostics (`view-env`)**:

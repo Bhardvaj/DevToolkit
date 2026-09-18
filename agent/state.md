@@ -4,9 +4,9 @@ This document is continuously updated to reflect current project status, complet
 
 ---
 
-## Current Status: Phase 5 Complete (UI & UX Overhaul, Inspector Drawer, Port Manager, Native Pickers & Progressive Async Architecture)
-- **Active Task**: Phase 5 officially marked complete, 100% verified with 52 passing tests, and recompiled into standalone binary `dist/DevToolkit.exe` (20.88 MB).
-- **Architecture**: Decoupled Engine + 22 Tool Inspectors + 4-Layer Generalized Discovery + Uniform Compact Cards with Slide-Over Inspector Drawer + Progressive SSE Streaming & Skeleton Shimmers + Interactive Metric Stat Filters + Process-Grouped Port Manager with Browser Launch & Spinning Refresh Feedback + Visual Project Auditor Scorecard with Native Folder Browser Picker + Dynamic Sidebar Telemetry & Software Info Footer + Dual-Mode Executable Entrypoint.
+## Current Status: Phase 6.1 Complete (Code Maintainability & Modularity Refactoring, Server Decomposition, Static Frontend Separation)
+- **Active Task**: Phase 6.1 completed, 100% verified with 52 passing tests, and recompiled into standalone binary `dist/DevToolkit.exe` (20.88 MB).
+- **Architecture**: Decoupled Engine + 22 Tool Inspectors + 4-Layer Generalized Discovery + Modular Server Architecture (`devtoolkit/server/` decomposed into `app.py`, `models.py`, `routes/`, `ui.py`, and pure static frontend assets in `static/` with syntax highlighting and 3-layer resource resolution) + Google Stitch Precision UI (Obsidian Canvas, Geist & JetBrains Mono Typography, Micro-Borders, 4px Radii) + Dual-Mode Executable Entrypoint.
 - **Repository**: Synced on GitHub at [https://github.com/Bhardvaj/DevToolkit](https://github.com/Bhardvaj/DevToolkit).
 
 ---
@@ -110,10 +110,42 @@ This document is continuously updated to reflect current project status, complet
 
 ---
 
+## Milestone Checklist: Phase 6.1 (Completed - Code Maintainability & Modularity Refactoring)
+- [x] **Monolith Decomposition (`devtoolkit/server/app.py`)**:
+  - Reduced `app.py` from 3,160 lines down to 134 lines (a 96% reduction).
+  - Preserved 100% backward compatibility by re-exporting all route handlers, Pydantic models, and server symbols.
+- [x] **Pydantic Schema Isolation (`devtoolkit/server/models.py`)**:
+  - Centralized all server request and response schemas (`OpenFolderRequest`, `SearchPathRequest`, `AuditRequest`, `KillPortRequest`, `ProjectAuditRequest`, `SelectFolderRequest`, `ApplyFixRequest`).
+- [x] **Domain-Driven API Routes (`devtoolkit/server/routes/`)**:
+  - Modularized route handlers by functional domain:
+    - `system.py`: Host telemetry, configuration, and search roots.
+    - `audit.py`: Audit execution, SSE streaming generator, and tools discovery.
+    - `ports.py`: Listening sockets and safe port termination.
+    - `project.py`: Project workspace readiness inspection.
+    - `actions.py`: Explorer launcher, native folder dialog, and environment fix runner.
+- [x] **Clean Static Frontend Separation (`devtoolkit/server/static/`)**:
+  - Extracted HTML layout into `index.html` (819 lines) with clean semantic structure.
+  - Extracted CSS styling into `styles.css` (163 lines) with full syntax highlighting.
+  - Extracted JavaScript logic into `app.js` (1,860 lines) with syntax highlighting and linting.
+  - Added `devtoolkit/server/static/__init__.py` for Python package discovery.
+- [x] **Robust Template Engine (`devtoolkit/server/ui.py`)**:
+  - Implemented 3-layer asset resolution: `importlib.resources` -> `sys._MEIPASS` -> local filesystem fallback.
+  - Inlines CSS and JS into HTML at serve time for single-payload, zero-latency, 100% offline-capable serving.
+- [x] **Build Pipeline & Standalone Bundling**:
+  - Updated `scripts/build_standalone.ps1` with `--collect-data "devtoolkit"`.
+  - Recompiled standalone executable `dist/DevToolkit.exe` (20.88 MB).
+  - Verified with smoke tests (`--help`, `config list`).
+- [x] **Verification & Test Validation**:
+  - All 52 unit tests passing cleanly in 31.54s.
+  - Headless Chrome visual verification confirmed identical layout rendering across all 6 views.
+
+---
+
 ## Future Horizons & Candidate Roadmap
 
 1. **Build Cache & Disk Cleaner (`devtoolkit clean`)**:
    - Audit and prune build caches across Node (`npm`, `pnpm`, `yarn`), Python (`pip`), Gradle (`.gradle/caches`), Docker (`docker system prune`), Flutter (`.pub-cache`).
 2. **Multi-Platform CI Matrix**:
    - Expand `.github/workflows/build.yml` to compile standalone binaries for macOS (`DevToolkit-macOS-arm64`) and Linux (`DevToolkit-linux-x86_64`).
+
 
