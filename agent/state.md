@@ -196,6 +196,11 @@ This document is continuously updated to reflect current project status, complet
   - 58 passing unit tests (`58 passed in 58.56s`).
   - Standalone binary recompiled: `dist/DevToolkit.exe` (20.96 MB).
   - Screenshots captured across Batch 2 tools: VS Code, Android SDK, CMake.
+- [x] **Comprehensive Documentation & Condition Branch Specification**:
+  - Expanded `agent/documentation.md` (Section 3) into an exhaustive 22-tool technical specification.
+  - Documented every visual badge, status pill, precedence indicator, and environment variable alignment state along with the developer rationale explaining why each tag exists.
+  - Documented every flow branch, fallback vector, version extraction regex, companion probe, and health condition in `inspect()`.
+  - Documented every multi-instance resolution path, monitored environment variable condition (`ALIGNED`, `DIVERGENT`, `MISSING`), forensic CLI command, and safe copyable remediation command in `deep_inspect()`.
 
 ---
 

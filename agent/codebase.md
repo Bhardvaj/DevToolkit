@@ -42,7 +42,7 @@ DevToolkit/
 │   │   │   ├── android_studio.py      # Android Studio IDE, launcher, and bundled JBR
 │   │   │   ├── bun.py                 # Bun JS runtime & package manager
 │   │   │   ├── cmake.py               # CMake build system
-│   │   │   ├── cpp.py                 # C/C++ compilers (MSVC cl.exe, GCC, Clang)
+│   │   │   ├── c_compiler.py          # C/C++ compilers (MSVC cl.exe, GCC, Clang)
 │   │   │   ├── cuda.py                # NVIDIA CUDA Toolkit & nvcc compiler
 │   │   │   ├── docker.py              # Docker CLI, Docker Compose, engine daemon check
 │   │   │   ├── dotnet.py              # .NET SDK, CLI, runtimes & workloads
