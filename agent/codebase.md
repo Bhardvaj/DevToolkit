@@ -84,7 +84,7 @@ DevToolkit/
 ├── .github/
 │   └── workflows/
 │       └── build.yml                  # GitHub Actions CI for test, packaging & release
-└── tests/                             # Automated test suite (58 passing unit tests)
+└── tests/                             # Automated test suite (154 passing unit tests)
     ├── test_batch1_inspectors.py      # Tests for Batch 1 inspectors (VS Code, .NET, Bun, GH, CMake, Ollama)
     ├── test_batch2_inspectors.py      # Tests for Batch 2 inspectors (Kubectl, Terraform, C++, PHP, CUDA, SQLite)
     ├── test_config.py                 # Tests for user configuration and custom search paths
@@ -97,7 +97,8 @@ DevToolkit/
     ├── test_registry.py               # Tests for dynamic plugin discovery & filtering
     ├── test_runner.py                 # Tests for SafeRunner timeouts & multi-binary path resolution
     ├── test_server.py                 # Tests for FastAPI server endpoints, SSE streaming & deep audit
-    └── test_signatures.py              # Tests for content signature detection
+    ├── test_signatures.py              # Tests for content signature detection
+    └── test_tool_spec_validation.py   # Comprehensive specification & contract test suite across all 22 tools (96 tests)
 ```
 
 ---
