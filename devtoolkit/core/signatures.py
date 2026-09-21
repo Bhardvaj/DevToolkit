@@ -170,6 +170,103 @@ def is_mingw(path: Path) -> bool:
         return False
 
 
+def is_python_sdk(path: Path) -> bool:
+    """Check if directory is a Python runtime installation or virtualenv."""
+    try:
+        py_name = "python.exe" if sys.platform == "win32" else "python"
+        has_py = (path / py_name).is_file() or (path / "Scripts" / py_name).is_file() or (path / "bin" / py_name).is_file()
+        has_lib = (path / "Lib").is_dir() or (path / "lib").is_dir() or (path / "pyvenv.cfg").is_file()
+        return has_py and has_lib
+    except Exception:
+        return False
+
+
+def is_node_sdk(path: Path) -> bool:
+    """Check if directory is a Node.js runtime installation."""
+    try:
+        node_name = "node.exe" if sys.platform == "win32" else "node"
+        has_node = (path / node_name).is_file() or (path / "bin" / node_name).is_file()
+        has_npm = (path / "node_modules" / "npm").is_dir() or (path / "npm.cmd").is_file() or (path / "bin" / "npm").is_file()
+        return has_node and (has_npm or (path / "package.json").is_file())
+    except Exception:
+        return False
+
+
+def is_git_install(path: Path) -> bool:
+    """Check if directory is a Git installation."""
+    try:
+        git_name = "git.exe" if sys.platform == "win32" else "git"
+        has_cmd = (path / "cmd" / git_name).is_file() or (path / "bin" / git_name).is_file() or (path / git_name).is_file()
+        has_sub = (path / "usr").is_dir() or (path / "mingw64").is_dir() or (path / "etc").is_dir()
+        return has_cmd and has_sub
+    except Exception:
+        return False
+
+
+def is_docker_install(path: Path) -> bool:
+    """Check if directory is Docker Desktop / CLI installation."""
+    try:
+        docker_name = "docker.exe" if sys.platform == "win32" else "docker"
+        return (path / docker_name).is_file() or (path / "resources" / "bin" / docker_name).is_file()
+    except Exception:
+        return False
+
+
+def is_kubectl_install(path: Path) -> bool:
+    """Check if directory contains Kubernetes CLI."""
+    try:
+        k_name = "kubectl.exe" if sys.platform == "win32" else "kubectl"
+        return (path / k_name).is_file() or (path / "bin" / k_name).is_file()
+    except Exception:
+        return False
+
+
+def is_terraform_install(path: Path) -> bool:
+    """Check if directory contains Terraform or OpenTofu."""
+    try:
+        tf_name = "terraform.exe" if sys.platform == "win32" else "terraform"
+        tofu_name = "tofu.exe" if sys.platform == "win32" else "tofu"
+        return (path / tf_name).is_file() or (path / tofu_name).is_file() or (path / "bin" / tf_name).is_file()
+    except Exception:
+        return False
+
+
+def is_gh_install(path: Path) -> bool:
+    """Check if directory contains GitHub CLI."""
+    try:
+        gh_name = "gh.exe" if sys.platform == "win32" else "gh"
+        return (path / "bin" / gh_name).is_file() or (path / gh_name).is_file()
+    except Exception:
+        return False
+
+
+def is_ollama_install(path: Path) -> bool:
+    """Check if directory contains Ollama runtime."""
+    try:
+        ollama_name = "ollama.exe" if sys.platform == "win32" else "ollama"
+        return (path / ollama_name).is_file() or (path / "lib" / "ollama").is_dir()
+    except Exception:
+        return False
+
+
+def is_sqlite_install(path: Path) -> bool:
+    """Check if directory contains SQLite CLI."""
+    try:
+        sqlite_name = "sqlite3.exe" if sys.platform == "win32" else "sqlite3"
+        return (path / sqlite_name).is_file() or (path / "bin" / sqlite_name).is_file()
+    except Exception:
+        return False
+
+
+def is_bun_install(path: Path) -> bool:
+    """Check if directory contains Bun runtime."""
+    try:
+        bun_name = "bun.exe" if sys.platform == "win32" else "bun"
+        return (path / "bin" / bun_name).is_file() or (path / bun_name).is_file()
+    except Exception:
+        return False
+
+
 SIGNATURE_CHECKERS = {
     "android": is_android_sdk,
     "java": is_jdk,
@@ -183,37 +280,111 @@ SIGNATURE_CHECKERS = {
     "cuda": is_cuda_toolkit,
     "php": is_php_sdk,
     "c_compiler": is_mingw,
+    "python": is_python_sdk,
+    "node": is_node_sdk,
+    "git": is_git_install,
+    "docker": is_docker_install,
+    "kubectl": is_kubectl_install,
+    "terraform": is_terraform_install,
+    "gh": is_gh_install,
+    "ollama": is_ollama_install,
+    "sqlite": is_sqlite_install,
+    "bun": is_bun_install,
+}
+
+TARGET_TOOL_BINARIES: Dict[str, List[str]] = {
+    "adb.exe": ["android"],
+    "adb": ["android"],
+    "javac.exe": ["java"],
+    "javac": ["java"],
+    "java.exe": ["java"],
+    "java": ["java"],
+    "studio64.exe": ["android_studio"],
+    "studio.sh": ["android_studio"],
+    "flutter.bat": ["flutter"],
+    "flutter": ["flutter"],
+    "rustc.exe": ["rust"],
+    "rustc": ["rust"],
+    "cargo.exe": ["rust"],
+    "cargo": ["rust"],
+    "go.exe": ["golang"],
+    "go": ["golang"],
+    "dotnet.exe": ["dotnet"],
+    "dotnet": ["dotnet"],
+    "code.exe": ["vscode"],
+    "code.cmd": ["vscode"],
+    "code": ["vscode"],
+    "cmake.exe": ["cmake"],
+    "cmake": ["cmake"],
+    "nvcc.exe": ["cuda"],
+    "nvcc": ["cuda"],
+    "php.exe": ["php"],
+    "php": ["php"],
+    "gcc.exe": ["c_compiler"],
+    "gcc": ["c_compiler"],
+    "clang.exe": ["c_compiler"],
+    "clang": ["c_compiler"],
+    "cl.exe": ["c_compiler"],
+    "python.exe": ["python"],
+    "python": ["python"],
+    "node.exe": ["node"],
+    "node": ["node"],
+    "git.exe": ["git"],
+    "git": ["git"],
+    "docker.exe": ["docker"],
+    "docker": ["docker"],
+    "kubectl.exe": ["kubectl"],
+    "kubectl": ["kubectl"],
+    "terraform.exe": ["terraform"],
+    "terraform": ["terraform"],
+    "tofu.exe": ["terraform"],
+    "tofu": ["terraform"],
+    "gh.exe": ["gh"],
+    "gh": ["gh"],
+    "ollama.exe": ["ollama"],
+    "ollama": ["ollama"],
+    "sqlite3.exe": ["sqlite"],
+    "sqlite3": ["sqlite"],
+    "bun.exe": ["bun"],
+    "bun": ["bun"],
 }
 
 
-def scan_roots_for_tools(roots: List[Path], max_depth: int = 2) -> Dict[str, List[Path]]:
-    """Scan root directories up to max_depth and classify directories by content signature."""
+def scan_roots_for_tools(roots: List[Path], max_depth: int = 6) -> Dict[str, List[Path]]:
+    """Scan root directories using FastSearchEngine and classify directories by content signature."""
+    from devtoolkit.core.search import FastSearchEngine
+
     results: Dict[str, List[Path]] = {key: [] for key in SIGNATURE_CHECKERS}
+    valid_roots = [r.expanduser().resolve() for r in roots if r.exists() and r.is_dir()]
+    if not valid_roots:
+        return results
 
-    for root in roots:
-        root_path = root.expanduser().resolve()
-        if not root_path.exists() or not root_path.is_dir():
-            continue
+    # Tool binaries typically reside in subdirectories (bin/, platform-tools/) 1-2 levels below the SDK root
+    crawler_depth = max_depth + 2
+    engine = FastSearchEngine(max_depth=crawler_depth)
+    engine.index_roots(valid_roots)
 
-        _scan_recursive(root_path, depth=0, max_depth=max_depth, results=results)
+    matches = engine.find_exact_names(TARGET_TOOL_BINARIES.keys())
+
+    for bin_name, search_results in matches.items():
+        tool_ids = TARGET_TOOL_BINARIES.get(bin_name.lower(), [])
+        for sr in search_results:
+            file_path = sr.path_obj
+            parent = file_path.parent
+            grandparent = parent.parent
+            candidates = [parent, grandparent]
+            if len(grandparent.parts) > 1:
+                candidates.append(grandparent.parent)
+
+            for tool_id in tool_ids:
+                checker = SIGNATURE_CHECKERS.get(tool_id)
+                if not checker:
+                    continue
+                for cand in candidates:
+                    try:
+                        if cand not in results[tool_id] and checker(cand):
+                            results[tool_id].append(cand)
+                    except Exception:
+                        pass
 
     return results
-
-
-def _scan_recursive(current: Path, depth: int, max_depth: int, results: Dict[str, List[Path]]) -> None:
-    for tool_id, checker in SIGNATURE_CHECKERS.items():
-        if checker(current):
-            if current not in results[tool_id]:
-                results[tool_id].append(current)
-
-    if depth >= max_depth:
-        return
-
-    try:
-        for entry in current.iterdir():
-            if entry.is_dir():
-                if entry.name.lower() in IGNORE_DIR_NAMES or entry.name.startswith("."):
-                    continue
-                _scan_recursive(entry, depth + 1, max_depth, results)
-    except (PermissionError, OSError):
-        pass

@@ -1,0 +1,150 @@
+"""High-performance standalone search engine coordinating USN and Parallel Crawler strategies."""
+
+from pathlib import Path
+import sys
+from typing import Dict, Iterable, List, Optional, Set
+
+from devtoolkit.core.search.crawler import ParallelPrunedCrawler
+from devtoolkit.core.search.index import SearchIndex
+from devtoolkit.core.search.models import IndexStats, SearchQuery, SearchResult
+from devtoolkit.core.search.usn import NTFSUSNReader
+
+
+class FastSearchEngine:
+    """Zero-dependency, standalone file & folder search engine modeled after Everything algorithms.
+    
+    Provides sub-millisecond in-memory lookups across indexed roots using:
+    - Direct NTFS USN Journal streaming via DeviceIoControl when elevated
+    - Parallel multi-threaded pruned Win32 directory scanning when non-elevated
+    """
+
+    def __init__(self, max_workers: int = 16, max_depth: int = 6) -> None:
+        self.index = SearchIndex()
+        self.crawler = ParallelPrunedCrawler(max_workers=max_workers, max_depth=max_depth)
+        self.usn_reader = NTFSUSNReader()
+        self._last_stats: Optional[IndexStats] = None
+
+    @property
+    def total_entries(self) -> int:
+        return self.index.total_entries
+
+    @property
+    def total_files(self) -> int:
+        return self.index.total_files
+
+    @property
+    def total_dirs(self) -> int:
+        return self.index.total_dirs
+
+    @property
+    def last_stats(self) -> Optional[IndexStats]:
+        return self._last_stats
+
+    def clear(self) -> None:
+        self.index.clear()
+        self._last_stats = None
+
+    def index_roots(self, roots: List[Path], force_crawler: bool = False) -> IndexStats:
+        """Index one or more root directories using the fastest accessible strategy."""
+        valid_roots = [r.resolve() for r in roots if r.exists() and r.is_dir()]
+        if not valid_roots:
+            stats = IndexStats(total_files=0, total_dirs=0, duration_ms=0.0, roots_scanned=[])
+            self._last_stats = stats
+            return stats
+
+        # Check if we can use NTFS USN Journal for whole drive roots
+        can_usn = not force_crawler and sys.platform == "win32" and self.usn_reader.is_elevated()
+
+        crawler_roots: List[Path] = []
+        usn_stats: Optional[IndexStats] = None
+
+        for root in valid_roots:
+            # Check if root is a drive root like 'C:\' or 'D:\'
+            is_drive_root = (
+                sys.platform == "win32"
+                and len(str(root).rstrip("\\/")) <= 3
+                and str(root)[1:2] == ":"
+            )
+            if can_usn and is_drive_root:
+                drive_letter = str(root)[:2]
+                usn_res = self.usn_reader.scan_volume(drive_letter, self.index)
+                if usn_res:
+                    usn_stats = usn_res
+                else:
+                    crawler_roots.append(root)
+            else:
+                crawler_roots.append(root)
+
+        if crawler_roots:
+            crawler_stats = self.crawler.crawl_roots(crawler_roots, self.index)
+            if usn_stats:
+                combined_duration = usn_stats.duration_ms + crawler_stats.duration_ms
+                all_scanned = usn_stats.roots_scanned + crawler_stats.roots_scanned
+                stats = IndexStats(
+                    total_files=self.index.total_files,
+                    total_dirs=self.index.total_dirs,
+                    duration_ms=combined_duration,
+                    roots_scanned=all_scanned,
+                    engine_used="Hybrid_USN_and_Crawler",
+                )
+            else:
+                stats = crawler_stats
+        elif usn_stats:
+            stats = usn_stats
+        else:
+            stats = IndexStats(total_files=0, total_dirs=0, duration_ms=0.0, roots_scanned=[])
+
+        self._last_stats = stats
+        return stats
+
+    def find_exact(self, name: str, case_sensitive: bool = False) -> List[SearchResult]:
+        """Find entries matching exact name in O(1) time (<0.1ms)."""
+        return self.index.find_exact(name, case_sensitive=case_sensitive)
+
+    def find_exact_names(self, names: Iterable[str], case_sensitive: bool = False) -> Dict[str, List[SearchResult]]:
+        """Batch lookup for multiple exact filenames in <1ms."""
+        return self.index.find_exact_names(names, case_sensitive=case_sensitive)
+
+    def find_files(self, pattern: str, case_sensitive: bool = False, max_results: Optional[int] = None) -> List[Path]:
+        """Convenience method returning Paths for matching files."""
+        results = self.index.find_pattern(
+            pattern,
+            case_sensitive=case_sensitive,
+            files_only=True,
+            max_results=max_results,
+        )
+        return [r.path_obj for r in results]
+
+    def find_directories(self, pattern: str, case_sensitive: bool = False, max_results: Optional[int] = None) -> List[Path]:
+        """Convenience method returning Paths for matching directories."""
+        results = self.index.find_pattern(
+            pattern,
+            case_sensitive=case_sensitive,
+            directories_only=True,
+            max_results=max_results,
+        )
+        return [r.path_obj for r in results]
+
+    def search(self, query: SearchQuery) -> List[SearchResult]:
+        """Execute a structured SearchQuery against the in-memory index."""
+        return self.index.search(query)
+
+    def search_text(
+        self,
+        pattern: str,
+        is_regex: bool = False,
+        case_sensitive: bool = False,
+        files_only: bool = False,
+        directories_only: bool = False,
+        max_results: Optional[int] = None,
+    ) -> List[SearchResult]:
+        """Quick search method for text or wildcard pattern."""
+        query = SearchQuery(
+            pattern=pattern,
+            is_regex=is_regex,
+            case_sensitive=case_sensitive,
+            files_only=files_only,
+            directories_only=directories_only,
+            max_results=max_results,
+        )
+        return self.index.search(query)
