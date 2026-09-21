@@ -9,7 +9,8 @@ class OpenFolderRequest(BaseModel):
 
 
 class SearchPathRequest(BaseModel):
-    path: str
+    path: Optional[str] = None
+    index: Optional[int] = None
 
 
 class AuditRequest(BaseModel):

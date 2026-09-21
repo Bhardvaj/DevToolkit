@@ -38,6 +38,16 @@ let activeTab = 'env';
       showToast('Copied ' + (label || 'content') + ' to clipboard!');
     }
 
+    function escapeHtml(str) {
+      if (str === null || str === undefined) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
     async function openFolder(path) {
       if (!path) return;
       try {
@@ -1881,13 +1891,13 @@ let activeTab = 'env';
       bannerEl.classList.remove('hidden');
       bannerListEl.innerText = paths.join(', ');
 
-      listEl.innerHTML = paths.map(p => `
+      listEl.innerHTML = paths.map((p, idx) => `
         <div class="flex items-center justify-between p-2.5 bg-[#08090C] rounded border border-[#1F2430] text-xs">
-          <div class="flex items-center gap-2 font-mono text-slate-200 truncate" title="${p}">
+          <div class="flex items-center gap-2 font-mono text-slate-200 truncate" title="${escapeHtml(p)}">
             <i class="fa-regular fa-folder text-[#10B981]"></i>
-            <span class="truncate">${p}</span>
+            <span class="truncate">${escapeHtml(p)}</span>
           </div>
-          <button onclick="removeSearchPath('${p.replace(/\\\\/g, '\\\\\\\\')}')" class="p-1 hover:text-rose-400 text-slate-500 transition" title="Remove path">
+          <button onclick="removeSearchPathByIndex(${idx})" class="p-1 hover:text-rose-400 text-slate-500 transition" title="Remove path">
             <i class="fa-solid fa-trash-can text-xs"></i>
           </button>
         </div>
@@ -1919,17 +1929,34 @@ let activeTab = 'env';
       }
     }
 
-    async function removeSearchPath(path) {
+    async function removeSearchPathByIndex(idx) {
+      const paths = currentConfig.search_paths || [];
+      const path = paths[idx];
+      await removeSearchPath(path, idx);
+    }
+
+    async function removeSearchPath(path, idx) {
       try {
+        const payload = {};
+        if (typeof idx === 'number') payload.index = idx;
+        if (path) payload.path = path;
+
         const res = await fetch('/api/config/search-paths', {
           method: 'DELETE',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ path })
+          body: JSON.stringify(payload)
         });
         if (res.ok) {
-          showToast('Search path removed');
+          const data = await res.json();
+          if (data && data.removed) {
+            showToast('Search path removed');
+          } else {
+            showToast('Path was not found in config', true);
+          }
           await loadConfig();
           await fetchAudit();
+        } else {
+          showToast('Error removing path', true);
         }
       } catch (e) {
         showToast('Error removing path', true);

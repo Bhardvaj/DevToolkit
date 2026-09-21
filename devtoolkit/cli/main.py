@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import List, Optional
 import typer
 from rich.console import Console
+from rich.markup import escape
 
 # Ensure UTF-8 output on Windows streams
 if sys.platform == "win32":
@@ -14,7 +15,7 @@ if sys.platform == "win32":
     except Exception:
         pass
 
-from devtoolkit.core.config import add_search_path, get_config_path, load_config
+from devtoolkit.core.config import add_search_path, get_config_path, load_config, remove_search_path
 from devtoolkit.core.registry import PluginRegistry
 from devtoolkit.formatters.json_fmt import render_json
 from devtoolkit.formatters.table import render_doctor, render_ports_table, render_project_audit, render_table
@@ -134,7 +135,7 @@ def config_list_cmd() -> None:
     if cfg.search_paths:
         console.print("\n[bold]Custom Search Directories:[/]")
         for sp in cfg.search_paths:
-            console.print(f"  • [green]{sp}[/green]")
+            console.print(f"  • [green]{escape(sp)}[/green]")
     else:
         console.print("\n[dim]No custom search paths configured. Using standard OS & ecosystem discovery.[/dim]")
 
@@ -150,9 +151,20 @@ def config_add_path_cmd(
 
     added = add_search_path(str(p))
     if added:
-        console.print(f"[bold green]✓ Added custom search path:[/] {p}")
+        console.print(f"[bold green]✓ Added custom search path:[/] {escape(str(p))}")
     else:
-        console.print(f"[yellow]Path is already configured:[/] {p}")
+        console.print(f"[yellow]Path is already configured:[/] {escape(str(p))}")
+
+
+@config_app.command(name="remove-path", help="Remove a custom search root directory from monitoring.")
+def config_remove_path_cmd(
+    path: str = typer.Argument(..., help="Path or index to remove from configuration"),
+) -> None:
+    removed = remove_search_path(path)
+    if removed:
+        console.print(f"[bold green]✓ Removed custom search path:[/] {escape(path)}")
+    else:
+        console.print(f"[bold yellow]Path not found in configuration:[/] {escape(path)}")
 
 
 # Ports Sub-Typer

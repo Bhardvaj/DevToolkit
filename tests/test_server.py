@@ -93,10 +93,24 @@ def test_config_handlers(tmp_path, monkeypatch):
     assert res["status"] == "ok"
     assert str(custom_dir) in res["config"].search_paths
 
-    # Remove path
+    # Remove path by exact path
     del_res = delete_search_path(SearchPathRequest(path=str(custom_dir)))
     assert del_res["status"] == "ok"
+    assert del_res["removed"] is True
     assert str(custom_dir) not in del_res["config"].search_paths
+
+    # Remove non-existent path
+    del_res2 = delete_search_path(SearchPathRequest(path=str(custom_dir)))
+    assert del_res2["status"] == "ok"
+    assert del_res2["removed"] is False
+
+    # Re-add and remove by index
+    post_search_path(SearchPathRequest(path=str(custom_dir)))
+    assert str(custom_dir) in get_config().search_paths
+    del_idx_res = delete_search_path(SearchPathRequest(index=0))
+    assert del_idx_res["status"] == "ok"
+    assert del_idx_res["removed"] is True
+    assert len(del_idx_res["config"].search_paths) == 0
 
 
 def test_serve_dashboard():

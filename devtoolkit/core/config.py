@@ -1,5 +1,6 @@
 """User configuration management for DevToolkit."""
 
+import os
 from pathlib import Path
 from typing import Dict, List, Optional
 import yaml
@@ -61,13 +62,47 @@ def add_search_path(path_str: str) -> bool:
     return False
 
 
+def remove_search_path_by_index(index: int) -> bool:
+    """Remove a custom search path by its numeric index in search_paths."""
+    config = load_config()
+    if 0 <= index < len(config.search_paths):
+        config.search_paths.pop(index)
+        save_config(config)
+        return True
+    return False
+
+
 def remove_search_path(path_str: str) -> bool:
     """Remove a custom search path from user configuration."""
     config = load_config()
-    normalized = str(Path(path_str).expanduser().resolve())
+    target_clean = path_str.strip()
+    target_norm = os.path.normcase(os.path.normpath(target_clean))
+    try:
+        target_resolved = os.path.normcase(str(Path(target_clean).expanduser().resolve()))
+    except Exception:
+        target_resolved = target_norm
+
     for sp in list(config.search_paths):
-        if sp == path_str or str(Path(sp).expanduser().resolve()) == normalized:
+        sp_clean = sp.strip()
+        sp_norm = os.path.normcase(os.path.normpath(sp_clean))
+        try:
+            sp_resolved = os.path.normcase(str(Path(sp_clean).expanduser().resolve()))
+        except Exception:
+            sp_resolved = sp_norm
+
+        if (
+            sp == path_str
+            or sp_clean == target_clean
+            or sp_norm == target_norm
+            or sp_resolved == target_resolved
+        ):
             config.search_paths.remove(sp)
             save_config(config)
             return True
+
+    # Fallback: if a numeric index was provided as string
+    if target_clean.isdigit():
+        idx = int(target_clean)
+        return remove_search_path_by_index(idx)
+
     return False

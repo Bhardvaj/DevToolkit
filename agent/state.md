@@ -203,7 +203,13 @@ This document is continuously updated to reflect current project status, complet
   - Parameterized tests for live `deep_inspect()` contracts (raw CLI dumps, multi-instance discovery with `is_active` precedence flag, and environment variable status validation against `{"aligned", "divergent", "missing"}`).
   - Parameterized tests for controlled `NOT_FOUND` fallback execution when binaries are unresolvable.
   - Domain-specific condition branch tests: Python missing pip, Node.js missing npm, Git missing identity, Docker daemon stopped, Java broken JAVA_HOME, C compiler missing C++, CMake missing Ninja, VS Code CLI missing from PATH.
-  - Total test suite expanded to 154 tests passing (100% pass rate in 88.58s).
+- [x] **Settings Custom Search Path Removal Bug Fix & CLI Parity**:
+  - Resolved bug where Windows paths (e.g. `C:\Users\...`, `D:\UtilitySoftware`, paths containing `\u`, `\t`, `\n`) could not be removed from the Settings tab due to inline JS attribute parsing and Unicode escape syntax errors.
+  - Added `escapeHtml` utility and refactored UI to index-based removal `removeSearchPathByIndex(idx)` with payload `{ index, path }`.
+  - Added `remove_search_path_by_index` and case/trailing-slash/normalization matching in `devtoolkit/core/config.py`.
+  - Added `devtoolkit config remove-path` CLI command and wrapped console path prints with Rich `escape()`.
+  - Total test suite expanded to 156 tests passing (100% pass rate). Standalone binary `dist/DevToolkit.exe` recompiled (20.96 MB).
+
 
 ---
 

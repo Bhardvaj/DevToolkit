@@ -84,7 +84,7 @@ DevToolkit/
 ├── .github/
 │   └── workflows/
 │       └── build.yml                  # GitHub Actions CI for test, packaging & release
-└── tests/                             # Automated test suite (154 passing unit tests)
+└── tests/                             # Automated test suite (156 passing unit tests)
     ├── test_batch1_inspectors.py      # Tests for Batch 1 inspectors (VS Code, .NET, Bun, GH, CMake, Ollama)
     ├── test_batch2_inspectors.py      # Tests for Batch 2 inspectors (Kubectl, Terraform, C++, PHP, CUDA, SQLite)
     ├── test_config.py                 # Tests for user configuration and custom search paths

@@ -3,7 +3,7 @@
 from pathlib import Path
 from fastapi import APIRouter, HTTPException
 
-from devtoolkit.core.config import add_search_path, load_config, remove_search_path
+from devtoolkit.core.config import add_search_path, load_config, remove_search_path, remove_search_path_by_index
 from devtoolkit.core.runner import SafeRunner
 from devtoolkit.server.models import SearchPathRequest
 
@@ -17,6 +17,8 @@ def get_config():
 
 @router.post("/config/search-paths")
 def post_search_path(req: SearchPathRequest):
+    if not req.path:
+        raise HTTPException(status_code=400, detail="Missing required 'path' parameter.")
     p = Path(req.path).expanduser().resolve()
     if not p.exists() or not p.is_dir():
         raise HTTPException(status_code=400, detail=f"Directory '{req.path}' does not exist on disk.")
@@ -26,7 +28,11 @@ def post_search_path(req: SearchPathRequest):
 
 @router.delete("/config/search-paths")
 def delete_search_path(req: SearchPathRequest):
-    removed = remove_search_path(req.path)
+    removed = False
+    if req.index is not None:
+        removed = remove_search_path_by_index(req.index)
+    if not removed and req.path:
+        removed = remove_search_path(req.path)
     return {"status": "ok", "removed": removed, "config": load_config()}
 
 
