@@ -208,7 +208,13 @@ This document is continuously updated to reflect current project status, complet
   - Added `escapeHtml` utility and refactored UI to index-based removal `removeSearchPathByIndex(idx)` with payload `{ index, path }`.
   - Added `remove_search_path_by_index` and case/trailing-slash/normalization matching in `devtoolkit/core/config.py`.
   - Added `devtoolkit config remove-path` CLI command and wrapped console path prints with Rich `escape()`.
-  - Total test suite expanded to 156 tests passing (100% pass rate). Standalone binary `dist/DevToolkit.exe` recompiled (20.96 MB).
+- [x] **Zero-Footprint Portable Configuration (`devtoolkit.config.yaml`)**:
+  - Eliminated all host OS user profile pollution (`%USERPROFILE%\.devtoolkit` / `~/.devtoolkit`).
+  - Switched configuration resolution strictly to `devtoolkit.config.yaml` located beside the executable (`Path(sys.executable).parent` when frozen, or `Path.cwd()` in development).
+  - Code contains zero references or checks to host user home folders.
+  - Manually cleaned up legacy `C:\Users\bhard\.devtoolkit`.
+  - Total test suite expanded to 158 tests passing (100% pass rate). Standalone binary `dist/DevToolkit.exe` recompiled (20.97 MB).
+
 
 
 ---

@@ -1,12 +1,13 @@
-"""User configuration management for DevToolkit."""
+"""Portable configuration management for DevToolkit."""
 
 import os
 from pathlib import Path
+import sys
 from typing import Dict, List, Optional
 import yaml
 from pydantic import BaseModel, Field
 
-DEFAULT_CONFIG_PATH = Path.home() / ".devtoolkit" / "config.yaml"
+CONFIG_FILENAME = "devtoolkit.config.yaml"
 
 
 class DevToolkitConfig(BaseModel):
@@ -17,12 +18,25 @@ class DevToolkitConfig(BaseModel):
     custom_env: Dict[str, str] = Field(default_factory=dict)
 
 
+def get_app_dir() -> Path:
+    """Return the application directory: executable directory if frozen, else current working directory."""
+    if getattr(sys, "frozen", False):
+        return Path(sys.executable).resolve().parent
+    return Path.cwd().resolve()
+
+
 def get_config_path() -> Path:
-    """Return path to active config file (supports local .devtoolkit.yaml or global)."""
-    local_cfg = Path(".devtoolkit.yaml")
-    if local_cfg.exists():
-        return local_cfg
-    return DEFAULT_CONFIG_PATH
+    """Return path to portable config file located beside the executable (or cwd in dev)."""
+    env_override = os.environ.get("DEVTOOLKIT_CONFIG")
+    if env_override:
+        return Path(env_override).resolve()
+
+    app_dir = get_app_dir()
+    primary_cfg = app_dir / CONFIG_FILENAME
+    alt_cfg = app_dir / ".devtoolkit.yaml"
+    if not primary_cfg.exists() and alt_cfg.exists():
+        return alt_cfg
+    return primary_cfg
 
 
 def load_config() -> DevToolkitConfig:

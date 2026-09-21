@@ -73,3 +73,31 @@ def test_remove_search_path_normalization(tmp_path, monkeypatch):
     assert remove_search_path(variant) is True
     assert len(load_config().search_paths) == 0
 
+
+def test_get_config_path_portable_frozen(monkeypatch, tmp_path):
+    """Verify that when running frozen as an executable, config is beside the executable."""
+    import sys
+    from devtoolkit.core.config import CONFIG_FILENAME, get_app_dir, get_config_path
+
+    exe_dir = tmp_path / "PortableTools"
+    exe_dir.mkdir()
+    fake_exe = exe_dir / "DevToolkit.exe"
+
+    monkeypatch.setattr(sys, "frozen", True, raising=False)
+    monkeypatch.setattr(sys, "executable", str(fake_exe))
+    monkeypatch.delenv("DEVTOOLKIT_CONFIG", raising=False)
+
+    assert get_app_dir() == exe_dir
+    assert get_config_path() == exe_dir / CONFIG_FILENAME
+
+
+def test_get_config_path_env_override(monkeypatch, tmp_path):
+    """Verify DEVTOOLKIT_CONFIG environment override is respected."""
+    from devtoolkit.core.config import get_config_path
+
+    custom_cfg = tmp_path / "custom.yaml"
+    monkeypatch.setenv("DEVTOOLKIT_CONFIG", str(custom_cfg))
+
+    assert get_config_path() == custom_cfg.resolve()
+
+

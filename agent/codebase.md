@@ -22,7 +22,7 @@ DevToolkit/
 │   ├── __main__.py                    # Entrypoint for `python -m devtoolkit`
 │   ├── core/                          # Engine kernel & discovery pipeline
 │   │   ├── base.py                    # BaseInspector (inspect, deep_inspect) & BaseUtility abstractions
-│   │   ├── config.py                  # User configuration management (~/.devtoolkit/config.yaml)
+│   │   ├── config.py                  # Portable configuration management (devtoolkit.config.yaml beside executable)
 │   │   ├── discovery.py               # Unified 4-layer DiscoveryPipeline coordinator
 │   │   ├── ecosystem.py               # Layer 3: Cross-tool ecosystem config resolvers (Studio, Flutter, Gradle)
 │   │   ├── inventory.py               # Layer 2: OS Application Inventory & Windows Registry scanner
@@ -84,7 +84,7 @@ DevToolkit/
 ├── .github/
 │   └── workflows/
 │       └── build.yml                  # GitHub Actions CI for test, packaging & release
-└── tests/                             # Automated test suite (156 passing unit tests)
+└── tests/                             # Automated test suite (158 passing unit tests)
     ├── test_batch1_inspectors.py      # Tests for Batch 1 inspectors (VS Code, .NET, Bun, GH, CMake, Ollama)
     ├── test_batch2_inspectors.py      # Tests for Batch 2 inspectors (Kubectl, Terraform, C++, PHP, CUDA, SQLite)
     ├── test_config.py                 # Tests for user configuration and custom search paths
