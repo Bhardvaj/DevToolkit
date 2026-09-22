@@ -352,7 +352,7 @@ TARGET_TOOL_BINARIES: Dict[str, List[str]] = {
 
 def scan_roots_for_tools(roots: List[Path], max_depth: int = 6) -> Dict[str, List[Path]]:
     """Scan root directories using FastSearchEngine and classify directories by content signature."""
-    from devtoolkit.core.search import FastSearchEngine
+    from devtoolkit.core.search import get_search_engine
 
     results: Dict[str, List[Path]] = {key: [] for key in SIGNATURE_CHECKERS}
     valid_roots = [r.expanduser().resolve() for r in roots if r.exists() and r.is_dir()]
@@ -361,7 +361,8 @@ def scan_roots_for_tools(roots: List[Path], max_depth: int = 6) -> Dict[str, Lis
 
     # Tool binaries typically reside in subdirectories (bin/, platform-tools/) 1-2 levels below the SDK root
     crawler_depth = max_depth + 2
-    engine = FastSearchEngine(max_depth=crawler_depth)
+    engine = get_search_engine()
+    engine.crawler.max_depth = crawler_depth
     engine.index_roots(valid_roots)
 
     matches = engine.find_exact_names(TARGET_TOOL_BINARIES.keys())

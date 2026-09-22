@@ -4,9 +4,9 @@ This document is continuously updated to reflect current project status, complet
 
 ---
 
-## Current Status: Phase 8 Complete (Everything-Class Standalone Search Engine & Layer 4 Decoupling across all 22 Tools)
-- **Active Task**: Phase 8 (Standalone FastSearchEngine in `devtoolkit/core/search/`, in-memory $O(1)$ indexing, multi-threaded pruned Win32 crawling, NTFS USN Journal streaming, Layer 4 decoupling with 22-tool signature matrix, and 166 passing tests) 100% complete with standalone binary `dist/DevToolkit.exe` (20.99 MB).
-- **Architecture**: Decoupled Engine + 22 Comprehensive Tool Inspectors + 4-Layer Generalized Discovery + Standalone Everything-Class FastSearchEngine (`SearchIndex`, `ParallelPrunedCrawler`, `NTFSUSNReader`) + Modular Server Architecture + Google Stitch Precision UI + 7-Zone Standardized Inspector Drawer + Multi-Instance Precedence Engine (`where.exe`) + Environment Variable Alignment Matrix + On-Demand Telemetry API (`GET /api/tool/{tool_id}/deep`) + Safe Copyable Remediations.
+## Current Status: Phase 8 Complete (Everything-Class Search Engine, Search Telemetry UI & Manual Re-indexing across 22 Tools)
+- **Active Task**: Search Engine Telemetry & Manual Re-indexing (Sidebar footer search status, persistent bottom status bar Search RAM + live Process RAM, Settings Tab Telemetry Card with "Re-index Now" button, `/api/search/status`, `/api/search/reindex`, and 170 passing tests) 100% complete with standalone binary `dist/DevToolkit.exe` (21.0 MB).
+- **Architecture**: Decoupled Engine + 22 Comprehensive Tool Inspectors + 4-Layer Generalized Discovery + Standalone Everything-Class FastSearchEngine (`SearchIndex`, `ParallelPrunedCrawler`, `NTFSUSNReader`) + Native Win32 RAM Telemetry (`K32GetProcessMemoryInfo`) + Modular Server Architecture + Google Stitch Precision UI + Live Search Engine Telemetry & On-Demand Re-indexing + Multi-Instance Precedence Engine (`where.exe`) + Environment Variable Alignment Matrix + On-Demand Telemetry API (`GET /api/tool/{tool_id}/deep`) + Safe Copyable Remediations.
 - **Repository**: Synced on GitHub at [https://github.com/Bhardvaj/DevToolkit](https://github.com/Bhardvaj/DevToolkit).
 
 ---
@@ -227,10 +227,18 @@ This document is continuously updated to reflect current project status, complet
   - Added unified `TARGET_TOOL_BINARIES` mapping.
   - Rewrote `scan_roots_for_tools` to index roots using `FastSearchEngine` and batch query target binaries in <0.02ms, verifying candidate directory structures with signature checkers.
   - Live benchmark on `D:\Dev`: indexed 56,310 entries and verified 6 SDKs in **399.2ms** (vs. 12+ seconds previously).
+- [x] **Live Search Engine Telemetry & Manual Re-indexing UI**:
+  - **Memory & Process Footprint**: Implemented `estimate_memory_bytes()` on `SearchIndex` and native Win32 working set RAM calculation `get_process_ram_bytes()` via `K32GetProcessMemoryInfo` (zero external dependencies).
+  - **Singleton & Engine State**: Added `get_search_engine()` global singleton provider, indexing lifecycle tracking (`is_indexing`, `last_indexed_at`), and `get_telemetry()`.
+  - **API Endpoints**: Engineered `GET /api/search/status` (live telemetry) and `POST /api/search/reindex` (on-demand re-index across monitored roots).
+  - **UI Integration**:
+    - **Sidebar Footer**: Live search status (`Ready (<count> files • <duration>ms)`, `Indexing...`, `Idle`).
+    - **Bottom Status Bar**: Displays real-time `PATH: <count>`, `Search RAM: <formatted>`, and live process `Process RAM: <formatted>`.
+    - **Settings Tab**: Added dedicated **FastSearch Engine Telemetry** card featuring a 6-metric grid (Engine Strategy, Indexed Files, Indexed Folders, Build Latency, Index Memory, Process RAM) and an interactive **Re-index Now** button with spinning refresh animation and toast feedback.
 - [x] **Verification & Standalone Recompilation**:
-  - Authored comprehensive test suite `tests/test_search_engine.py` (8 tests).
-  - All 166 project tests pass (`166 passed in 95.47s`).
-  - Standalone binary recompiled: `dist/DevToolkit.exe` (20.99 MB).
+  - Authored comprehensive test suite in `tests/test_search_engine.py` and `tests/test_server.py`.
+  - All 170 project tests pass (`170 passed in 103.86s`).
+  - Standalone binary recompiled: `dist/DevToolkit.exe` (21.0 MB).
 
 ---
 

@@ -7,8 +7,8 @@ Modeled after voidtools Everything algorithms:
 """
 
 from devtoolkit.core.search.crawler import ParallelPrunedCrawler
-from devtoolkit.core.search.engine import FastSearchEngine
-from devtoolkit.core.search.index import SearchIndex
+from devtoolkit.core.search.engine import FastSearchEngine, get_process_ram_bytes, get_search_engine
+from devtoolkit.core.search.index import SearchIndex, format_bytes
 from devtoolkit.core.search.models import IndexStats, SearchQuery, SearchResult
 from devtoolkit.core.search.usn import NTFSUSNReader
 
@@ -20,4 +20,7 @@ __all__ = [
     "IndexStats",
     "ParallelPrunedCrawler",
     "NTFSUSNReader",
+    "format_bytes",
+    "get_search_engine",
+    "get_process_ram_bytes",
 ]

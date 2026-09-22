@@ -37,6 +37,7 @@ from devtoolkit.server.routes.audit import (
 )
 from devtoolkit.server.routes.ports import get_ports, post_kill_port
 from devtoolkit.server.routes.project import post_audit_project
+from devtoolkit.server.routes.search import get_search_status, trigger_reindex
 from devtoolkit.server.routes.system import delete_search_path, get_config, get_system, post_search_path
 from devtoolkit.server.ui import EMBEDDED_UI_HTML, get_dashboard_html
 
@@ -77,6 +78,10 @@ def register_routes(application: FastAPI) -> None:
     application.add_api_route("/api/action/open-folder", open_folder, methods=["POST"], tags=["actions"])
     application.add_api_route("/api/action/select-folder", post_select_folder, methods=["POST"], tags=["actions"])
     application.add_api_route("/api/action/apply-fix", post_apply_fix, methods=["POST"], tags=["actions"])
+
+    # Search Engine Telemetry & Manual Re-indexing
+    application.add_api_route("/api/search/status", get_search_status, methods=["GET"], tags=["search"])
+    application.add_api_route("/api/search/reindex", trigger_reindex, methods=["POST"], tags=["search"])
 
 
 register_routes(app)

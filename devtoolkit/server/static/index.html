@@ -126,6 +126,12 @@
             </span>
             <span id="side-python-version" class="text-[#F3F4F6]">...</span>
           </div>
+          <div class="flex items-center justify-between text-[11px] text-[#94A3B8] font-mono">
+            <span class="text-[#475569] flex items-center gap-1">
+              <i class="fa-solid fa-bolt text-[#10B981] text-[10px]" id="side-search-icon"></i> Search
+            </span>
+            <span id="side-search-status" class="text-[#F3F4F6] truncate max-w-[120px]" title="Search Engine Status">Idle</span>
+          </div>
           <div class="flex items-center justify-between text-[10px] text-[#94A3B8] pt-1.5 border-t border-[#1F2430] font-sans">
             <span class="flex items-center gap-1.5 text-[#10B981] font-medium">
               <span class="w-1.5 h-1.5 rounded-full bg-[#10B981] animate-pulse"></span>
@@ -634,6 +640,70 @@
             </div>
           </div>
 
+          <!-- Search Engine Telemetry & Manual Re-indexing Card -->
+          <div class="card-pro p-5 sm:p-6 space-y-4">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[#1F2430]">
+              <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded bg-[#10B9811A] text-[#10B981] border border-[#10B98140] flex items-center justify-center font-bold flex-shrink-0">
+                  <i class="fa-solid fa-bolt"></i>
+                </div>
+                <div>
+                  <div class="flex items-center gap-2">
+                    <h2 class="text-sm font-semibold text-[#F3F4F6]">FastSearch Engine Telemetry</h2>
+                    <span id="settings-search-badge" class="px-2 py-0.5 rounded text-[10px] font-mono font-semibold bg-[#10B9811A] text-[#10B981] border border-[#10B98140]">Ready</span>
+                  </div>
+                  <p class="text-xs text-[#94A3B8]">In-memory high performance search engine modeling Everything algorithms with sub-millisecond query evaluation.</p>
+                </div>
+              </div>
+
+              <div class="flex items-center gap-2 flex-shrink-0">
+                <button onclick="triggerManualReindex()" id="btn-reindex-search" class="btn-secondary-pro px-3 py-1.5 text-xs font-medium flex items-center gap-1.5" title="Rebuild the in-memory search index">
+                  <i class="fa-solid fa-arrows-rotate text-[#10B981]" id="reindex-spinner"></i>
+                  <span id="reindex-btn-text">Re-index Now</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Telemetry Metrics Grid -->
+            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 text-xs">
+              <div class="p-3 rounded bg-[#08090C] border border-[#1F2430] min-w-0">
+                <div class="text-[#475569] font-mono text-[10px] uppercase truncate">Engine Strategy</div>
+                <div class="font-mono text-[#06B6D4] font-semibold mt-1 truncate" id="settings-search-strategy">—</div>
+              </div>
+              <div class="p-3 rounded bg-[#08090C] border border-[#1F2430]">
+                <div class="text-[#475569] font-mono text-[10px] uppercase truncate">Indexed Files</div>
+                <div class="font-mono text-[#F3F4F6] font-semibold mt-1" id="settings-search-files">0</div>
+              </div>
+              <div class="p-3 rounded bg-[#08090C] border border-[#1F2430]">
+                <div class="text-[#475569] font-mono text-[10px] uppercase truncate">Indexed Folders</div>
+                <div class="font-mono text-[#F3F4F6] font-semibold mt-1" id="settings-search-dirs">0</div>
+              </div>
+              <div class="p-3 rounded bg-[#08090C] border border-[#1F2430]">
+                <div class="text-[#475569] font-mono text-[10px] uppercase truncate">Build Latency</div>
+                <div class="font-mono text-[#F59E0B] font-semibold mt-1" id="settings-search-duration">0.0 ms</div>
+              </div>
+              <div class="p-3 rounded bg-[#08090C] border border-[#1F2430]">
+                <div class="text-[#475569] font-mono text-[10px] uppercase truncate">Index Memory</div>
+                <div class="font-mono text-[#8B5CF6] font-semibold mt-1" id="settings-search-mem">0 B</div>
+              </div>
+              <div class="p-3 rounded bg-[#08090C] border border-[#1F2430]">
+                <div class="text-[#475569] font-mono text-[10px] uppercase truncate">Process RAM</div>
+                <div class="font-mono text-[#10B981] font-semibold mt-1" id="settings-process-ram">0 B</div>
+              </div>
+            </div>
+
+            <div class="pt-2 border-t border-[#1F2430] flex flex-col sm:flex-row sm:items-center justify-between text-xs text-[#94A3B8] font-mono gap-1.5">
+              <div class="flex items-center gap-2 truncate">
+                <span class="text-[#475569]">Active Scanned Roots:</span>
+                <span id="settings-search-roots-tags" class="text-[#F3F4F6] font-medium truncate">None</span>
+              </div>
+              <div class="flex items-center gap-1.5 flex-shrink-0 text-[11px]">
+                <span class="text-[#475569]">Last Indexed:</span>
+                <span id="settings-search-last-time" class="text-[#94A3B8]">Never</span>
+              </div>
+            </div>
+          </div>
+
           <!-- Workstation System Specs Card -->
           <div class="card-pro p-5 sm:p-6 space-y-3">
             <h3 class="text-sm font-semibold text-[#F3F4F6] flex items-center gap-2">
@@ -671,9 +741,11 @@
             Environment Watcher: <strong class="text-[#F3F4F6] font-medium truncate">Active</strong>
           </span>
           <span class="text-[#2E3446] hidden sm:inline">|</span>
-          <span class="hidden sm:inline">PATH Entries: <strong class="text-[#F3F4F6]" id="status-path-count">25</strong></span>
+          <span class="hidden sm:inline">PATH: <strong class="text-[#F3F4F6]" id="status-path-count">—</strong></span>
           <span class="text-[#2E3446] hidden md:inline">|</span>
-          <span class="hidden md:inline">RAM Footprint: <strong class="text-[#F3F4F6]" id="status-ram-count">114 MB</strong></span>
+          <span class="hidden md:inline">Search RAM: <strong class="text-[#06B6D4]" id="status-search-ram">—</strong></span>
+          <span class="text-[#2E3446] hidden md:inline">|</span>
+          <span class="hidden md:inline">Process RAM: <strong class="text-[#10B981]" id="status-process-ram">—</strong></span>
         </div>
 
         <div class="flex items-center gap-2 sm:gap-3 flex-shrink-0 font-sans">

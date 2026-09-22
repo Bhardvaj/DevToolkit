@@ -132,6 +132,7 @@ let activeTab = 'env';
         bc.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-[#94A3B8] flex-shrink-0"></span> Preferences & Search Roots';
         loadConfig();
         loadSystemInfo();
+        fetchSearchTelemetry();
       }
     }
 
@@ -141,7 +142,7 @@ let activeTab = 'env';
       if (activeTab === 'env') fetchAudit();
       else if (activeTab === 'ports') fetchPorts();
       else if (activeTab === 'project') runProjectAudit();
-      else if (activeTab === 'settings') { loadConfig(); loadSystemInfo(); }
+      else if (activeTab === 'settings') { loadConfig(); loadSystemInfo(); fetchSearchTelemetry(); }
     }
 
     function updateTimerDisplay() {
@@ -1255,13 +1256,20 @@ let activeTab = 'env';
       if (sideOs) sideOs.innerText = `${sys.os_name} ${sys.os_release} (${sys.arch})`;
       const sideHost = document.getElementById('side-host-name');
       if (sideHost) sideHost.innerText = sys.hostname || 'LOCAL';
+      const sidePy = document.getElementById('side-python-version');
+      if (sidePy && sys.python_version) sidePy.innerText = sys.python_version;
+      const sideApp = document.getElementById('side-app-version');
+      if (sideApp && sys.app_version) sideApp.innerText = `v${sys.app_version}`;
+
       if (sys.path_count) {
         const statusPath = document.getElementById('status-path-count');
         if (statusPath) statusPath.innerText = sys.path_count;
       }
       if (sys.ram_footprint_mb) {
-        const statusRam = document.getElementById('status-ram-count');
-        if (statusRam) statusRam.innerText = `${sys.ram_footprint_mb} MB`;
+        const procRam = document.getElementById('status-process-ram') || document.getElementById('status-ram-count');
+        if (procRam) procRam.innerText = `${sys.ram_footprint_mb} MB`;
+        const settProcRam = document.getElementById('settings-process-ram');
+        if (settProcRam) settProcRam.innerText = `${sys.ram_footprint_mb} MB`;
       }
     }
 
@@ -1332,6 +1340,7 @@ let activeTab = 'env';
                   if (searchQuery || activeStatusFilter || activeCategory !== 'all') {
                     renderTools();
                   }
+                  fetchSearchTelemetry();
                   es.close();
                   activeAuditSource = null;
                   resolve();
@@ -1354,6 +1363,7 @@ let activeTab = 'env';
                 updateStatusFilterUI();
                 renderTools();
                 updateAuditMetrics();
+                fetchSearchTelemetry();
               } catch (fallbackErr) {
                 showToast('Error auditing environment', true);
               }
@@ -1370,6 +1380,7 @@ let activeTab = 'env';
           updateStatusFilterUI();
           renderTools();
           updateAuditMetrics();
+          fetchSearchTelemetry();
         }
       } catch (err) {
         showToast('Error auditing environment', true);
@@ -1984,6 +1995,140 @@ let activeTab = 'env';
       }
     }
 
+    async function fetchSearchTelemetry() {
+      try {
+        const res = await fetch('/api/search/status');
+        if (!res.ok) return;
+        const data = await res.json();
+        updateSearchTelemetryUI(data);
+      } catch (err) {
+        console.error('Failed to fetch search telemetry:', err);
+      }
+    }
+
+    function updateSearchTelemetryUI(data) {
+      if (!data) return;
+
+      // 1. Sidebar Footer indicator
+      const sideStatus = document.getElementById('side-search-status');
+      const sideIcon = document.getElementById('side-search-icon');
+      if (sideStatus) {
+        if (data.is_indexing || data.status === 'indexing') {
+          sideStatus.innerText = 'Indexing...';
+          sideStatus.className = 'text-[#F59E0B] font-mono truncate max-w-[120px]';
+          if (sideIcon) sideIcon.className = 'fa-solid fa-arrows-rotate fa-spin text-[#F59E0B] text-[10px]';
+        } else if (data.status === 'ready') {
+          const filesCount = data.total_files >= 1000 ? `${(data.total_files / 1000).toFixed(1)}k` : data.total_files;
+          sideStatus.innerText = `Ready (${filesCount})`;
+          sideStatus.className = 'text-[#10B981] font-mono truncate max-w-[120px]';
+          sideStatus.title = `${data.total_files.toLocaleString()} files indexed in ${data.duration_ms}ms (${data.search_memory_formatted})`;
+          if (sideIcon) sideIcon.className = 'fa-solid fa-bolt text-[#10B981] text-[10px]';
+        } else {
+          sideStatus.innerText = 'Idle';
+          sideStatus.className = 'text-[#94A3B8] font-mono truncate max-w-[120px]';
+          if (sideIcon) sideIcon.className = 'fa-solid fa-bolt text-[#475569] text-[10px]';
+        }
+      }
+
+      // 2. Persistent Bottom Status Bar
+      const statusSearchRam = document.getElementById('status-search-ram');
+      if (statusSearchRam && data.search_memory_formatted) {
+        statusSearchRam.innerText = data.search_memory_formatted;
+      }
+      const statusProcRam = document.getElementById('status-process-ram');
+      if (statusProcRam && data.process_ram_formatted) {
+        statusProcRam.innerText = data.process_ram_formatted;
+      }
+
+      // 3. Settings Tab Search Telemetry Card
+      const badge = document.getElementById('settings-search-badge');
+      if (badge) {
+        if (data.is_indexing || data.status === 'indexing') {
+          badge.className = 'px-2 py-0.5 rounded text-[10px] font-mono font-semibold bg-[#F59E0B1A] text-[#F59E0B] border border-[#F59E0B40]';
+          badge.innerText = 'Indexing...';
+        } else if (data.status === 'ready') {
+          badge.className = 'px-2 py-0.5 rounded text-[10px] font-mono font-semibold bg-[#10B9811A] text-[#10B981] border border-[#10B98140]';
+          badge.innerText = 'Ready';
+        } else {
+          badge.className = 'px-2 py-0.5 rounded text-[10px] font-mono font-semibold bg-[#141721] text-[#94A3B8] border border-[#1F2430]';
+          badge.innerText = 'Idle';
+        }
+      }
+
+      const stratEl = document.getElementById('settings-search-strategy');
+      if (stratEl) stratEl.innerText = data.engine_used || 'None';
+
+      const filesEl = document.getElementById('settings-search-files');
+      if (filesEl) filesEl.innerText = (data.total_files || 0).toLocaleString();
+
+      const dirsEl = document.getElementById('settings-search-dirs');
+      if (dirsEl) dirsEl.innerText = (data.total_dirs || 0).toLocaleString();
+
+      const durEl = document.getElementById('settings-search-duration');
+      if (durEl) durEl.innerText = `${data.duration_ms || 0.0} ms`;
+
+      const memEl = document.getElementById('settings-search-mem');
+      if (memEl) memEl.innerText = data.search_memory_formatted || '0 B';
+
+      const procRamEl = document.getElementById('settings-process-ram');
+      if (procRamEl && data.process_ram_formatted) procRamEl.innerText = data.process_ram_formatted;
+
+      const rootsEl = document.getElementById('settings-search-roots-tags');
+      if (rootsEl) {
+        if (data.roots_scanned && data.roots_scanned.length > 0) {
+          rootsEl.innerText = data.roots_scanned.join(', ');
+          rootsEl.title = data.roots_scanned.join('\n');
+        } else {
+          rootsEl.innerText = 'None';
+        }
+      }
+
+      const lastTimeEl = document.getElementById('settings-search-last-time');
+      if (lastTimeEl) {
+        if (data.last_indexed_at) {
+          try {
+            const dt = new Date(data.last_indexed_at);
+            lastTimeEl.innerText = dt.toLocaleTimeString();
+          } catch {
+            lastTimeEl.innerText = data.last_indexed_at;
+          }
+        } else {
+          lastTimeEl.innerText = 'Never';
+        }
+      }
+    }
+
+    async function triggerManualReindex() {
+      const spinner = document.getElementById('reindex-spinner');
+      const btnText = document.getElementById('reindex-btn-text');
+      const btn = document.getElementById('btn-reindex-search');
+
+      if (spinner) spinner.classList.add('fa-spin');
+      if (btnText) btnText.innerText = 'Indexing...';
+      if (btn) btn.disabled = true;
+
+      const sideStatus = document.getElementById('side-search-status');
+      if (sideStatus) sideStatus.innerText = 'Indexing...';
+
+      try {
+        const res = await fetch('/api/search/reindex', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({})
+        });
+        const data = await res.json();
+        updateSearchTelemetryUI(data);
+        showToast(`Search Index updated: ${(data.total_files || 0).toLocaleString()} files in ${data.duration_ms}ms`);
+      } catch (err) {
+        console.error('Re-indexing error:', err);
+        showToast('Error rebuilding search index', true);
+      } finally {
+        if (spinner) spinner.classList.remove('fa-spin');
+        if (btnText) btnText.innerText = 'Re-index Now';
+        if (btn) btn.disabled = false;
+      }
+    }
+
     async function loadSystemInfo() {
       try {
         const res = await fetch('/api/system');
@@ -2018,6 +2163,9 @@ let activeTab = 'env';
         if (sysHost) sysHost.innerText = sys.hostname;
         const sysPython = document.getElementById('sys-python');
         if (sysPython) sysPython.innerText = sys.python_version || 'Active';
+
+        // Update search engine telemetry
+        fetchSearchTelemetry();
       } catch (e) {
         console.error('Error loading system info:', e);
       }
@@ -2084,6 +2232,7 @@ let activeTab = 'env';
     // Initialize Default View
     loadConfig();
     loadSystemInfo();
+    fetchSearchTelemetry();
     fetchPorts(false);
     fetchAudit();
     const projInput = document.getElementById('project-path-input');

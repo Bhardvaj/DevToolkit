@@ -249,10 +249,12 @@ class SafeRunner:
         except Exception:
             pass
 
-        ram_mb = 114
+        ram_mb = 0
         try:
-            import psutil
-            ram_mb = int(psutil.Process().memory_info().rss / (1024 * 1024))
+            from devtoolkit.core.search import get_process_ram_bytes
+            ram_bytes = get_process_ram_bytes()
+            if ram_bytes > 0:
+                ram_mb = int(ram_bytes / (1024 * 1024))
         except Exception:
             pass
 

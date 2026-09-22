@@ -175,3 +175,40 @@ def test_scan_roots_non_existent():
     assert isinstance(results, dict)
     assert len(results) == len(SIGNATURE_CHECKERS)
     assert all(len(v) == 0 for v in results.values())
+
+
+def test_search_index_memory_estimation():
+    from devtoolkit.core.search.index import format_bytes
+
+    idx = SearchIndex()
+    assert idx.estimate_memory_bytes() > 0
+    assert format_bytes(500) == "500 B"
+    assert format_bytes(2048) == "2.0 KB"
+    assert format_bytes(1024 * 1024 * 5) == "5.0 MB"
+
+    for i in range(50):
+        idx.add_entry(f"/root/test_{i}.txt", f"test_{i}.txt", False, 100)
+
+    mem_bytes = idx.estimate_memory_bytes()
+    assert mem_bytes > 1000
+
+
+def test_search_engine_telemetry_and_singleton():
+    from devtoolkit.core.search.engine import get_search_engine, get_process_ram_bytes
+
+    engine1 = get_search_engine()
+    engine2 = get_search_engine()
+    assert engine1 is engine2
+
+    ram = get_process_ram_bytes()
+    assert isinstance(ram, int)
+    assert ram >= 0
+
+    telemetry = engine1.get_telemetry()
+    assert "status" in telemetry
+    assert "is_indexing" in telemetry
+    assert "search_memory_bytes" in telemetry
+    assert "search_memory_formatted" in telemetry
+    assert "process_ram_bytes" in telemetry
+    assert "process_ram_formatted" in telemetry
+

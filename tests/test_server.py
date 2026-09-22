@@ -19,6 +19,8 @@ from devtoolkit.server.app import (
     ProjectAuditRequest,
     SelectFolderRequest,
     post_select_folder,
+    get_search_status,
+    trigger_reindex,
 )
 
 
@@ -37,6 +39,8 @@ def test_server_routes_registered():
     assert "/api/ports/kill" in route_paths
     assert "/api/project/audit" in route_paths
     assert "/api/tool/{tool_id}/deep" in route_paths
+    assert "/api/search/status" in route_paths
+    assert "/api/search/reindex" in route_paths
     assert "/" in route_paths
 
 
@@ -175,5 +179,30 @@ def test_select_folder_handler(monkeypatch):
     res = post_select_folder(SelectFolderRequest(initial_path="C:\\"))
     assert res["status"] == "ok"
     assert "TestProject" in res["path"]
+
+
+def test_search_status_handler():
+    res = get_search_status()
+    assert isinstance(res, dict)
+    assert "status" in res
+    assert "is_indexing" in res
+    assert "total_files" in res
+    assert "search_memory_formatted" in res
+    assert "process_ram_formatted" in res
+
+
+def test_trigger_reindex_handler(tmp_path):
+    from devtoolkit.server.routes.search import ReindexRequest
+
+    test_dir = tmp_path / "custom_test_root"
+    test_dir.mkdir()
+    (test_dir / "sample.txt").write_text("hello")
+
+    res = trigger_reindex(ReindexRequest(roots=[str(test_dir)]))
+    assert isinstance(res, dict)
+    assert res["status"] in ("ready", "idle")
+    assert res["total_files"] >= 1
+    assert "sample.txt" in str(res["roots_scanned"]) or len(res["roots_scanned"]) > 0
+
 
 

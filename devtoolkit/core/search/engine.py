@@ -1,13 +1,57 @@
 """High-performance standalone search engine coordinating USN and Parallel Crawler strategies."""
 
+from datetime import datetime, timezone
 from pathlib import Path
 import sys
-from typing import Dict, Iterable, List, Optional, Set
+from typing import Any, Dict, Iterable, List, Optional, Set
 
 from devtoolkit.core.search.crawler import ParallelPrunedCrawler
-from devtoolkit.core.search.index import SearchIndex
+from devtoolkit.core.search.index import SearchIndex, format_bytes
 from devtoolkit.core.search.models import IndexStats, SearchQuery, SearchResult
 from devtoolkit.core.search.usn import NTFSUSNReader
+
+
+def get_process_ram_bytes() -> int:
+    """Get current process working set RAM in bytes without third-party dependencies."""
+    if sys.platform == "win32":
+        try:
+            import ctypes
+            from ctypes import wintypes
+
+            class PROCESS_MEMORY_COUNTERS(ctypes.Structure):
+                _fields_ = [
+                    ("cb", wintypes.DWORD),
+                    ("PageFaultCount", wintypes.DWORD),
+                    ("PeakWorkingSetSize", ctypes.c_size_t),
+                    ("WorkingSetSize", ctypes.c_size_t),
+                    ("QuotaPeakPagedPoolUsage", ctypes.c_size_t),
+                    ("QuotaPagedPoolUsage", ctypes.c_size_t),
+                    ("QuotaPeakNonPagedPoolUsage", ctypes.c_size_t),
+                    ("QuotaNonPagedPoolUsage", ctypes.c_size_t),
+                    ("PagefileUsage", ctypes.c_size_t),
+                    ("PeakPagefileUsage", ctypes.c_size_t),
+                ]
+
+            counters = PROCESS_MEMORY_COUNTERS()
+            counters.cb = ctypes.sizeof(PROCESS_MEMORY_COUNTERS)
+            handle = ctypes.windll.kernel32.GetCurrentProcess()
+            func = getattr(ctypes.windll.kernel32, "K32GetProcessMemoryInfo", None)
+            if not func:
+                func = getattr(ctypes.windll.psapi, "GetProcessMemoryInfo", None)
+            if func and func(handle, ctypes.byref(counters), ctypes.sizeof(counters)):
+                return int(counters.WorkingSetSize)
+        except Exception:
+            pass
+    else:
+        try:
+            import resource
+            usage = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+            if sys.platform == "darwin":
+                return usage
+            return usage * 1024
+        except Exception:
+            pass
+    return 0
 
 
 class FastSearchEngine:
@@ -23,6 +67,8 @@ class FastSearchEngine:
         self.crawler = ParallelPrunedCrawler(max_workers=max_workers, max_depth=max_depth)
         self.usn_reader = NTFSUSNReader()
         self._last_stats: Optional[IndexStats] = None
+        self._is_indexing: bool = False
+        self._last_indexed_at: Optional[str] = None
 
     @property
     def total_entries(self) -> int:
@@ -40,9 +86,41 @@ class FastSearchEngine:
     def last_stats(self) -> Optional[IndexStats]:
         return self._last_stats
 
+    @property
+    def is_indexing(self) -> bool:
+        return self._is_indexing
+
+    @property
+    def last_indexed_at(self) -> Optional[str]:
+        return self._last_indexed_at
+
     def clear(self) -> None:
         self.index.clear()
         self._last_stats = None
+        self._last_indexed_at = None
+
+    def get_telemetry(self) -> Dict[str, Any]:
+        """Return comprehensive engine telemetry, memory footprints, and indexing status."""
+        search_mem = self.index.estimate_memory_bytes()
+        proc_ram = get_process_ram_bytes()
+        stats = self._last_stats
+        status = "indexing" if self._is_indexing else ("ready" if stats and stats.total_files > 0 else "idle")
+
+        return {
+            "status": status,
+            "is_indexing": self._is_indexing,
+            "engine_used": stats.engine_used if stats else "None",
+            "total_files": self.total_files,
+            "total_dirs": self.total_dirs,
+            "total_entries": self.total_entries,
+            "duration_ms": round(stats.duration_ms, 2) if stats else 0.0,
+            "roots_scanned": stats.roots_scanned if stats else [],
+            "search_memory_bytes": search_mem,
+            "search_memory_formatted": format_bytes(search_mem),
+            "process_ram_bytes": proc_ram,
+            "process_ram_formatted": format_bytes(proc_ram),
+            "last_indexed_at": self._last_indexed_at,
+        }
 
     def index_roots(self, roots: List[Path], force_crawler: bool = False) -> IndexStats:
         """Index one or more root directories using the fastest accessible strategy."""
@@ -52,50 +130,55 @@ class FastSearchEngine:
             self._last_stats = stats
             return stats
 
-        # Check if we can use NTFS USN Journal for whole drive roots
-        can_usn = not force_crawler and sys.platform == "win32" and self.usn_reader.is_elevated()
+        self._is_indexing = True
+        try:
+            # Check if we can use NTFS USN Journal for whole drive roots
+            can_usn = not force_crawler and sys.platform == "win32" and self.usn_reader.is_elevated()
 
-        crawler_roots: List[Path] = []
-        usn_stats: Optional[IndexStats] = None
+            crawler_roots: List[Path] = []
+            usn_stats: Optional[IndexStats] = None
 
-        for root in valid_roots:
-            # Check if root is a drive root like 'C:\' or 'D:\'
-            is_drive_root = (
-                sys.platform == "win32"
-                and len(str(root).rstrip("\\/")) <= 3
-                and str(root)[1:2] == ":"
-            )
-            if can_usn and is_drive_root:
-                drive_letter = str(root)[:2]
-                usn_res = self.usn_reader.scan_volume(drive_letter, self.index)
-                if usn_res:
-                    usn_stats = usn_res
+            for root in valid_roots:
+                # Check if root is a drive root like 'C:\' or 'D:\'
+                is_drive_root = (
+                    sys.platform == "win32"
+                    and len(str(root).rstrip("\\/")) <= 3
+                    and str(root)[1:2] == ":"
+                )
+                if can_usn and is_drive_root:
+                    drive_letter = str(root)[:2]
+                    usn_res = self.usn_reader.scan_volume(drive_letter, self.index)
+                    if usn_res:
+                        usn_stats = usn_res
+                    else:
+                        crawler_roots.append(root)
                 else:
                     crawler_roots.append(root)
-            else:
-                crawler_roots.append(root)
 
-        if crawler_roots:
-            crawler_stats = self.crawler.crawl_roots(crawler_roots, self.index)
-            if usn_stats:
-                combined_duration = usn_stats.duration_ms + crawler_stats.duration_ms
-                all_scanned = usn_stats.roots_scanned + crawler_stats.roots_scanned
-                stats = IndexStats(
-                    total_files=self.index.total_files,
-                    total_dirs=self.index.total_dirs,
-                    duration_ms=combined_duration,
-                    roots_scanned=all_scanned,
-                    engine_used="Hybrid_USN_and_Crawler",
-                )
+            if crawler_roots:
+                crawler_stats = self.crawler.crawl_roots(crawler_roots, self.index)
+                if usn_stats:
+                    combined_duration = usn_stats.duration_ms + crawler_stats.duration_ms
+                    all_scanned = usn_stats.roots_scanned + crawler_stats.roots_scanned
+                    stats = IndexStats(
+                        total_files=self.index.total_files,
+                        total_dirs=self.index.total_dirs,
+                        duration_ms=combined_duration,
+                        roots_scanned=all_scanned,
+                        engine_used="Hybrid_USN_and_Crawler",
+                    )
+                else:
+                    stats = crawler_stats
+            elif usn_stats:
+                stats = usn_stats
             else:
-                stats = crawler_stats
-        elif usn_stats:
-            stats = usn_stats
-        else:
-            stats = IndexStats(total_files=0, total_dirs=0, duration_ms=0.0, roots_scanned=[])
+                stats = IndexStats(total_files=0, total_dirs=0, duration_ms=0.0, roots_scanned=[])
 
-        self._last_stats = stats
-        return stats
+            self._last_stats = stats
+            self._last_indexed_at = datetime.now(timezone.utc).isoformat()
+            return stats
+        finally:
+            self._is_indexing = False
 
     def find_exact(self, name: str, case_sensitive: bool = False) -> List[SearchResult]:
         """Find entries matching exact name in O(1) time (<0.1ms)."""
@@ -148,3 +231,15 @@ class FastSearchEngine:
             max_results=max_results,
         )
         return self.index.search(query)
+
+
+_global_search_engine: Optional[FastSearchEngine] = None
+
+
+def get_search_engine() -> FastSearchEngine:
+    """Get or create the global shared FastSearchEngine instance."""
+    global _global_search_engine
+    if _global_search_engine is None:
+        _global_search_engine = FastSearchEngine()
+    return _global_search_engine
+

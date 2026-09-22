@@ -80,6 +80,7 @@ DevToolkit/
 │       │   ├── audit.py               # Environment audit, SSE streaming generator & deep inspection
 │       │   ├── ports.py               # Port listing & socket termination
 │       │   ├── project.py             # Workspace readiness inspection
+│       │   ├── search.py              # FastSearch engine telemetry & manual re-indexing (/api/search/status, /api/search/reindex)
 │       │   └── system.py              # Host telemetry & search path management
 │       └── static/                    # Google Stitch pure static frontend assets
 │           ├── __init__.py
@@ -91,7 +92,7 @@ DevToolkit/
 ├── .github/
 │   └── workflows/
 │       └── build.yml                  # GitHub Actions CI for test, packaging & release
-└── tests/                             # Automated test suite (166 passing unit tests)
+└── tests/                             # Automated test suite (170 passing unit tests)
     ├── test_batch1_inspectors.py      # Tests for Batch 1 inspectors (VS Code, .NET, Bun, GH, CMake, Ollama)
     ├── test_batch2_inspectors.py      # Tests for Batch 2 inspectors (Kubectl, Terraform, C++, PHP, CUDA, SQLite)
     ├── test_config.py                 # Tests for user configuration and custom search paths

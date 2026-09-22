@@ -2,10 +2,23 @@
 
 from fnmatch import fnmatchcase
 import re
+import sys
 import threading
 from typing import Dict, Iterable, List, Optional, Set
 
 from devtoolkit.core.search.models import SearchQuery, SearchResult
+
+
+def format_bytes(bytes_count: int) -> str:
+    """Format bytes count into human-readable string (e.g. 11.4 MB)."""
+    if bytes_count < 1024:
+        return f"{bytes_count} B"
+    elif bytes_count < 1024 * 1024:
+        return f"{bytes_count / 1024:.1f} KB"
+    elif bytes_count < 1024 * 1024 * 1024:
+        return f"{bytes_count / (1024 * 1024):.1f} MB"
+    else:
+        return f"{bytes_count / (1024 * 1024 * 1024):.2f} GB"
 
 
 class SearchIndex:
@@ -32,6 +45,38 @@ class SearchIndex:
     def total_dirs(self) -> int:
         with self._lock:
             return self._total_dirs
+
+    def estimate_memory_bytes(self) -> int:
+        """Estimate total in-memory footprint of the index in bytes."""
+        with self._lock:
+            base_mem = sys.getsizeof(self._entries) + sys.getsizeof(self._name_map)
+            count = len(self._entries)
+            if count == 0:
+                return base_mem
+
+            # Sample first N items for sub-millisecond calculation speed
+            sample_size = min(count, 200)
+            sample_bytes = 0
+            for i in range(sample_size):
+                e = self._entries[i]
+                # Pydantic SearchResult + path string + name string
+                sample_bytes += sys.getsizeof(e) + sys.getsizeof(e.path) + sys.getsizeof(e.name)
+
+            avg_entry_bytes = sample_bytes / sample_size
+            total_entries_mem = int(avg_entry_bytes * count)
+
+            # Map overhead: sample keys and index lists
+            map_sample_size = min(len(self._name_map), 200)
+            map_sample_bytes = 0
+            for k, (key, val) in enumerate(self._name_map.items()):
+                if k >= map_sample_size:
+                    break
+                map_sample_bytes += sys.getsizeof(key) + sys.getsizeof(val) + (len(val) * 8)
+
+            avg_map_entry = (map_sample_bytes / map_sample_size) if map_sample_size > 0 else 0
+            total_map_mem = int(avg_map_entry * len(self._name_map))
+
+            return base_mem + total_entries_mem + total_map_mem
 
     def clear(self) -> None:
         """Reset the index."""
