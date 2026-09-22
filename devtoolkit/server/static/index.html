@@ -960,6 +960,28 @@
               </div>
             </div>
 
+            <!-- Real-Time Updates Toggle Control -->
+            <div class="flex items-center justify-between p-3 rounded bg-[#08090C] border border-[#1F2430] text-xs">
+              <div class="flex items-center gap-3">
+                <div class="w-7 h-7 rounded bg-[#10B9811A] text-[#10B981] flex items-center justify-center text-xs flex-shrink-0">
+                  <i class="fa-solid fa-bolt"></i>
+                </div>
+                <div>
+                  <div class="font-medium text-[#F3F4F6] flex items-center gap-2">
+                    <span>Real-Time Index Updating</span>
+                    <span id="settings-realtime-badge" class="px-1.5 py-0.2 rounded text-[10px] font-mono font-semibold bg-[#10B9811A] text-[#10B981] border border-[#10B98140]">Active</span>
+                  </div>
+                  <div class="text-[#94A3B8] text-[11px]">
+                    Instantly sync filesystem changes (create, rename, modify, delete) into memory without manual re-indexing.
+                  </div>
+                </div>
+              </div>
+              <label class="relative inline-flex items-center cursor-pointer ml-4 flex-shrink-0">
+                <input type="checkbox" id="settings-toggle-realtime" onchange="toggleRealtimeSearchSetting(this.checked)" class="sr-only peer" checked>
+                <div class="w-9 h-5 bg-[#1F2430] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#10B981]"></div>
+              </label>
+            </div>
+
             <div class="pt-2 border-t border-[#1F2430] flex flex-col sm:flex-row sm:items-center justify-between text-xs text-[#94A3B8] font-mono gap-1.5">
               <div class="flex items-center gap-2 truncate">
                 <span class="text-[#475569]">Active Scanned Roots:</span>

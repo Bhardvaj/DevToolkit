@@ -16,6 +16,7 @@ class DevToolkitConfig(BaseModel):
     search_paths: List[str] = Field(default_factory=list)
     enabled_categories: Optional[List[str]] = None
     custom_env: Dict[str, str] = Field(default_factory=dict)
+    realtime_search: bool = True
 
 
 def get_app_dir() -> Path:
@@ -120,3 +121,12 @@ def remove_search_path(path_str: str) -> bool:
         return remove_search_path_by_index(idx)
 
     return False
+
+
+def set_realtime_search(enabled: bool) -> bool:
+    """Set realtime_search enabled flag in persistent configuration."""
+    config = load_config()
+    config.realtime_search = bool(enabled)
+    save_config(config)
+    return True
+

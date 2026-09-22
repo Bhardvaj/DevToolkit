@@ -106,3 +106,19 @@ def trigger_reindex(req: Optional[ReindexRequest] = None):
 
     return engine.get_telemetry()
 
+
+class RealtimeToggleRequest(BaseModel):
+    enabled: bool
+
+
+@router.post("/realtime")
+def toggle_realtime(req: RealtimeToggleRequest):
+    """Enable or disable live filesystem watchers and persist preference to config."""
+    from devtoolkit.core.config import set_realtime_search
+
+    engine = get_search_engine()
+    engine.enable_realtime(req.enabled)
+    set_realtime_search(req.enabled)
+    return engine.get_telemetry()
+
+

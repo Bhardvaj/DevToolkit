@@ -4,9 +4,9 @@ This document is continuously updated to reflect current project status, complet
 
 ---
 
-## Current Status: Phase 8 Complete (Everything-Class Search Engine, Search Telemetry UI & Manual Re-indexing across 22 Tools)
-- **Active Task**: Search Engine Telemetry & Manual Re-indexing (Sidebar footer search status, persistent bottom status bar Search RAM + live Process RAM, Settings Tab Telemetry Card with "Re-index Now" button, `/api/search/status`, `/api/search/reindex`, and 170 passing tests) 100% complete with standalone binary `dist/DevToolkit.exe` (21.0 MB).
-- **Architecture**: Decoupled Engine + 22 Comprehensive Tool Inspectors + 4-Layer Generalized Discovery + Standalone Everything-Class FastSearchEngine (`SearchIndex`, `ParallelPrunedCrawler`, `NTFSUSNReader`) + Native Win32 RAM Telemetry (`K32GetProcessMemoryInfo`) + Modular Server Architecture + Google Stitch Precision UI + Live Search Engine Telemetry & On-Demand Re-indexing + Multi-Instance Precedence Engine (`where.exe`) + Environment Variable Alignment Matrix + On-Demand Telemetry API (`GET /api/tool/{tool_id}/deep`) + Safe Copyable Remediations.
+## Current Status: Phase 10 Complete (Real-Time Live Updating & Settings Toggle Control)
+- **Active Task**: Real-Time Live Updating (Native Win32 ReadDirectoryChangesW live filesystem change monitor, O(1) in-memory index additions, deletions, renames, and tree pruning, `POST /api/search/realtime` toggle endpoint, Settings UI switch with instant persistence, non-distracting clean `Ready (live)` status, and 181 passing tests) 100% complete with standalone binary `dist/DevToolkit.exe` (21.04 MB).
+- **Architecture**: Decoupled Engine + 22 Comprehensive Tool Inspectors + 4-Layer Generalized Discovery + Standalone Everything-Class FastSearchEngine (`SearchIndex`, `ParallelPrunedCrawler`, `NTFSUSNReader`, `Win32DirectoryWatcher`) + Native Win32 RAM Telemetry (`K32GetProcessMemoryInfo`) + Modular Server Architecture + Google Stitch Precision UI + Live Search Engine Telemetry, Real-Time Updating & On-Demand Re-indexing + Multi-Instance Precedence Engine (`where.exe`) + Environment Variable Alignment Matrix + On-Demand Telemetry API (`GET /api/tool/{tool_id}/deep`) + Safe Copyable Remediations.
 - **Repository**: Synced on GitHub at [https://github.com/Bhardvaj/DevToolkit](https://github.com/Bhardvaj/DevToolkit).
 
 ---
@@ -277,12 +277,40 @@ This document is continuously updated to reflect current project status, complet
 
 ---
 
+## Milestone Checklist: Phase 10 (Completed - Real-Time Live Updating & Settings Toggle Control)
+- [x] **Zero-Dependency Win32 Filesystem Watcher (`devtoolkit/core/search/watcher.py`)**:
+  - Direct Win32 `ReadDirectoryChangesW` kernel monitoring via `ctypes` without third-party dependencies (`watchdog`, `pywin32`).
+  - Prunes developer churn folders (`.git`, `node_modules`, `build`, `dist`, `__pycache__`, `.venv`, `target`).
+  - Handles `FILE_ACTION_ADDED`, `FILE_ACTION_REMOVED`, `FILE_ACTION_MODIFIED`, `FILE_ACTION_RENAMED_OLD_NAME`, `FILE_ACTION_RENAMED_NEW_NAME`.
+  - Graceful teardown via `CancelIoEx` and `CloseHandle`.
+- [x] **O(1) SearchIndex Mutations (`devtoolkit/core/search/index.py`)**:
+  - Added `_path_map: Dict[str, int]` for instantaneous entry lookups, renames, and deletions.
+  - Implemented swap-with-last contiguous array deletion to ensure zero memory compaction overhead during high-frequency filesystem events.
+  - Case-preserving path storage with Windows case-insensitive fallback.
+- [x] **FastSearchEngine Watcher Orchestration & Telemetry (`devtoolkit/core/search/engine.py`)**:
+  - Manages watcher daemon threads across all active user-configured search roots.
+  - Dynamic `enable_realtime(bool)` toggles background threads on demand.
+  - Telemetry payload exposes `realtime_enabled`, `is_live`, and `active_watchers`.
+- [x] **Server API Route & Config Persistence (`devtoolkit/server/routes/search.py`)**:
+  - `POST /api/search/realtime`: toggles watcher state and persists `realtime_search: bool` in `devtoolkit.config.yaml`.
+- [x] **UI Control & Non-Distracting Status (`index.html`, `app.js`)**:
+  - Settings screen FastSearch card features a dedicated Real-Time Index Updating toggle switch with status pill (`Active (Live)`, `Enabled`, `Disabled`).
+  - Clean text indicator: displays **`Ready (live)`** when real-time updates are active—**zero pulsing or blinking animations**, adhering strictly to user preferences.
+  - 4-second background telemetry polling keeps indexed counts and status fresh during live file events.
+- [x] **Automated Testing & Compilation**:
+  - Created `tests/test_search_watcher.py` validating O(1) mutations, live filesystem event synchronization, engine lifecycle, and API endpoint.
+  - All **181 / 181** tests passing.
+  - Recompiled standalone executable: `dist/DevToolkit.exe` (**21.04 MB**).
+
+---
+
 ## Future Horizons & Candidate Roadmap
 
 1. **Build Cache & Disk Cleaner (`devtoolkit clean`)**:
    - Audit and prune build caches across Node (`npm`, `pnpm`, `yarn`), Python (`pip`), Gradle (`.gradle/caches`), Docker (`docker system prune`), Flutter (`.pub-cache`).
 2. **Multi-Platform CI Matrix**:
    - Expand `.github/workflows/build.yml` to compile standalone binaries for macOS (`DevToolkit-macOS-arm64`) and Linux (`DevToolkit-linux-x86_64`).
+
 
 
 

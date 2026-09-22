@@ -48,6 +48,7 @@ from devtoolkit.server.routes.search import (
     get_search_query,
     get_search_status,
     post_search_query,
+    toggle_realtime,
     trigger_reindex,
 )
 from devtoolkit.server.routes.system import delete_search_path, get_config, get_system, post_search_path
@@ -124,6 +125,7 @@ def register_routes(application: FastAPI) -> None:
     application.add_api_route("/api/search/query", get_search_query, methods=["GET"], tags=["search"])
     application.add_api_route("/api/search/status", get_search_status, methods=["GET"], tags=["search"])
     application.add_api_route("/api/search/reindex", trigger_reindex, methods=["POST"], tags=["search"])
+    application.add_api_route("/api/search/realtime", toggle_realtime, methods=["POST"], tags=["search"])
 
 
 register_routes(app)

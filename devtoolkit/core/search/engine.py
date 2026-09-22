@@ -5,10 +5,12 @@ from pathlib import Path
 import sys
 from typing import Any, Dict, Iterable, List, Optional, Set
 
+from devtoolkit.core.config import load_config
 from devtoolkit.core.search.crawler import ParallelPrunedCrawler
 from devtoolkit.core.search.index import SearchIndex, format_bytes
 from devtoolkit.core.search.models import IndexStats, SearchQuery, SearchResult
 from devtoolkit.core.search.usn import NTFSUSNReader
+from devtoolkit.core.search.watcher import LiveDirectoryWatcher, create_directory_watcher
 
 
 def get_process_ram_bytes() -> int:
@@ -75,6 +77,13 @@ class FastSearchEngine:
         self._last_stats: Optional[IndexStats] = None
         self._is_indexing: bool = False
         self._last_indexed_at: Optional[str] = None
+        self._watchers: List[LiveDirectoryWatcher] = []
+        self._indexed_roots: List[Path] = []
+        try:
+            cfg = load_config()
+            self._realtime_enabled: bool = getattr(cfg, "realtime_search", True)
+        except Exception:
+            self._realtime_enabled = True
 
     @property
     def total_entries(self) -> int:
@@ -100,10 +109,42 @@ class FastSearchEngine:
     def last_indexed_at(self) -> Optional[str]:
         return self._last_indexed_at
 
+    @property
+    def realtime_enabled(self) -> bool:
+        return self._realtime_enabled
+
     def clear(self) -> None:
+        self._stop_watchers()
         self.index.clear()
         self._last_stats = None
         self._last_indexed_at = None
+        self._indexed_roots = []
+
+    def _start_watchers(self) -> None:
+        self._stop_watchers()
+        if not self._realtime_enabled:
+            return
+        for root in self._indexed_roots:
+            if root.exists() and root.is_dir():
+                watcher = create_directory_watcher(str(root), self.index)
+                watcher.start()
+                self._watchers.append(watcher)
+
+    def _stop_watchers(self) -> None:
+        for watcher in self._watchers:
+            try:
+                watcher.stop()
+            except Exception:
+                pass
+        self._watchers.clear()
+
+    def enable_realtime(self, enabled: bool) -> None:
+        """Dynamically toggle live filesystem change watchers."""
+        self._realtime_enabled = bool(enabled)
+        if self._realtime_enabled:
+            self._start_watchers()
+        else:
+            self._stop_watchers()
 
     def get_telemetry(self) -> Dict[str, Any]:
         """Return comprehensive engine telemetry, memory footprints, and indexing status."""
@@ -111,6 +152,8 @@ class FastSearchEngine:
         proc_ram = get_process_ram_bytes()
         stats = self._last_stats
         status = "indexing" if self._is_indexing else ("ready" if stats and stats.total_files > 0 else "idle")
+        active_watchers = len([w for w in self._watchers if getattr(w, "is_running", False)])
+        is_live = bool(self._realtime_enabled and active_watchers > 0 and status == "ready")
 
         return {
             "status": status,
@@ -126,12 +169,17 @@ class FastSearchEngine:
             "process_ram_bytes": proc_ram,
             "process_ram_formatted": format_bytes(proc_ram),
             "last_indexed_at": self._last_indexed_at,
+            "realtime_enabled": self._realtime_enabled,
+            "is_live": is_live,
+            "active_watchers": active_watchers,
         }
 
     def index_roots(self, roots: List[Path], force_crawler: bool = False) -> IndexStats:
         """Index one or more root directories using the fastest accessible strategy."""
         valid_roots = [r.resolve() for r in roots if r.exists() and r.is_dir()]
+        self._indexed_roots = list(valid_roots)
         if not valid_roots:
+            self._stop_watchers()
             stats = IndexStats(total_files=0, total_dirs=0, duration_ms=0.0, roots_scanned=[])
             self._last_stats = stats
             return stats
@@ -182,6 +230,11 @@ class FastSearchEngine:
 
             self._last_stats = stats
             self._last_indexed_at = datetime.now(timezone.utc).isoformat()
+
+            # Start real-time watchers for active roots if enabled
+            if self._realtime_enabled:
+                self._start_watchers()
+
             return stats
         finally:
             self._is_indexing = False

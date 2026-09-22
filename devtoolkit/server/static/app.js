@@ -2052,9 +2052,10 @@ let activeTab = 'env';
           sideStatus.className = 'text-[#F59E0B] font-mono truncate max-w-[120px]';
           if (sideIcon) sideIcon.className = 'fa-solid fa-arrows-rotate fa-spin text-[#F59E0B] text-[10px]';
         } else if (isReady) {
-          sideStatus.innerText = `Ready (${filesCount})`;
+          const readyText = data.is_live ? 'Ready (live)' : `Ready (${filesCount})`;
+          sideStatus.innerText = readyText;
           sideStatus.className = 'text-[#10B981] font-mono truncate max-w-[120px]';
-          sideStatus.title = `${(data.total_files || 0).toLocaleString()} files indexed in ${data.duration_ms}ms (${data.search_memory_formatted || '0 B'})`;
+          sideStatus.title = `${(data.total_files || 0).toLocaleString()} files indexed in ${data.duration_ms}ms (${data.search_memory_formatted || '0 B'})${data.is_live ? ' • Real-time live updating active' : ''}`;
           if (sideIcon) sideIcon.className = 'fa-solid fa-bolt text-[#10B981] text-[10px]';
         } else {
           sideStatus.innerText = 'Idle';
@@ -2067,7 +2068,13 @@ let activeTab = 'env';
       const fsTotalBadge = document.getElementById('fs-index-total-badge');
       if (fsTotalBadge) {
         const memStr = data.search_memory_formatted ? ` (${data.search_memory_formatted})` : '';
-        fsTotalBadge.innerText = `${(data.total_files || 0).toLocaleString()} files indexed${memStr}`;
+        const liveTag = data.is_live ? ' • Live' : '';
+        fsTotalBadge.innerText = `${(data.total_files || 0).toLocaleString()} files indexed${memStr}${liveTag}`;
+        if (data.is_live) {
+          fsTotalBadge.className = 'font-mono text-[11px] text-[#10B981]';
+        } else {
+          fsTotalBadge.className = 'font-mono text-[11px] text-[#475569]';
+        }
       }
 
       // 4. Fast Search Monitored Paths Banner
@@ -2105,10 +2112,29 @@ let activeTab = 'env';
           badge.innerText = 'Indexing...';
         } else if (isReady) {
           badge.className = 'px-2 py-0.5 rounded text-[10px] font-mono font-semibold bg-[#10B9811A] text-[#10B981] border border-[#10B98140]';
-          badge.innerText = 'Ready';
+          badge.innerText = data.is_live ? 'Ready (live)' : 'Ready';
         } else {
           badge.className = 'px-2 py-0.5 rounded text-[10px] font-mono font-semibold bg-[#141721] text-[#94A3B8] border border-[#1F2430]';
           badge.innerText = 'Idle';
+        }
+      }
+
+      // Settings Real-Time Toggle & Badge
+      const rtToggle = document.getElementById('settings-toggle-realtime');
+      if (rtToggle && data.realtime_enabled !== undefined) {
+        rtToggle.checked = Boolean(data.realtime_enabled);
+      }
+      const rtBadge = document.getElementById('settings-realtime-badge');
+      if (rtBadge) {
+        if (data.is_live) {
+          rtBadge.innerText = 'Active (Live)';
+          rtBadge.className = 'px-1.5 py-0.2 rounded text-[10px] font-mono font-semibold bg-[#10B9811A] text-[#10B981] border border-[#10B98140]';
+        } else if (data.realtime_enabled) {
+          rtBadge.innerText = 'Enabled';
+          rtBadge.className = 'px-1.5 py-0.2 rounded text-[10px] font-mono font-semibold bg-[#3B82F61A] text-[#3B82F6] border border-[#3B82F640]';
+        } else {
+          rtBadge.innerText = 'Disabled';
+          rtBadge.className = 'px-1.5 py-0.2 rounded text-[10px] font-mono font-semibold bg-[#141721] text-[#94A3B8] border border-[#1F2430]';
         }
       }
 
@@ -2194,6 +2220,32 @@ let activeTab = 'env';
         if (spinner) spinner.classList.remove('fa-spin');
         if (btnText) btnText.innerText = 'Re-index Now';
         if (btn) btn.disabled = false;
+      }
+    }
+
+    async function toggleRealtimeSearchSetting(enabled) {
+      const toggle = document.getElementById('settings-toggle-realtime');
+      if (toggle) toggle.disabled = true;
+
+      try {
+        const res = await fetch('/api/search/realtime', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ enabled: Boolean(enabled) })
+        });
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          throw new Error(errData.detail || `Server returned ${res.status}`);
+        }
+        const data = await res.json();
+        updateSearchTelemetryUI(data);
+        showToast(enabled ? 'Real-time search updates enabled' : 'Real-time search updates disabled');
+      } catch (err) {
+        console.error('Failed to toggle realtime search:', err);
+        showToast(`Error updating real-time setting: ${err.message || 'Unknown error'}`, true);
+        if (toggle) toggle.checked = !enabled;
+      } finally {
+        if (toggle) toggle.disabled = false;
       }
     }
 
@@ -3010,6 +3062,9 @@ let activeTab = 'env';
     const projInput = document.getElementById('project-path-input');
     if (projInput) projInput.value = '';
     renderRecentProjects();
+
+    // Background Telemetry Polling (4s interval)
+    setInterval(fetchSearchTelemetry, 4000);
 
     // Deep Link & Query Param Support
     try {

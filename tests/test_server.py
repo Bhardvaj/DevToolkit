@@ -42,6 +42,7 @@ def test_server_routes_registered():
     assert "/api/tool/{tool_id}/deep" in route_paths
     assert "/api/search/status" in route_paths
     assert "/api/search/reindex" in route_paths
+    assert "/api/search/realtime" in route_paths
     assert "/" in route_paths
 
 

@@ -19,6 +19,7 @@ from devtoolkit.core.search.models import (
 )
 from devtoolkit.core.search.query import EverythingQueryParser, execute_search
 from devtoolkit.core.search.usn import NTFSUSNReader
+from devtoolkit.core.search.watcher import LiveDirectoryWatcher, Win32DirectoryWatcher, create_directory_watcher
 
 __all__ = [
     "FastSearchEngine",
@@ -32,8 +33,12 @@ __all__ = [
     "ParallelPrunedCrawler",
     "NTFSUSNReader",
     "EverythingQueryParser",
+    "LiveDirectoryWatcher",
+    "Win32DirectoryWatcher",
+    "create_directory_watcher",
     "execute_search",
     "format_bytes",
     "get_search_engine",
     "get_process_ram_bytes",
 ]
+
