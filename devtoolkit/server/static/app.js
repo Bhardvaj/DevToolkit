@@ -2245,8 +2245,8 @@ let activeTab = 'env';
         const data = await res.json();
         updateSearchTelemetryUI(data);
         showToast(enabled ? `Real-time updates enabled (${(data.total_files || 0).toLocaleString()} files synchronized)` : 'Real-time updates disabled');
-        if (currentActiveTab === 'search') {
-          triggerSearch();
+        if (typeof activeTab !== 'undefined' && activeTab === 'search' && typeof triggerSearch === 'function') {
+          triggerSearch(false);
         }
       } catch (err) {
         console.error('Failed to toggle realtime search:', err);
