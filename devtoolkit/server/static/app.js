@@ -91,16 +91,18 @@ let activeTab = 'env';
     // Tab Switching
     function switchTab(tab) {
       activeTab = tab;
-      const tabs = ['env', 'ports', 'project', 'settings'];
+      const tabs = ['env', 'search', 'ports', 'project', 'settings'];
       tabs.forEach(t => {
         const btn = document.getElementById(`nav-btn-${t}`);
         const view = document.getElementById(`view-${t}`);
-        if (t === tab) {
-          btn.className = 'w-full flex items-center justify-between px-2.5 py-2 rounded text-xs font-medium transition nav-active';
-          view.classList.remove('hidden');
-        } else {
-          btn.className = 'w-full flex items-center justify-between px-2.5 py-2 rounded text-xs font-medium transition nav-inactive';
-          view.classList.add('hidden');
+        if (btn && view) {
+          if (t === tab) {
+            btn.className = 'w-full flex items-center justify-between px-2.5 py-2 rounded text-xs font-medium transition nav-active';
+            view.classList.remove('hidden');
+          } else {
+            btn.className = 'w-full flex items-center justify-between px-2.5 py-2 rounded text-xs font-medium transition nav-inactive';
+            view.classList.add('hidden');
+          }
         }
       });
 
@@ -122,6 +124,9 @@ let activeTab = 'env';
       const bc = document.getElementById('top-breadcrumb');
       if (tab === 'env') {
         bc.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-[#10B981] shadow-[0_0_6px_#10B981] flex-shrink-0"></span> Environment & Diagnostics';
+      } else if (tab === 'search') {
+        bc.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-[#3B82F6] shadow-[0_0_6px_#3B82F6] flex-shrink-0"></span> Fast Search (Everything Engine)';
+        initSearchTab();
       } else if (tab === 'ports') {
         bc.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-[#06B6D4] shadow-[0_0_6px_#06B6D4] flex-shrink-0"></span> Port Manager & Sockets';
         fetchPorts();
@@ -140,6 +145,7 @@ let activeTab = 'env';
       lastScanTime = Date.now();
       updateTimerDisplay();
       if (activeTab === 'env') fetchAudit();
+      else if (activeTab === 'search') triggerSearch(false);
       else if (activeTab === 'ports') fetchPorts();
       else if (activeTab === 'project') runProjectAudit();
       else if (activeTab === 'settings') { loadConfig(); loadSystemInfo(); fetchSearchTelemetry(); }
@@ -2133,6 +2139,511 @@ let activeTab = 'env';
       }
     }
 
+    // ==================== FAST SEARCH (EVERYTHING ENGINE) ====================
+    let fsQuery = '';
+    let fsModifiers = { case: false, word: false, path: false, regex: false };
+    let fsCategory = 'all';
+    let fsScope = 'all';
+    let fsSizeFilter = 'any';
+    let fsDateFilter = 'any';
+    let fsQuickExt = '';
+    let fsSortBy = 'name';
+    let fsSortDesc = false;
+    let fsLimit = 100;
+    let fsOffset = 0;
+    let fsCurrentResults = [];
+    let fsTotalMatches = 0;
+    let fsSelectedRowIndex = -1;
+    let fsDebounceTimer = null;
+    let fsIsInitialized = false;
+
+    function initSearchTab() {
+      if (!fsIsInitialized) {
+        fsIsInitialized = true;
+        const input = document.getElementById('fs-search-input');
+        if (input) {
+          input.addEventListener('input', (e) => {
+            fsQuery = e.target.value;
+            const clearBtn = document.getElementById('fs-clear-btn');
+            if (clearBtn) {
+              if (fsQuery.length > 0) clearBtn.classList.remove('hidden');
+              else clearBtn.classList.add('hidden');
+            }
+            if (fsDebounceTimer) clearTimeout(fsDebounceTimer);
+            fsDebounceTimer = setTimeout(() => triggerSearch(true), 120);
+          });
+          input.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+              clearSearchInput();
+            } else if (e.key === 'ArrowDown') {
+              e.preventDefault();
+              navigateSearchRows(1);
+            } else if (e.key === 'ArrowUp') {
+              e.preventDefault();
+              navigateSearchRows(-1);
+            } else if (e.key === 'Enter') {
+              e.preventDefault();
+              openSelectedSearchResult();
+            }
+          });
+        }
+      }
+      triggerSearch(false);
+      setTimeout(() => {
+        const input = document.getElementById('fs-search-input');
+        if (input) input.focus();
+      }, 50);
+    }
+
+    async function triggerSearch(resetOffset = true) {
+      if (resetOffset) fsOffset = 0;
+      fsSelectedRowIndex = -1;
+
+      const payload = {
+        query: fsQuery,
+        case_sensitive: fsModifiers.case,
+        whole_word: fsModifiers.word,
+        match_path: fsModifiers.path,
+        is_regex: fsModifiers.regex,
+        category: fsCategory,
+        scope: fsScope,
+        size_filter: fsSizeFilter,
+        date_filter: fsDateFilter,
+        ext_filter: fsQuickExt,
+        sort_by: fsSortBy,
+        sort_desc: fsSortDesc,
+        limit: fsLimit,
+        offset: fsOffset
+      };
+
+      try {
+        const res = await fetch('/api/search/query', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        renderSearchResults(data);
+      } catch (err) {
+        console.error('Fast Search error:', err);
+      }
+    }
+
+    function renderSearchResults(data) {
+      fsCurrentResults = data.results || [];
+      fsTotalMatches = data.total_matches || 0;
+
+      // Update counters
+      const countEl = document.getElementById('fs-results-count');
+      if (countEl) countEl.innerText = `${fsTotalMatches.toLocaleString()} items`;
+
+      const durationEl = document.getElementById('fs-results-duration');
+      if (durationEl) durationEl.innerText = `${data.duration_ms || 0} ms`;
+
+      // Update sidebar badge
+      const sideBadge = document.getElementById('side-search-count-badge');
+      if (sideBadge) sideBadge.innerText = `${fsTotalMatches.toLocaleString()}`;
+
+      // Update pagination info
+      const totalPages = Math.max(1, Math.ceil(fsTotalMatches / fsLimit));
+      const currentPage = Math.floor(fsOffset / fsLimit) + 1;
+      const pageInfo = document.getElementById('fs-page-info');
+      if (pageInfo) {
+        if (fsTotalMatches === 0) {
+          pageInfo.innerText = 'Page 0 of 0';
+        } else {
+          const startNum = fsOffset + 1;
+          const endNum = Math.min(fsOffset + fsCurrentResults.length, fsTotalMatches);
+          pageInfo.innerText = `Page ${currentPage} of ${totalPages} (${startNum}–${endNum})`;
+        }
+      }
+
+      const prevBtn = document.getElementById('fs-prev-btn');
+      const nextBtn = document.getElementById('fs-next-btn');
+      if (prevBtn) prevBtn.disabled = (fsOffset <= 0);
+      if (nextBtn) nextBtn.disabled = (fsOffset + fsLimit >= fsTotalMatches);
+
+      // Render table rows
+      const tbody = document.getElementById('fs-results-tbody');
+      if (!tbody) return;
+
+      if (fsCurrentResults.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="6" class="py-12 text-center text-[#475569]">
+              <i class="fa-solid fa-magnifying-glass text-2xl mb-2 block opacity-40"></i>
+              <div class="text-sm font-medium text-[#94A3B8]">No files or folders matched your query</div>
+              <div class="text-xs text-[#475569] mt-1">Try broadening your search term or resetting active filters</div>
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      let html = '';
+      fsCurrentResults.forEach((item, idx) => {
+        const icon = getFileIcon(item.name, item.is_dir);
+        const escapedPath = escapeHtml(item.path);
+        const escapedName = escapeHtml(item.name);
+        const escapedFolder = escapeHtml(item.folder);
+
+        html += `
+          <tr id="fs-row-${idx}" class="fs-row hover:bg-[#141721] transition group border-b border-[#141721]" onclick="selectSearchRow(${idx})" ondblclick="openSearchResult('${encodeURIComponent(item.path)}')">
+            <td class="py-2 px-3 font-mono text-xs text-[#F3F4F6] truncate max-w-xs" title="${escapedName}">
+              <div class="flex items-center gap-2 truncate">
+                <span class="flex-shrink-0 w-4 text-center">${icon}</span>
+                <span class="truncate font-medium">${escapedName}</span>
+              </div>
+            </td>
+            <td class="py-2 px-3 font-mono text-[11px] text-[#94A3B8] truncate max-w-sm" title="${escapedPath}">
+              <span class="truncate cursor-pointer hover:text-[#3B82F6] hover:underline" onclick="revealSearchResult('${encodeURIComponent(item.path)}'); event.stopPropagation();">${escapedFolder}</span>
+            </td>
+            <td class="py-2 px-3 font-mono text-xs text-right text-[#94A3B8] flex-shrink-0 whitespace-nowrap">
+              ${item.size_formatted}
+            </td>
+            <td class="py-2 px-3 font-mono text-[11px] text-[#475569] whitespace-nowrap">
+              ${item.mtime_formatted}
+            </td>
+            <td class="py-2 px-3 font-mono text-[11px] text-[#94A3B8] whitespace-nowrap">
+              <span class="px-1.5 py-0.5 rounded bg-[#141721] text-[#94A3B8] border border-[#1F2430] text-[10px]">${item.ext || '—'}</span>
+            </td>
+            <td class="py-2 px-3 text-right whitespace-nowrap">
+              <div class="flex items-center justify-end gap-1.5 opacity-60 group-hover:opacity-100 transition">
+                <button onclick="openSearchResult('${encodeURIComponent(item.path)}'); event.stopPropagation();" class="p-1 rounded text-[#94A3B8] hover:text-[#10B981] hover:bg-[#141721] transition cursor-pointer" title="Open File (Double-click)">
+                  <i class="fa-solid fa-arrow-up-right-from-square text-[11px]"></i>
+                </button>
+                <button onclick="revealSearchResult('${encodeURIComponent(item.path)}'); event.stopPropagation();" class="p-1 rounded text-[#94A3B8] hover:text-[#06B6D4] hover:bg-[#141721] transition cursor-pointer" title="Reveal in Explorer">
+                  <i class="fa-regular fa-folder-open text-[11px]"></i>
+                </button>
+                <button onclick="copySearchResultPath('${encodeURIComponent(item.path)}'); event.stopPropagation();" class="p-1 rounded text-[#94A3B8] hover:text-white hover:bg-[#141721] transition cursor-pointer" title="Copy Full Path">
+                  <i class="fa-regular fa-copy text-[11px]"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+        `;
+      });
+      tbody.innerHTML = html;
+    }
+
+    function getFileIcon(filename, isDir) {
+      if (isDir) return '<i class="fa-solid fa-folder text-[#F59E0B]"></i>';
+      const parts = filename.toLowerCase().split('.');
+      const ext = parts.length > 1 ? parts.pop() : '';
+      if (['py', 'pyw'].includes(ext)) return '<i class="fa-brands fa-python text-[#3B82F6]"></i>';
+      if (['js', 'mjs', 'cjs', 'jsx'].includes(ext)) return '<i class="fa-brands fa-js text-[#F59E0B]"></i>';
+      if (['ts', 'tsx'].includes(ext)) return '<i class="fa-solid fa-code text-[#3B82F6]"></i>';
+      if (['html', 'htm'].includes(ext)) return '<i class="fa-brands fa-html5 text-[#EF4444]"></i>';
+      if (['css', 'scss', 'sass', 'less'].includes(ext)) return '<i class="fa-brands fa-css3-alt text-[#06B6D4]"></i>';
+      if (['json', 'yaml', 'yml', 'toml', 'xml'].includes(ext)) return '<i class="fa-solid fa-gear text-[#A855F7]"></i>';
+      if (['exe', 'msi', 'bat', 'cmd', 'ps1'].includes(ext)) return '<i class="fa-solid fa-cube text-[#10B981]"></i>';
+      if (['dll', 'sys'].includes(ext)) return '<i class="fa-solid fa-gears text-[#94A3B8]"></i>';
+      if (['zip', 'rar', '7z', 'tar', 'gz', 'iso'].includes(ext)) return '<i class="fa-solid fa-file-zipper text-[#EC4899]"></i>';
+      if (['md', 'txt', 'rtf', 'log'].includes(ext)) return '<i class="fa-solid fa-file-lines text-[#06B6D4]"></i>';
+      if (['pdf'].includes(ext)) return '<i class="fa-solid fa-file-pdf text-[#EF4444]"></i>';
+      if (['png', 'jpg', 'jpeg', 'gif', 'svg', 'webp', 'ico'].includes(ext)) return '<i class="fa-solid fa-file-image text-[#F43F5E]"></i>';
+      return '<i class="fa-regular fa-file text-[#64748B]"></i>';
+    }
+
+    function toggleSearchModifier(mod) {
+      if (fsModifiers[mod] !== undefined) {
+        fsModifiers[mod] = !fsModifiers[mod];
+        const btn = document.getElementById(`fs-toggle-${mod}`);
+        if (btn) {
+          if (fsModifiers[mod]) btn.classList.add('fs-mod-active');
+          else btn.classList.remove('fs-mod-active');
+        }
+        triggerSearch(true);
+      }
+    }
+
+    function setSearchCategory(cat) {
+      fsCategory = cat;
+      const pills = ['all', 'code', 'exe', 'doc', 'archive', 'folder'];
+      pills.forEach(p => {
+        const btn = document.getElementById(`fs-cat-${p}`);
+        if (btn) {
+          if (p === cat) {
+            btn.className = 'fs-cat-pill px-3 py-1 rounded text-xs font-medium bg-[#141721] text-[#3B82F6] border border-[#3B82F640] transition flex items-center gap-1.5';
+          } else {
+            btn.className = 'fs-cat-pill px-3 py-1 rounded text-xs font-medium text-[#94A3B8] hover:text-[#F3F4F6] bg-[#08090C] border border-[#1F2430] transition flex items-center gap-1.5';
+          }
+        }
+      });
+      updateActiveFiltersBadge();
+      triggerSearch(true);
+    }
+
+    function onVisualFilterChange() {
+      const scopeSel = document.getElementById('fs-scope-select');
+      if (scopeSel) fsScope = scopeSel.value;
+
+      const sizeSel = document.getElementById('fs-size-select');
+      if (sizeSel) fsSizeFilter = sizeSel.value;
+
+      const dateSel = document.getElementById('fs-date-select');
+      if (dateSel) fsDateFilter = dateSel.value;
+
+      updateActiveFiltersBadge();
+      triggerSearch(true);
+    }
+
+    function setQuickExt(ext) {
+      if (fsQuickExt === ext) {
+        fsQuickExt = '';
+      } else {
+        fsQuickExt = ext;
+      }
+      const chips = ['py', 'exe', 'json', 'ts', 'md', 'dll'];
+      chips.forEach(c => {
+        const el = document.getElementById(`fs-chip-${c}`);
+        if (el) {
+          if (c === fsQuickExt) el.classList.add('fs-chip-active');
+          else el.classList.remove('fs-chip-active');
+        }
+      });
+      updateActiveFiltersBadge();
+      triggerSearch(true);
+    }
+
+    function updateActiveFiltersBadge() {
+      let count = 0;
+      if (fsCategory !== 'all') count++;
+      if (fsScope !== 'all') count++;
+      if (fsSizeFilter !== 'any') count++;
+      if (fsDateFilter !== 'any') count++;
+      if (fsQuickExt !== '') count++;
+
+      const resetBtn = document.getElementById('fs-reset-filters-btn');
+      const countEl = document.getElementById('fs-active-filters-count');
+      if (resetBtn && countEl) {
+        countEl.innerText = count;
+        if (count > 0) resetBtn.classList.remove('hidden');
+        else resetBtn.classList.add('hidden');
+      }
+    }
+
+    function resetAllVisualFilters() {
+      fsCategory = 'all';
+      fsScope = 'all';
+      fsSizeFilter = 'any';
+      fsDateFilter = 'any';
+      fsQuickExt = '';
+
+      const scopeSel = document.getElementById('fs-scope-select');
+      if (scopeSel) scopeSel.value = 'all';
+
+      const sizeSel = document.getElementById('fs-size-select');
+      if (sizeSel) sizeSel.value = 'any';
+
+      const dateSel = document.getElementById('fs-date-select');
+      if (dateSel) dateSel.value = 'any';
+
+      const chips = ['py', 'exe', 'json', 'ts', 'md', 'dll'];
+      chips.forEach(c => {
+        const el = document.getElementById(`fs-chip-${c}`);
+        if (el) el.classList.remove('fs-chip-active');
+      });
+
+      setSearchCategory('all');
+      updateActiveFiltersBadge();
+      triggerSearch(true);
+    }
+
+    function clearSearchInput() {
+      const input = document.getElementById('fs-search-input');
+      if (input) {
+        input.value = '';
+        fsQuery = '';
+        input.focus();
+      }
+      const clearBtn = document.getElementById('fs-clear-btn');
+      if (clearBtn) clearBtn.classList.add('hidden');
+      triggerSearch(true);
+    }
+
+    function toggleSyntaxHelp() {
+      const help = document.getElementById('fs-syntax-help');
+      if (help) help.classList.toggle('hidden');
+    }
+
+    function toggleSearchSort(col) {
+      if (fsSortBy === col) {
+        fsSortDesc = !fsSortDesc;
+      } else {
+        fsSortBy = col;
+        fsSortDesc = false;
+      }
+      // Update sort icons
+      ['name', 'path', 'size', 'mtime', 'ext'].forEach(c => {
+        const icon = document.getElementById(`fs-sort-icon-${c}`);
+        if (icon) {
+          if (c === fsSortBy) {
+            icon.className = fsSortDesc ? 'fa-solid fa-sort-down text-[10px] text-[#3B82F6]' : 'fa-solid fa-sort-up text-[10px] text-[#3B82F6]';
+          } else {
+            icon.className = 'fa-solid fa-sort text-[10px] text-[#475569]';
+          }
+        }
+      });
+      triggerSearch(true);
+    }
+
+    function onPageLimitChange() {
+      const sel = document.getElementById('fs-limit-select');
+      if (sel) {
+        fsLimit = parseInt(sel.value, 10) || 100;
+        triggerSearch(true);
+      }
+    }
+
+    function prevSearchPage() {
+      if (fsOffset > 0) {
+        fsOffset = Math.max(0, fsOffset - fsLimit);
+        triggerSearch(false);
+      }
+    }
+
+    function nextSearchPage() {
+      if (fsOffset + fsLimit < fsTotalMatches) {
+        fsOffset += fsLimit;
+        triggerSearch(false);
+      }
+    }
+
+    function selectSearchRow(idx) {
+      if (fsSelectedRowIndex >= 0) {
+        const prev = document.getElementById(`fs-row-${fsSelectedRowIndex}`);
+        if (prev) prev.classList.remove('selected');
+      }
+      fsSelectedRowIndex = idx;
+      const current = document.getElementById(`fs-row-${idx}`);
+      if (current) {
+        current.classList.add('selected');
+        current.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      }
+    }
+
+    function navigateSearchRows(delta) {
+      if (fsCurrentResults.length === 0) return;
+      let nextIdx = fsSelectedRowIndex + delta;
+      if (nextIdx < 0) nextIdx = 0;
+      if (nextIdx >= fsCurrentResults.length) nextIdx = fsCurrentResults.length - 1;
+      selectSearchRow(nextIdx);
+    }
+
+    function openSelectedSearchResult() {
+      if (fsSelectedRowIndex >= 0 && fsSelectedRowIndex < fsCurrentResults.length) {
+        openSearchResult(encodeURIComponent(fsCurrentResults[fsSelectedRowIndex].path));
+      }
+    }
+
+    async function openSearchResult(encodedPath) {
+      const path = decodeURIComponent(encodedPath);
+      try {
+        const res = await fetch('/api/action/open-file', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ path: path })
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        showToast(`Opened: ${path}`);
+      } catch (err) {
+        console.error('Failed to open file:', err);
+        showToast(`Failed to open file: ${err.message}`, true);
+      }
+    }
+
+    async function revealSearchResult(encodedPath) {
+      const path = decodeURIComponent(encodedPath);
+      try {
+        const res = await fetch('/api/action/reveal-file', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ path: path })
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        showToast(`Revealed in Explorer`);
+      } catch (err) {
+        console.error('Failed to reveal file:', err);
+        showToast(`Failed to reveal file: ${err.message}`, true);
+      }
+    }
+
+    function copySearchResultPath(encodedPath) {
+      const path = decodeURIComponent(encodedPath);
+      navigator.clipboard.writeText(path).then(() => {
+        showToast(`Copied path: ${path}`);
+      }).catch(err => {
+        showToast(`Failed to copy path`, true);
+      });
+    }
+
+    function exportSearchResultsCSV() {
+      if (!fsCurrentResults || fsCurrentResults.length === 0) {
+        showToast('No search results to export', true);
+        return;
+      }
+      let csv = 'Name,Path,Size (Bytes),Size Formatted,Date Modified,Type\n';
+      fsCurrentResults.forEach(item => {
+        const cleanName = `"${(item.name || '').replace(/"/g, '""')}"`;
+        const cleanPath = `"${(item.path || '').replace(/"/g, '""')}"`;
+        const size = item.size || 0;
+        const sizeFmt = `"${item.size_formatted || ''}"`;
+        const mtimeFmt = `"${item.mtime_formatted || ''}"`;
+        const ext = `"${item.ext || ''}"`;
+        csv += `${cleanName},${cleanPath},${size},${sizeFmt},${mtimeFmt},${ext}\n`;
+      });
+
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `devtoolkit_search_${Date.now()}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast(`Exported ${fsCurrentResults.length} items to CSV`);
+    }
+
+    function copySearchResultsText() {
+      if (!fsCurrentResults || fsCurrentResults.length === 0) {
+        showToast('No search results to copy', true);
+        return;
+      }
+      const lines = fsCurrentResults.map(item => item.path).join('\n');
+      navigator.clipboard.writeText(lines).then(() => {
+        showToast(`Copied ${fsCurrentResults.length} paths to clipboard`);
+      }).catch(err => {
+        showToast('Failed to copy paths', true);
+      });
+    }
+
+    async function triggerFastSearchReindex() {
+      const icon = document.getElementById('fs-reindex-icon');
+      const btn = document.getElementById('fs-reindex-btn');
+      if (icon) icon.classList.add('fa-spin');
+      if (btn) btn.disabled = true;
+
+      try {
+        const res = await fetch('/api/search/reindex', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({})
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        updateSearchTelemetryUI(data);
+        showToast(`Re-indexed ${(data.total_files || 0).toLocaleString()} files in ${data.duration_ms}ms`);
+        triggerSearch(true);
+      } catch (err) {
+        console.error('Fast Search re-index error:', err);
+        showToast(`Re-index failed: ${err.message}`, true);
+      } finally {
+        if (icon) icon.classList.remove('fa-spin');
+        if (btn) btn.disabled = false;
+      }
+    }
+
     async function loadSystemInfo() {
       try {
         const res = await fetch('/api/system');
@@ -2204,6 +2715,9 @@ let activeTab = 'env';
         if (activeTab === 'env') {
           const searchInput = document.getElementById('global-search-input');
           if (searchInput) searchInput.focus();
+        } else if (activeTab === 'search') {
+          const fsInput = document.getElementById('fs-search-input');
+          if (fsInput) fsInput.focus();
         } else if (activeTab === 'ports') {
           const portsSearch = document.getElementById('ports-search-input');
           if (portsSearch) portsSearch.focus();
@@ -2214,6 +2728,50 @@ let activeTab = 'env';
         return;
       }
 
+      // Fast Search table navigation when on Search tab
+      if (activeTab === 'search') {
+        if (e.altKey) {
+          if (e.key.toLowerCase() === 'c') {
+            e.preventDefault();
+            toggleSearchModifier('case');
+            return;
+          } else if (e.key.toLowerCase() === 'w') {
+            e.preventDefault();
+            toggleSearchModifier('word');
+            return;
+          } else if (e.key.toLowerCase() === 'p') {
+            e.preventDefault();
+            toggleSearchModifier('path');
+            return;
+          } else if (e.key.toLowerCase() === 'r') {
+            e.preventDefault();
+            toggleSearchModifier('regex');
+            return;
+          }
+        }
+        if (!isInput) {
+          if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            navigateSearchRows(1);
+            return;
+          } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            navigateSearchRows(-1);
+            return;
+          } else if (e.key === 'Enter') {
+            e.preventDefault();
+            openSelectedSearchResult();
+            return;
+          } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'c') {
+            if (fsSelectedRowIndex >= 0 && fsSelectedRowIndex < fsCurrentResults.length) {
+              e.preventDefault();
+              copySearchResultPath(encodeURIComponent(fsCurrentResults[fsSelectedRowIndex].path));
+              return;
+            }
+          }
+        }
+      }
+
       if (!isInput) {
         if (e.key.toLowerCase() === 'r') {
           e.preventDefault();
@@ -2221,13 +2779,22 @@ let activeTab = 'env';
         } else if (e.key === '?') {
           e.preventDefault();
           toggleHelpModal();
+        } else if (e.key === '/') {
+          e.preventDefault();
+          if (activeTab !== 'search') switchTab('search');
+          setTimeout(() => {
+            const fsInput = document.getElementById('fs-search-input');
+            if (fsInput) fsInput.focus();
+          }, 60);
         } else if (e.key === '1') {
           switchTab('env');
         } else if (e.key === '2') {
-          switchTab('ports');
+          switchTab('search');
         } else if (e.key === '3') {
-          switchTab('project');
+          switchTab('ports');
         } else if (e.key === '4') {
+          switchTab('project');
+        } else if (e.key === '5') {
           switchTab('settings');
         }
       }
@@ -2247,7 +2814,7 @@ let activeTab = 'env';
     try {
       const urlParams = new URLSearchParams(window.location.search);
       const initialTab = urlParams.get('tab');
-      if (initialTab && ['env', 'ports', 'project', 'settings'].includes(initialTab)) {
+      if (initialTab && ['env', 'search', 'ports', 'project', 'settings'].includes(initialTab)) {
         switchTab(initialTab);
       }
       const initialAudit = urlParams.get('audit');

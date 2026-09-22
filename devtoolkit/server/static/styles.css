@@ -181,4 +181,41 @@ body {
       background: rgba(16, 185, 129, 0.12);
       border: 1px solid rgba(16, 185, 129, 0.3);
     }
+    .fs-mod-btn {
+      background: transparent;
+      border: 1px solid transparent;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .fs-mod-btn:hover {
+      background: #141721;
+    }
+    .fs-mod-active {
+      background: rgba(59, 130, 246, 0.18) !important;
+      color: #3B82F6 !important;
+      border-color: rgba(59, 130, 246, 0.5) !important;
+    }
+    .fs-cat-active {
+      background: #141721 !important;
+      color: #3B82F6 !important;
+      border-color: rgba(59, 130, 246, 0.5) !important;
+      box-shadow: inset 0 -1px 0 #3B82F6;
+    }
+    .fs-chip-active {
+      background: rgba(59, 130, 246, 0.2) !important;
+      color: #60A5FA !important;
+      border-color: rgba(59, 130, 246, 0.6) !important;
+    }
+    .fs-row {
+      transition: background-color 0.1s ease-in-out;
+      cursor: pointer;
+    }
+    .fs-row:hover {
+      background-color: #141721;
+    }
+    .fs-row.selected {
+      background-color: rgba(59, 130, 246, 0.12) !important;
+      outline: 1px solid rgba(59, 130, 246, 0.35);
+    }
+
 

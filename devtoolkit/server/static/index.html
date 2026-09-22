@@ -79,6 +79,14 @@
               </div>
             </button>
 
+            <button onclick="switchTab('search')" id="nav-btn-search" class="w-full flex items-center justify-between px-2.5 py-2 rounded text-xs font-medium transition nav-inactive">
+              <div class="flex items-center gap-2.5 truncate">
+                <i class="fa-solid fa-bolt text-xs flex-shrink-0 text-[#3B82F6]"></i>
+                <span class="truncate">Fast Search</span>
+              </div>
+              <span id="side-search-count-badge" class="px-1.5 py-0.2 rounded text-[10px] font-mono font-semibold bg-[#3B82F61A] text-[#3B82F6] border border-[#3B82F640] flex-shrink-0">Ready</span>
+            </button>
+
             <button onclick="switchTab('ports')" id="nav-btn-ports" class="w-full flex items-center justify-between px-2.5 py-2 rounded text-xs font-medium transition nav-inactive">
               <div class="flex items-center gap-2.5 truncate">
                 <i class="fa-solid fa-network-wired text-xs flex-shrink-0"></i>
@@ -378,7 +386,261 @@
           </div>
         </div>
 
-        <!-- ==================== VIEW 2: PORT MANAGER ==================== -->
+        <!-- ==================== VIEW 2: FAST SEARCH (EVERYTHING ENGINE) ==================== -->
+        <div id="view-search" class="space-y-4 hidden">
+          <!-- Top Search Control Center -->
+          <div class="card-pro p-4 space-y-3.5">
+            <!-- Search Input with Clear button and Modifier toggles -->
+            <div class="flex items-center gap-2">
+              <div class="relative flex-1">
+                <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-[#475569] text-sm pointer-events-none"></i>
+                <input
+                  type="text"
+                  id="fs-search-input"
+                  placeholder="Search files, folders, extensions, sizes (e.g. *.py, ext:exe, size:>10mb, !node_modules)..."
+                  class="w-full bg-[#08090C] border border-[#1F2430] focus:border-[#3B82F6] focus:ring-1 focus:ring-[#3B82F6] text-xs font-mono text-[#F3F4F6] placeholder-[#475569] pl-10 pr-16 py-2.5 rounded transition outline-none"
+                  autocomplete="off"
+                  spellcheck="false"
+                />
+                <div class="absolute right-2.5 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                  <button id="fs-clear-btn" onclick="clearSearchInput()" class="text-[#475569] hover:text-[#F3F4F6] text-xs px-1.5 py-0.5 rounded transition hidden" title="Clear Search (Esc)">
+                    <i class="fa-solid fa-xmark"></i>
+                  </button>
+                  <kbd class="kbd-pro hidden sm:inline-block">/</kbd>
+                </div>
+              </div>
+
+              <!-- Modifier Toggles: Match Case, Whole Word, Match Path, Regex -->
+              <div class="flex items-center gap-1 bg-[#08090C] p-1 rounded border border-[#1F2430] flex-shrink-0">
+                <button id="fs-toggle-case" onclick="toggleSearchModifier('case')" class="fs-mod-btn px-2 py-1 rounded text-xs font-mono font-medium text-[#94A3B8] hover:text-white transition" title="Match Case (Alt+C)">
+                  Aa
+                </button>
+                <button id="fs-toggle-word" onclick="toggleSearchModifier('word')" class="fs-mod-btn px-2 py-1 rounded text-xs font-mono font-medium text-[#94A3B8] hover:text-white transition" title="Match Whole Word (Alt+W)">
+                  \b
+                </button>
+                <button id="fs-toggle-path" onclick="toggleSearchModifier('path')" class="fs-mod-btn px-2 py-1 rounded text-xs font-mono font-medium text-[#94A3B8] hover:text-white transition" title="Match Full Path (Alt+P)">
+                  PATH
+                </button>
+                <button id="fs-toggle-regex" onclick="toggleSearchModifier('regex')" class="fs-mod-btn px-2 py-1 rounded text-xs font-mono font-medium text-[#94A3B8] hover:text-white transition" title="Regular Expression (Alt+R)">
+                  .*
+                </button>
+              </div>
+            </div>
+
+            <!-- Category Filter Pills Bar & Syntax Help Toggle -->
+            <div class="flex items-center justify-between gap-2 flex-wrap pt-1 border-t border-[#141721]">
+              <div class="flex items-center gap-1.5 flex-wrap" id="fs-category-pills">
+                <button onclick="setSearchCategory('all')" id="fs-cat-all" class="fs-cat-pill px-3 py-1 rounded text-xs font-medium bg-[#141721] text-[#3B82F6] border border-[#3B82F640] transition flex items-center gap-1.5">
+                  <i class="fa-solid fa-layer-group text-[10px]"></i> All
+                </button>
+                <button onclick="setSearchCategory('code')" id="fs-cat-code" class="fs-cat-pill px-3 py-1 rounded text-xs font-medium text-[#94A3B8] hover:text-[#F3F4F6] bg-[#08090C] border border-[#1F2430] transition flex items-center gap-1.5">
+                  <i class="fa-solid fa-code text-[10px]"></i> Code
+                </button>
+                <button onclick="setSearchCategory('exe')" id="fs-cat-exe" class="fs-cat-pill px-3 py-1 rounded text-xs font-medium text-[#94A3B8] hover:text-[#F3F4F6] bg-[#08090C] border border-[#1F2430] transition flex items-center gap-1.5">
+                  <i class="fa-solid fa-cube text-[10px]"></i> Executables
+                </button>
+                <button onclick="setSearchCategory('doc')" id="fs-cat-doc" class="fs-cat-pill px-3 py-1 rounded text-xs font-medium text-[#94A3B8] hover:text-[#F3F4F6] bg-[#08090C] border border-[#1F2430] transition flex items-center gap-1.5">
+                  <i class="fa-solid fa-file-lines text-[10px]"></i> Documents
+                </button>
+                <button onclick="setSearchCategory('archive')" id="fs-cat-archive" class="fs-cat-pill px-3 py-1 rounded text-xs font-medium text-[#94A3B8] hover:text-[#F3F4F6] bg-[#08090C] border border-[#1F2430] transition flex items-center gap-1.5">
+                  <i class="fa-solid fa-file-zipper text-[10px]"></i> Archives
+                </button>
+                <button onclick="setSearchCategory('folder')" id="fs-cat-folder" class="fs-cat-pill px-3 py-1 rounded text-xs font-medium text-[#94A3B8] hover:text-[#F3F4F6] bg-[#08090C] border border-[#1F2430] transition flex items-center gap-1.5">
+                  <i class="fa-solid fa-folder text-[10px]"></i> Folders
+                </button>
+              </div>
+
+              <!-- Syntax Help Quick Toggle -->
+              <button onclick="toggleSyntaxHelp()" class="text-[11px] text-[#475569] hover:text-[#94A3B8] transition flex items-center gap-1.5 cursor-pointer">
+                <i class="fa-solid fa-circle-question text-[10px] text-[#3B82F6]"></i>
+                <span>Syntax Cheat Sheet</span>
+              </button>
+            </div>
+
+            <!-- Syntax Help Accordion (Collapsible) -->
+            <div id="fs-syntax-help" class="hidden p-3 rounded bg-[#08090C] border border-[#1F2430] text-xs font-mono space-y-1.5 text-[#94A3B8]">
+              <div class="text-[10px] font-semibold text-[#F3F4F6] uppercase tracking-wider mb-1">Everything Search Syntax Cheat Sheet</div>
+              <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 text-[11px]">
+                <div><span class="text-[#3B82F6]">space</span>: AND operator (<code class="text-white">python exe</code>)</div>
+                <div><span class="text-[#3B82F6]">|</span>: OR operator (<code class="text-white">png | jpg</code>)</div>
+                <div><span class="text-[#3B82F6]">!</span>: NOT operator (<code class="text-white">test !venv</code>)</div>
+                <div><span class="text-[#3B82F6]">&quot;phrase&quot;</span>: exact phrase with spaces</div>
+                <div><span class="text-[#3B82F6]">ext:py</span> or <span class="text-[#3B82F6]">ext:exe;dll</span>: file extensions</div>
+                <div><span class="text-[#3B82F6]">size:&gt;10mb</span> or <span class="text-[#3B82F6]">size:&lt;100kb</span>: file size</div>
+                <div><span class="text-[#3B82F6]">size:empty / tiny / small / large / huge</span></div>
+                <div><span class="text-[#3B82F6]">dm:today / yesterday / past7 / thisyear</span></div>
+                <div><span class="text-[#3B82F6]">folder:</span> or <span class="text-[#3B82F6]">file:</span>: type scope</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Comprehensive Visual Filter Bar -->
+          <div class="card-pro p-3 flex items-center justify-between gap-3 flex-wrap bg-[#0B0D12]">
+            <div class="flex items-center gap-3 flex-wrap">
+              <!-- Scope Selector -->
+              <div class="flex items-center gap-1.5">
+                <span class="text-[10px] text-[#475569] font-medium uppercase tracking-wider font-mono">Scope:</span>
+                <select id="fs-scope-select" onchange="onVisualFilterChange()" class="bg-[#141721] border border-[#1F2430] text-xs text-[#F3F4F6] rounded px-2 py-1 outline-none focus:border-[#3B82F6]">
+                  <option value="all">Files & Folders</option>
+                  <option value="files">Files Only</option>
+                  <option value="folders">Folders Only</option>
+                </select>
+              </div>
+
+              <!-- Size Filter Dropdown -->
+              <div class="flex items-center gap-1.5">
+                <span class="text-[10px] text-[#475569] font-medium uppercase tracking-wider font-mono">Size:</span>
+                <select id="fs-size-select" onchange="onVisualFilterChange()" class="bg-[#141721] border border-[#1F2430] text-xs text-[#F3F4F6] rounded px-2 py-1 outline-none focus:border-[#3B82F6]">
+                  <option value="any">Any Size</option>
+                  <option value="empty">Empty (0 B)</option>
+                  <option value="tiny">Tiny (&lt; 10 KB)</option>
+                  <option value="small">Small (10 – 100 KB)</option>
+                  <option value="medium">Medium (100 KB – 1 MB)</option>
+                  <option value="large">Large (1 – 16 MB)</option>
+                  <option value="huge">Huge (16 – 128 MB)</option>
+                  <option value="gigantic">Gigantic (&gt; 128 MB)</option>
+                </select>
+              </div>
+
+              <!-- Date Modified Dropdown -->
+              <div class="flex items-center gap-1.5">
+                <span class="text-[10px] text-[#475569] font-medium uppercase tracking-wider font-mono">Modified:</span>
+                <select id="fs-date-select" onchange="onVisualFilterChange()" class="bg-[#141721] border border-[#1F2430] text-xs text-[#F3F4F6] rounded px-2 py-1 outline-none focus:border-[#3B82F6]">
+                  <option value="any">Any Time</option>
+                  <option value="today">Today</option>
+                  <option value="yesterday">Yesterday</option>
+                  <option value="past7">Past 7 Days</option>
+                  <option value="past30">Past 30 Days</option>
+                  <option value="thisweek">This Week</option>
+                  <option value="thismonth">This Month</option>
+                  <option value="thisyear">This Year</option>
+                  <option value="pastyear">Past Year</option>
+                </select>
+              </div>
+
+              <!-- Quick Extension Chips -->
+              <div class="flex items-center gap-1.5">
+                <span class="text-[10px] text-[#475569] font-medium uppercase tracking-wider font-mono">Quick Ext:</span>
+                <div class="flex items-center gap-1" id="fs-quick-ext-chips">
+                  <button onclick="setQuickExt('py')" id="fs-chip-py" class="fs-ext-chip px-1.5 py-0.5 rounded text-[10px] font-mono bg-[#141721] text-[#94A3B8] border border-[#1F2430] hover:text-white hover:border-[#3B82F6] transition">.py</button>
+                  <button onclick="setQuickExt('exe')" id="fs-chip-exe" class="fs-ext-chip px-1.5 py-0.5 rounded text-[10px] font-mono bg-[#141721] text-[#94A3B8] border border-[#1F2430] hover:text-white hover:border-[#3B82F6] transition">.exe</button>
+                  <button onclick="setQuickExt('json')" id="fs-chip-json" class="fs-ext-chip px-1.5 py-0.5 rounded text-[10px] font-mono bg-[#141721] text-[#94A3B8] border border-[#1F2430] hover:text-white hover:border-[#3B82F6] transition">.json</button>
+                  <button onclick="setQuickExt('ts')" id="fs-chip-ts" class="fs-ext-chip px-1.5 py-0.5 rounded text-[10px] font-mono bg-[#141721] text-[#94A3B8] border border-[#1F2430] hover:text-white hover:border-[#3B82F6] transition">.ts</button>
+                  <button onclick="setQuickExt('md')" id="fs-chip-md" class="fs-ext-chip px-1.5 py-0.5 rounded text-[10px] font-mono bg-[#141721] text-[#94A3B8] border border-[#1F2430] hover:text-white hover:border-[#3B82F6] transition">.md</button>
+                  <button onclick="setQuickExt('dll')" id="fs-chip-dll" class="fs-ext-chip px-1.5 py-0.5 rounded text-[10px] font-mono bg-[#141721] text-[#94A3B8] border border-[#1F2430] hover:text-white hover:border-[#3B82F6] transition">.dll</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Active Filter Clear Button -->
+            <div class="flex items-center gap-2">
+              <button id="fs-reset-filters-btn" onclick="resetAllVisualFilters()" class="text-xs text-[#EF4444] hover:text-white px-2 py-1 rounded bg-[#EF44441A] border border-[#EF444440] transition hidden flex items-center gap-1.5">
+                <i class="fa-solid fa-filter-circle-xmark text-[11px]"></i>
+                <span>Reset Filters (<span id="fs-active-filters-count">0</span>)</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Metrics Bar & Quick Toolbar -->
+          <div class="flex items-center justify-between text-xs px-1 text-[#94A3B8] flex-wrap gap-2">
+            <div class="flex items-center gap-2">
+              <span id="fs-results-count" class="font-medium text-[#F3F4F6] font-mono">0 items</span>
+              <span class="text-[#475569]">•</span>
+              <span id="fs-results-duration" class="font-mono text-[11px] text-[#10B981]">0.0 ms</span>
+              <span class="text-[#475569]">•</span>
+              <span id="fs-index-total-badge" class="font-mono text-[11px] text-[#475569]">— indexed</span>
+            </div>
+
+            <div class="flex items-center gap-2">
+              <button onclick="exportSearchResultsCSV()" class="btn-secondary-pro px-2.5 py-1 text-xs flex items-center gap-1.5" title="Export current search results as CSV">
+                <i class="fa-solid fa-file-csv text-[11px] text-[#10B981]"></i>
+                <span class="hidden sm:inline">Export CSV</span>
+              </button>
+              <button onclick="copySearchResultsText()" class="btn-secondary-pro px-2.5 py-1 text-xs flex items-center gap-1.5" title="Copy file paths to clipboard">
+                <i class="fa-solid fa-copy text-[11px] text-[#06B6D4]"></i>
+                <span class="hidden sm:inline">Copy Paths</span>
+              </button>
+              <button onclick="triggerFastSearchReindex()" id="fs-reindex-btn" class="btn-secondary-pro px-2.5 py-1 text-xs flex items-center gap-1.5" title="Re-index search roots now">
+                <i class="fa-solid fa-arrows-rotate text-[11px]" id="fs-reindex-icon"></i>
+                <span class="hidden sm:inline">Re-index</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Results Data Grid -->
+          <div class="card-pro overflow-hidden border border-[#1F2430]">
+            <div class="overflow-x-auto max-h-[calc(100vh-380px)] custom-scrollbar">
+              <table class="w-full text-left border-collapse text-xs">
+                <thead class="sticky top-0 bg-[#141721] text-[#94A3B8] font-mono text-[11px] uppercase tracking-wider select-none border-b border-[#1F2430] z-10">
+                  <tr>
+                    <th onclick="toggleSearchSort('name')" class="py-2.5 px-3 cursor-pointer hover:text-white transition w-2/5">
+                      <div class="flex items-center gap-1">
+                        <span>Name</span>
+                        <i id="fs-sort-icon-name" class="fa-solid fa-sort text-[10px] text-[#475569]"></i>
+                      </div>
+                    </th>
+                    <th onclick="toggleSearchSort('path')" class="py-2.5 px-3 cursor-pointer hover:text-white transition w-2/5">
+                      <div class="flex items-center gap-1">
+                        <span>Path</span>
+                        <i id="fs-sort-icon-path" class="fa-solid fa-sort text-[10px] text-[#475569]"></i>
+                      </div>
+                    </th>
+                    <th onclick="toggleSearchSort('size')" class="py-2.5 px-3 cursor-pointer hover:text-white transition text-right w-24">
+                      <div class="flex items-center justify-end gap-1">
+                        <span>Size</span>
+                        <i id="fs-sort-icon-size" class="fa-solid fa-sort text-[10px] text-[#475569]"></i>
+                      </div>
+                    </th>
+                    <th onclick="toggleSearchSort('mtime')" class="py-2.5 px-3 cursor-pointer hover:text-white transition w-36">
+                      <div class="flex items-center gap-1">
+                        <span>Date Modified</span>
+                        <i id="fs-sort-icon-mtime" class="fa-solid fa-sort text-[10px] text-[#475569]"></i>
+                      </div>
+                    </th>
+                    <th onclick="toggleSearchSort('ext')" class="py-2.5 px-3 cursor-pointer hover:text-white transition w-20">
+                      <div class="flex items-center gap-1">
+                        <span>Type</span>
+                        <i id="fs-sort-icon-ext" class="fa-solid fa-sort text-[10px] text-[#475569]"></i>
+                      </div>
+                    </th>
+                    <th class="py-2.5 px-3 text-right w-24">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="fs-results-tbody" class="divide-y divide-[#141721] font-mono text-xs">
+                  <!-- Rendered dynamically -->
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Pagination / Footer Bar -->
+            <div class="p-2.5 bg-[#0E1015] border-t border-[#1F2430] flex items-center justify-between text-xs text-[#94A3B8] flex-wrap gap-2">
+              <div class="flex items-center gap-2">
+                <span id="fs-page-info">Page 1 of 1</span>
+                <span class="text-[#475569]">•</span>
+                <div class="flex items-center gap-1">
+                  <span>Per page:</span>
+                  <select id="fs-limit-select" onchange="onPageLimitChange()" class="bg-[#141721] border border-[#1F2430] text-xs text-[#F3F4F6] rounded px-1.5 py-0.5 outline-none">
+                    <option value="100">100</option>
+                    <option value="250">250</option>
+                    <option value="500">500</option>
+                    <option value="1000">1000</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="flex items-center gap-1">
+                <button onclick="prevSearchPage()" id="fs-prev-btn" class="btn-secondary-pro px-2 py-1 text-xs disabled:opacity-30 disabled:pointer-events-none">
+                  <i class="fa-solid fa-chevron-left text-[10px]"></i> Prev
+                </button>
+                <button onclick="nextSearchPage()" id="fs-next-btn" class="btn-secondary-pro px-2 py-1 text-xs disabled:opacity-30 disabled:pointer-events-none">
+                  Next <i class="fa-solid fa-chevron-right text-[10px]"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ==================== VIEW 3: PORT MANAGER ==================== -->
         <div id="view-ports" class="space-y-5 hidden">
           <!-- Port Stats -->
           <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -830,6 +1092,10 @@
 
       <div class="space-y-1.5 text-xs">
         <div class="flex items-center justify-between p-2 rounded bg-[#08090C] border border-[#1F2430]">
+          <span class="text-[#F3F4F6]">Jump to Fast Search</span>
+          <kbd class="kbd-pro">/</kbd>
+        </div>
+        <div class="flex items-center justify-between p-2 rounded bg-[#08090C] border border-[#1F2430]">
           <span class="text-[#F3F4F6]">Focus Global Search</span>
           <kbd class="kbd-pro">Ctrl + K</kbd>
         </div>
@@ -842,16 +1108,28 @@
           <kbd class="kbd-pro">1</kbd>
         </div>
         <div class="flex items-center justify-between p-2 rounded bg-[#08090C] border border-[#1F2430]">
-          <span class="text-[#F3F4F6]">Switch to Port Manager Tab</span>
+          <span class="text-[#F3F4F6]">Switch to Fast Search Tab</span>
           <kbd class="kbd-pro">2</kbd>
         </div>
         <div class="flex items-center justify-between p-2 rounded bg-[#08090C] border border-[#1F2430]">
-          <span class="text-[#F3F4F6]">Switch to Project Auditor Tab</span>
+          <span class="text-[#F3F4F6]">Switch to Port Manager Tab</span>
           <kbd class="kbd-pro">3</kbd>
         </div>
         <div class="flex items-center justify-between p-2 rounded bg-[#08090C] border border-[#1F2430]">
-          <span class="text-[#F3F4F6]">Switch to Settings Tab</span>
+          <span class="text-[#F3F4F6]">Switch to Project Auditor Tab</span>
           <kbd class="kbd-pro">4</kbd>
+        </div>
+        <div class="flex items-center justify-between p-2 rounded bg-[#08090C] border border-[#1F2430]">
+          <span class="text-[#F3F4F6]">Switch to Settings Tab</span>
+          <kbd class="kbd-pro">5</kbd>
+        </div>
+        <div class="flex items-center justify-between p-2 rounded bg-[#08090C] border border-[#1F2430]">
+          <span class="text-[#F3F4F6]">Fast Search: Match Modifiers</span>
+          <kbd class="kbd-pro">Alt + C / W / P / R</kbd>
+        </div>
+        <div class="flex items-center justify-between p-2 rounded bg-[#08090C] border border-[#1F2430]">
+          <span class="text-[#F3F4F6]">Fast Search: Navigate & Open</span>
+          <kbd class="kbd-pro">↑ / ↓ / Enter</kbd>
         </div>
         <div class="flex items-center justify-between p-2 rounded bg-[#08090C] border border-[#1F2430]">
           <span class="text-[#F3F4F6]">Close Modal / Blur Search</span>

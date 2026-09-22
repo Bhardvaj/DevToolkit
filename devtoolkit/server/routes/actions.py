@@ -7,10 +7,54 @@ from pathlib import Path
 from typing import Optional
 from fastapi import APIRouter, HTTPException
 
-from devtoolkit.core.runner import SafeRunner
-from devtoolkit.server.models import ApplyFixRequest, OpenFolderRequest, SelectFolderRequest
+from devtoolkit.server.models import (
+    ApplyFixRequest,
+    OpenFileRequest,
+    OpenFolderRequest,
+    RevealFileRequest,
+    SelectFolderRequest,
+)
 
 router = APIRouter(prefix="/api", tags=["actions"])
+
+
+@router.post("/action/open-file")
+def open_file(req: OpenFileRequest):
+    """Launch file using default system file association."""
+    raw_path = req.path.strip().strip('"').strip("'")
+    p = Path(raw_path)
+    if not p.exists():
+        raise HTTPException(status_code=404, detail=f"File '{raw_path}' does not exist.")
+
+    if sys.platform == "win32":
+        try:
+            os.startfile(str(p))
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Failed to open file: {e}")
+    elif sys.platform == "darwin":
+        subprocess.run(["open", str(p)])
+    else:
+        subprocess.run(["xdg-open", str(p)])
+
+    return {"status": "ok", "opened": str(p)}
+
+
+@router.post("/action/reveal-file")
+def reveal_file(req: RevealFileRequest):
+    """Highlight file in Windows Explorer or native file manager."""
+    raw_path = req.path.strip().strip('"').strip("'")
+    p = Path(raw_path)
+    if not p.exists():
+        raise HTTPException(status_code=404, detail=f"Path '{raw_path}' does not exist.")
+
+    if sys.platform == "win32":
+        subprocess.run(["explorer.exe", f"/select,{str(p.resolve())}"])
+    elif sys.platform == "darwin":
+        subprocess.run(["open", "-R", str(p)])
+    else:
+        subprocess.run(["xdg-open", str(p.parent)])
+
+    return {"status": "ok", "revealed": str(p)}
 
 
 @router.post("/action/open-folder")

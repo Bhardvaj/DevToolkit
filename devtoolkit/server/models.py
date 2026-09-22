@@ -33,3 +33,29 @@ class SelectFolderRequest(BaseModel):
 
 class ApplyFixRequest(BaseModel):
     command: str
+
+
+class OpenFileRequest(BaseModel):
+    path: str
+
+
+class RevealFileRequest(BaseModel):
+    path: str
+
+
+class SearchQueryAPIRequest(BaseModel):
+    query: str = ""
+    case_sensitive: bool = False
+    whole_word: bool = False
+    match_path: bool = False
+    is_regex: bool = False
+    category: str = "all"
+    scope: str = "all"
+    size_filter: str = "any"
+    date_filter: str = "any"
+    ext_filter: str = ""
+    sort_by: str = "name"
+    sort_desc: bool = False
+    limit: int = 500
+    offset: int = 0
+

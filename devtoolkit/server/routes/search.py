@@ -6,9 +6,72 @@ from fastapi import APIRouter, BackgroundTasks
 from pydantic import BaseModel
 
 from devtoolkit.core.config import load_config
-from devtoolkit.core.search import get_search_engine
+from devtoolkit.core.search import SearchQueryParams, execute_search, get_search_engine
+from devtoolkit.server.models import SearchQueryAPIRequest
 
 router = APIRouter(prefix="/api/search", tags=["search"])
+
+
+@router.post("/query")
+def post_search_query(req: SearchQueryAPIRequest):
+    """Execute Everything-class search query against in-memory index."""
+    engine = get_search_engine()
+    params = SearchQueryParams(
+        query=req.query,
+        case_sensitive=req.case_sensitive,
+        whole_word=req.whole_word,
+        match_path=req.match_path,
+        is_regex=req.is_regex,
+        category=req.category,
+        scope=req.scope,
+        size_filter=req.size_filter,
+        date_filter=req.date_filter,
+        ext_filter=req.ext_filter,
+        sort_by=req.sort_by,
+        sort_desc=req.sort_desc,
+        limit=req.limit,
+        offset=req.offset,
+    )
+    return execute_search(engine.index, params)
+
+
+@router.get("/query")
+def get_search_query(
+    q: str = "",
+    case: bool = False,
+    whole_word: bool = False,
+    match_path: bool = False,
+    regex: bool = False,
+    category: str = "all",
+    scope: str = "all",
+    size_filter: str = "any",
+    date_filter: str = "any",
+    ext_filter: str = "",
+    sort_by: str = "name",
+    sort_desc: bool = False,
+    limit: int = 500,
+    offset: int = 0,
+):
+    """GET variant of search query for lightweight url fetching."""
+    engine = get_search_engine()
+    params = SearchQueryParams(
+        query=q,
+        case_sensitive=case,
+        whole_word=whole_word,
+        match_path=match_path,
+        is_regex=regex,
+        category=category,
+        scope=scope,
+        size_filter=size_filter,
+        date_filter=date_filter,
+        ext_filter=ext_filter,
+        sort_by=sort_by,
+        sort_desc=sort_desc,
+        limit=limit,
+        offset=offset,
+    )
+    return execute_search(engine.index, params)
+
 
 
 class ReindexRequest(BaseModel):
