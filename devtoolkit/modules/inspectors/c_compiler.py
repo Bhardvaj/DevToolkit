@@ -27,10 +27,11 @@ class CCompilerInspector(BaseInspector):
     description = "Native C/C++ toolchain (GCC, Clang, MinGW) for native extensions and compilation"
 
     def inspect(self, runner: SafeRunner) -> ToolReport:
-        gcc_bin = runner.resolve_binary("gcc")
-        clang_bin = runner.resolve_binary("clang")
+        gcc_bin = runner.resolve_binary("gcc", tool_id=self.id)
+        clang_bin = runner.resolve_binary("clang", tool_id=self.id)
+        cl_bin = runner.resolve_binary("cl", tool_id=self.id)
 
-        primary_bin = gcc_bin or clang_bin
+        primary_bin = gcc_bin or clang_bin or cl_bin
         if not primary_bin:
             return ToolReport(
                 id=self.id,
@@ -165,6 +166,30 @@ class CCompilerInspector(BaseInspector):
                         source="MSYS2 UCRT64",
                         is_active=False,
                         details="MSYS2 modern C/C++ compiler toolchain",
+                    )
+                )
+
+        # Discovery Pipeline instances (Layer 2-4 Discovery)
+        for disc_p in runner.discovery.discover_all_tool_instances(self.id):
+            cand_bin = None
+            for b_name in ["gcc.exe", "clang.exe", "cl.exe", "gcc", "clang"]:
+                for sub in [disc_p / "bin" / b_name, disc_p / b_name]:
+                    if sub.is_file():
+                        cand_bin = sub
+                        break
+                if cand_bin:
+                    break
+            k = str(cand_bin or disc_p).lower()
+            if k not in seen_bins:
+                seen_bins.add(k)
+                instances.append(
+                    DiscoveredInstance(
+                        path=str(disc_p),
+                        binary_path=str(cand_bin) if cand_bin else None,
+                        version=None,
+                        source="Discovery Pipeline",
+                        is_active=bool(base_report.binary_path and cand_bin and str(cand_bin).lower() == str(base_report.binary_path).lower()),
+                        details="Discovered C/C++ compiler toolchain (Layer 2-4)",
                     )
                 )
 

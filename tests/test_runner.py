@@ -31,3 +31,30 @@ def test_safe_runner_resolve_binary():
     py_path = runner.resolve_binary("python")
     assert py_path is not None
     assert py_path.exists()
+
+
+def test_safe_runner_zero_path_discovery(tmp_path, monkeypatch):
+    """Verify SafeRunner resolves a binary outside PATH via discovery."""
+    custom_dir = tmp_path / "custom_tools"
+    custom_dir.mkdir()
+    tool_dir = custom_dir / "portable_sqlite"
+    tool_dir.mkdir()
+    fake_sqlite = tool_dir / "sqlite3.exe"
+    fake_sqlite.write_text("dummy", encoding="utf-8")
+
+    monkeypatch.setattr("shutil.which", lambda name: None)
+
+    runner = SafeRunner()
+    # Mock where.exe to return nothing as well
+    monkeypatch.setattr(runner, "run_command", lambda cmd, **kwargs: type("Obj", (), {"ok": False, "stdout": "", "timed_out": False})())
+
+    runner.discovery._user_config.search_paths = [str(custom_dir)]
+    runner.discovery.clear_scan_cache()
+
+    resolved = runner.resolve_binary("sqlite3", tool_id="sqlite")
+    assert resolved is not None
+    assert resolved.resolve() == fake_sqlite.resolve()
+
+    all_resolved = runner.resolve_all_binaries("sqlite3", tool_id="sqlite")
+    assert any(p.resolve() == fake_sqlite.resolve() for p in all_resolved)
+

@@ -214,6 +214,24 @@ class AndroidInspector(BaseInspector):
                     )
                 )
 
+        # Discovery Pipeline instances (Layer 2-4 Discovery)
+        for disc_p in runner.discovery.discover_all_tool_instances(self.id):
+            cand_bin = disc_p / "platform-tools" / ("adb.exe" if sys.platform == "win32" else "adb")
+            b_target = cand_bin if cand_bin.is_file() else None
+            k = str(b_target or disc_p).lower()
+            if k not in seen_paths:
+                seen_paths.add(k)
+                instances.append(
+                    DiscoveredInstance(
+                        path=str(disc_p),
+                        binary_path=str(b_target) if b_target else None,
+                        version=base_report.version,
+                        source="Discovery Pipeline",
+                        is_active=bool(base_report.binary_path and b_target and str(b_target).lower() == str(base_report.binary_path).lower()),
+                        details="Discovered Android SDK root (Layer 2-4)",
+                    )
+                )
+
         trace.append(f"Discovered {len(instances)} Android/adb instances")
 
         # 2. Environment Variables Alignment

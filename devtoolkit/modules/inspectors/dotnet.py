@@ -30,7 +30,7 @@ class DotNetInspector(BaseInspector):
     description = ".NET SDK, CLR runtime, MSBuild and package tools"
 
     def inspect(self, runner: SafeRunner) -> ToolReport:
-        dotnet_bin = runner.resolve_binary("dotnet")
+        dotnet_bin = runner.resolve_binary("dotnet", tool_id=self.id)
         if not dotnet_bin and sys.platform == "win32":
             default_path = Path(os.environ.get("ProgramFiles", "C:\\Program Files")) / "dotnet" / "dotnet.exe"
             if default_path.is_file():
@@ -178,7 +178,14 @@ class DotNetInspector(BaseInspector):
             reg_bin = reg_p / "dotnet.exe"
             b_target = reg_bin if reg_bin.exists() else None
             is_act = bool(base_rep.binary_path and b_target and str(b_target).lower() == str(base_rep.binary_path).lower())
-            _add_inst(reg_p, b_target, None, "Registry", is_act, "Windows Registry .NET installation")
+            _add_inst(reg_p, b_target, None, "Registry", is_act, "Windows Registry App Entry")
+
+        # 4. Discovery Pipeline (4-Layer & FastSearchEngine)
+        for disc_root in runner.discovery.discover_all_tool_instances(self.id):
+            cand_bin = disc_root / ("dotnet.exe" if sys.platform == "win32" else "dotnet")
+            b_target = cand_bin if cand_bin.is_file() else None
+            is_act = bool(base_rep.binary_path and b_target and str(b_target).lower() == str(base_rep.binary_path).lower())
+            _add_inst(disc_root, b_target, None, "Discovery Pipeline", is_act, "Discovered via 4-Layer / FastSearchEngine signatures")
 
         # 4. Monitored Environment Variables Alignment
         env_vars: list[EnvVarStatus] = []

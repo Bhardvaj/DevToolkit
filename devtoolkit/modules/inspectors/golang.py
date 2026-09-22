@@ -28,7 +28,7 @@ class GoInspector(BaseInspector):
     description = "Go Programming Language runtime and compiler"
 
     def inspect(self, runner: SafeRunner) -> ToolReport:
-        go_bin = runner.find_binary("go")
+        go_bin = runner.find_binary("go", tool_id=self.id)
         if not go_bin:
             return ToolReport(
                 id=self.id,
@@ -125,6 +125,15 @@ class GoInspector(BaseInspector):
             b_target = reg_bin if reg_bin.exists() else None
             is_act = bool(base_rep.binary_path and b_target and str(b_target).lower() == str(base_rep.binary_path).lower())
             _add_inst(reg_p, b_target, None, "Registry", is_act, "Official Go Windows Installer")
+
+        # 3. Discovery Pipeline (4-Layer & FastSearchEngine)
+        for disc_root in runner.discovery.discover_all_tool_instances(self.id):
+            cand_bin = disc_root / "bin" / ("go.exe" if sys.platform == "win32" else "go")
+            if not cand_bin.is_file():
+                cand_bin = disc_root / ("go.exe" if sys.platform == "win32" else "go")
+            b_target = cand_bin if cand_bin.is_file() else None
+            is_act = bool(base_rep.binary_path and b_target and str(b_target).lower() == str(base_rep.binary_path).lower())
+            _add_inst(disc_root, b_target, None, "Discovery Pipeline", is_act, "Discovered via 4-Layer / FastSearchEngine signatures")
 
         # 3. Monitored Environment Variables Alignment
         env_vars: list[EnvVarStatus] = []

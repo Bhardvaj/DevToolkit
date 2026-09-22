@@ -27,7 +27,7 @@ class RustInspector(BaseInspector):
     description = "Rust compiler (rustc), Cargo package manager, and rustup toolchains"
 
     def inspect(self, runner: SafeRunner) -> ToolReport:
-        rustc_bin = runner.resolve_binary("rustc")
+        rustc_bin = runner.resolve_binary("rustc", tool_id=self.id)
         if not rustc_bin:
             return ToolReport(
                 id=self.id,
@@ -128,6 +128,15 @@ class RustInspector(BaseInspector):
         if std_cargo_bin.exists():
             is_act = bool(base_rep.binary_path) and (str(std_cargo_bin).lower() == str(base_rep.binary_path).lower())
             _add_inst(std_cargo_bin.parent, std_cargo_bin, None, "Default", is_act, "Rustup standard ~/.cargo/bin location")
+
+        # 3. Discovery Pipeline (4-Layer & FastSearchEngine)
+        for disc_root in runner.discovery.discover_all_tool_instances(self.id):
+            cand_bin = disc_root / "bin" / ("rustc.exe" if sys.platform == "win32" else "rustc")
+            if not cand_bin.is_file():
+                cand_bin = disc_root / ("rustc.exe" if sys.platform == "win32" else "rustc")
+            b_target = cand_bin if cand_bin.is_file() else None
+            is_act = bool(base_rep.binary_path and b_target and str(b_target).lower() == str(base_rep.binary_path).lower())
+            _add_inst(disc_root, b_target, None, "Discovery Pipeline", is_act, "Discovered via 4-Layer / FastSearchEngine signatures")
 
         # 3. Monitored Environment Variables Alignment
         env_vars: list[EnvVarStatus] = []

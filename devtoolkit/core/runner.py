@@ -104,8 +104,10 @@ class SafeRunner:
         self,
         name: str,
         extra_paths: Optional[List[str]] = None,
+        tool_id: Optional[str] = None,
+        use_discovery: bool = True,
     ) -> Optional[Path]:
-        """Resolve full executable path across PATH and optional candidate paths."""
+        """Resolve full executable path across PATH, optional candidate paths, and discovery fallback."""
         # 1. Standard shutil.which lookup
         found = shutil.which(name)
         if found:
@@ -135,6 +137,41 @@ class SafeRunner:
                 if p.exists():
                     return p.resolve()
 
+        # 4. Discovery Pipeline Fallback (Layer 2-4 Discovery)
+        if use_discovery and not getattr(self, "_in_discovery", False):
+            try:
+                self._in_discovery = True
+                from devtoolkit.core.signatures import TARGET_TOOL_BINARIES
+                inferred_tool_id = tool_id
+                if not inferred_tool_id:
+                    c_name = name.lower()
+                    c_name_exe = f"{c_name}.exe" if not c_name.endswith(".exe") else c_name
+                    tool_ids = TARGET_TOOL_BINARIES.get(c_name) or TARGET_TOOL_BINARIES.get(c_name_exe)
+                    if tool_ids:
+                        inferred_tool_id = tool_ids[0]
+
+                if inferred_tool_id:
+                    discovered_root = self.discovery.discover_tool(inferred_tool_id)
+                    if discovered_root and discovered_root.exists():
+                        search_dirs = [
+                            discovered_root,
+                            discovered_root / "bin",
+                            discovered_root / "cmd",
+                            discovered_root / "Scripts",
+                            discovered_root / "platform-tools",
+                        ]
+                        extensions = [""]
+                        if sys.platform == "win32":
+                            extensions = ["", ".exe", ".cmd", ".bat"]
+                        for s_dir in search_dirs:
+                            if s_dir.is_dir():
+                                for ext in extensions:
+                                    target = s_dir / f"{name}{ext}"
+                                    if target.is_file():
+                                        return target.resolve()
+            finally:
+                self._in_discovery = False
+
         return None
 
     # Alias for convenience across inspectors
@@ -144,8 +181,10 @@ class SafeRunner:
         self,
         name: str,
         extra_paths: Optional[List[str]] = None,
+        tool_id: Optional[str] = None,
+        use_discovery: bool = True,
     ) -> List[Path]:
-        """Resolve all instances of an executable across PATH and optional candidate paths in order of precedence."""
+        """Resolve all instances of an executable across PATH, candidate paths, and discovery pipeline."""
         results: List[Path] = []
         seen_str: set = set()
 
@@ -187,6 +226,40 @@ class SafeRunner:
                     target = base_dir / f"{name}{ext}"
                     if target.is_file() and os.access(target, os.X_OK):
                         _add(target)
+
+        # 4. Multi-instance discovery pipeline fallback
+        if use_discovery and not getattr(self, "_in_discovery_all", False):
+            try:
+                self._in_discovery_all = True
+                from devtoolkit.core.signatures import TARGET_TOOL_BINARIES
+                inferred_tool_id = tool_id
+                if not inferred_tool_id:
+                    c_name = name.lower()
+                    c_name_exe = f"{c_name}.exe" if not c_name.endswith(".exe") else c_name
+                    tool_ids = TARGET_TOOL_BINARIES.get(c_name) or TARGET_TOOL_BINARIES.get(c_name_exe)
+                    if tool_ids:
+                        inferred_tool_id = tool_ids[0]
+
+                if inferred_tool_id:
+                    for inst_root in self.discovery.discover_all_tool_instances(inferred_tool_id):
+                        search_dirs = [
+                            inst_root,
+                            inst_root / "bin",
+                            inst_root / "cmd",
+                            inst_root / "Scripts",
+                            inst_root / "platform-tools",
+                        ]
+                        extensions = [""]
+                        if sys.platform == "win32":
+                            extensions = ["", ".exe", ".cmd", ".bat"]
+                        for s_dir in search_dirs:
+                            if s_dir.is_dir():
+                                for ext in extensions:
+                                    target = s_dir / f"{name}{ext}"
+                                    if target.is_file():
+                                        _add(target)
+            finally:
+                self._in_discovery_all = False
 
         return results
 

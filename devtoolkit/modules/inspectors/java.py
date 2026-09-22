@@ -195,13 +195,12 @@ class JavaInspector(BaseInspector):
                     is_act = bool(base_rep.binary_path and str(cand_bin).lower() == str(base_rep.binary_path).lower())
                     _add_inst(cand, cand_bin, None, "IDE_Config", is_act, "Embedded JetBrains Runtime inside Android Studio")
 
-        # 5. User Search Roots
-        scanned = runner.discovery._get_user_scanned_tools().get("java", [])
-        for sp in scanned:
+        # 5. Discovery Pipeline (4-Layer & FastSearchEngine)
+        for sp in runner.discovery.discover_all_tool_instances(self.id):
             sp_bin = sp / "bin" / ("java.exe" if sys.platform == "win32" else "java")
             b_target = sp_bin if sp_bin.exists() else None
             is_act = bool(base_rep.binary_path and b_target and str(b_target).lower() == str(base_rep.binary_path).lower())
-            _add_inst(sp, b_target, None, "SearchRoot", is_act, "User Configured Search Root")
+            _add_inst(sp, b_target, None, "Discovery Pipeline", is_act, "Discovered JDK root (Layer 2-4)")
 
         # 6. Monitored Environment Variables Alignment
         env_vars: list[EnvVarStatus] = []

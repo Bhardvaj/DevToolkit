@@ -121,6 +121,10 @@ class FastSearchEngine:
     def realtime_enabled(self) -> bool:
         return self._realtime_enabled
 
+    @property
+    def roots(self) -> List[Path]:
+        return list(self._indexed_roots)
+
     def clear(self) -> None:
         self._stop_watchers()
         self.index.clear()

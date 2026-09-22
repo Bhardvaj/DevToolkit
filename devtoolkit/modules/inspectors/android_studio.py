@@ -185,6 +185,23 @@ class AndroidStudioInspector(BaseInspector):
                         )
                     )
 
+        # Discovery Pipeline instances (Layer 2-4 Discovery)
+        for disc_p in runner.discovery.discover_all_tool_instances(self.id):
+            k = str(disc_p).lower()
+            if k not in seen_roots:
+                seen_roots.add(k)
+                launcher = disc_p / "bin" / ("studio64.exe" if sys.platform == "win32" else "studio.sh")
+                instances.append(
+                    DiscoveredInstance(
+                        path=str(disc_p),
+                        binary_path=str(launcher) if launcher.is_file() else None,
+                        version=base_report.version,
+                        source="Discovery Pipeline",
+                        is_active=bool(base_report.home_path and str(disc_p).lower() == str(base_report.home_path).lower()),
+                        details="Discovered Android Studio root (Layer 2-4)",
+                    )
+                )
+
         trace.append(f"Discovered {len(instances)} Android Studio installations")
 
         # 2. Environment Variables Alignment

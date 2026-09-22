@@ -27,7 +27,7 @@ class GitInspector(BaseInspector):
     description = "Git distributed version control system and GitHub CLI"
 
     def inspect(self, runner: SafeRunner) -> ToolReport:
-        git_bin = runner.resolve_binary("git")
+        git_bin = runner.resolve_binary("git", tool_id=self.id)
         if not git_bin:
             return ToolReport(
                 id=self.id,
@@ -153,6 +153,17 @@ class GitInspector(BaseInspector):
                         _add_inst(cand.parent.parent.parent, cand, None, "IDE_Config", False, "Embedded Git inside GitHub Desktop")
         except Exception:
             pass
+
+        # 4. Discovery Pipeline (4-Layer & FastSearchEngine)
+        for disc_root in runner.discovery.discover_all_tool_instances(self.id):
+            cand_bin = disc_root / "cmd" / ("git.exe" if sys.platform == "win32" else "git")
+            if not cand_bin.is_file():
+                cand_bin = disc_root / "bin" / ("git.exe" if sys.platform == "win32" else "git")
+            if not cand_bin.is_file():
+                cand_bin = disc_root / ("git.exe" if sys.platform == "win32" else "git")
+            b_target = cand_bin if cand_bin.is_file() else None
+            is_act = bool(base_rep.binary_path and b_target and str(b_target).lower() == str(base_rep.binary_path).lower())
+            _add_inst(disc_root, b_target, None, "Discovery Pipeline", is_act, "Discovered via 4-Layer / FastSearchEngine signatures")
 
         # 4. Monitored Environment Variables Alignment
         env_vars: list[EnvVarStatus] = []

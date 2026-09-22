@@ -27,7 +27,11 @@ class PythonInspector(BaseInspector):
     description = "Python interpreter, pip, uv, poetry, and virtualenv tooling"
 
     def inspect(self, runner: SafeRunner) -> ToolReport:
-        py_bin = runner.resolve_binary("python") or runner.resolve_binary("python3")
+        py_bin = (
+            runner.resolve_binary("python", tool_id=self.id)
+            or runner.resolve_binary("python3", tool_id=self.id)
+            or runner.resolve_binary("py", tool_id=self.id)
+        )
         if not py_bin:
             return ToolReport(
                 id=self.id,
@@ -154,6 +158,15 @@ class PythonInspector(BaseInspector):
             b_target = reg_bin if reg_bin.exists() else None
             is_act = bool(base_rep.binary_path and b_target and str(b_target).lower() == str(base_rep.binary_path).lower())
             _add_inst(reg_p, b_target, None, "Registry", is_act, "Discovered via Windows Registry uninstall inventory")
+
+        # 4. Discovery Pipeline (4-Layer & FastSearchEngine)
+        for disc_root in runner.discovery.discover_all_tool_instances(self.id):
+            cand_bin = disc_root / "python.exe"
+            if not cand_bin.is_file():
+                cand_bin = disc_root / "Scripts" / "python.exe"
+            b_target = cand_bin if cand_bin.is_file() else None
+            is_act = bool(base_rep.binary_path and b_target and str(b_target).lower() == str(base_rep.binary_path).lower())
+            _add_inst(disc_root, b_target, None, "Discovery Pipeline", is_act, "Discovered via 4-Layer / FastSearchEngine signatures")
 
         # 4. Monitored Environment Variables Alignment
         env_vars: list[EnvVarStatus] = []

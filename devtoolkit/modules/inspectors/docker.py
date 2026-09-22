@@ -26,7 +26,7 @@ class DockerInspector(BaseInspector):
     description = "Docker container engine, Docker CLI, and Docker Compose"
 
     def inspect(self, runner: SafeRunner) -> ToolReport:
-        docker_bin = runner.resolve_binary("docker")
+        docker_bin = runner.resolve_binary("docker", tool_id=self.id)
         if not docker_bin:
             return ToolReport(
                 id=self.id,
@@ -149,6 +149,17 @@ class DockerInspector(BaseInspector):
         reg_apps = OSInventory.find_app_locations("Docker Desktop")
         for reg_p in reg_apps:
             _add_inst(reg_p, None, None, "Registry", False, "Docker Desktop installation from Windows Registry")
+
+        # 4. Discovery Pipeline (4-Layer & FastSearchEngine)
+        for disc_root in runner.discovery.discover_all_tool_instances(self.id):
+            cand_bin = disc_root / ("docker.exe" if sys.platform == "win32" else "docker")
+            if not cand_bin.is_file():
+                cand_bin = disc_root / "resources" / "bin" / ("docker.exe" if sys.platform == "win32" else "docker")
+            if not cand_bin.is_file():
+                cand_bin = disc_root / "bin" / ("docker.exe" if sys.platform == "win32" else "docker")
+            b_target = cand_bin if cand_bin.is_file() else None
+            is_act = bool(base_rep.binary_path and b_target and str(b_target).lower() == str(base_rep.binary_path).lower())
+            _add_inst(disc_root, b_target, None, "Discovery Pipeline", is_act, "Discovered via 4-Layer / FastSearchEngine signatures")
 
         # 4. Monitored Environment Variables Alignment
         env_vars: list[EnvVarStatus] = []

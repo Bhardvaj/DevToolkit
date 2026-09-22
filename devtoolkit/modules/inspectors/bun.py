@@ -27,7 +27,7 @@ class BunInspector(BaseInspector):
     description = "Bun all-in-one JavaScript runtime, bundler, and package manager"
 
     def inspect(self, runner: SafeRunner) -> ToolReport:
-        bun_bin = runner.resolve_binary("bun")
+        bun_bin = runner.resolve_binary("bun", tool_id=self.id)
         user_bun = None
 
         if not bun_bin:
@@ -159,6 +159,26 @@ class BunInspector(BaseInspector):
                     details="Bun user home installation directory",
                 )
             )
+
+        # Discovery Pipeline instances (Layer 2-4 Discovery)
+        for disc_p in runner.discovery.discover_all_tool_instances(self.id):
+            cand_bin = disc_p / "bin" / ("bun.exe" if sys.platform == "win32" else "bun")
+            if not cand_bin.is_file():
+                cand_bin = disc_p / ("bun.exe" if sys.platform == "win32" else "bun")
+            b_target = cand_bin if cand_bin.is_file() else None
+            k = str(b_target or disc_p).lower()
+            if k not in seen_bins:
+                seen_bins.add(k)
+                instances.append(
+                    DiscoveredInstance(
+                        path=str(disc_p),
+                        binary_path=str(b_target) if b_target else None,
+                        version=None,
+                        source="Discovery Pipeline",
+                        is_active=bool(base_report.binary_path and b_target and str(b_target).lower() == str(base_report.binary_path).lower()),
+                        details="Discovered Bun runtime (Layer 2-4)",
+                    )
+                )
 
         trace.append(f"Discovered {len(instances)} Bun runtime instances")
 

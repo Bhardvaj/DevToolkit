@@ -28,7 +28,7 @@ class OllamaInspector(BaseInspector):
     description = "Local LLM inference server, model runner, and CLI"
 
     def inspect(self, runner: SafeRunner) -> ToolReport:
-        ollama_bin = runner.resolve_binary("ollama")
+        ollama_bin = runner.resolve_binary("ollama", tool_id=self.id)
         user_bin = None
 
         if not ollama_bin and sys.platform == "win32":
@@ -198,6 +198,26 @@ class OllamaInspector(BaseInspector):
                             details="Ollama user application directory",
                         )
                     )
+
+        # Discovery Pipeline instances (Layer 2-4 Discovery)
+        for disc_p in runner.discovery.discover_all_tool_instances(self.id):
+            cand_bin = disc_p / ("ollama.exe" if sys.platform == "win32" else "ollama")
+            if not cand_bin.is_file():
+                cand_bin = disc_p / "bin" / ("ollama.exe" if sys.platform == "win32" else "ollama")
+            b_target = cand_bin if cand_bin.is_file() else None
+            k = str(b_target or disc_p).lower()
+            if k not in seen_bins:
+                seen_bins.add(k)
+                instances.append(
+                    DiscoveredInstance(
+                        path=str(disc_p),
+                        binary_path=str(b_target) if b_target else None,
+                        version=None,
+                        source="Discovery Pipeline",
+                        is_active=bool(base_report.binary_path and b_target and str(b_target).lower() == str(base_report.binary_path).lower()),
+                        details="Discovered Ollama installation (Layer 2-4)",
+                    )
+                )
 
         trace.append(f"Discovered {len(instances)} Ollama instances")
 

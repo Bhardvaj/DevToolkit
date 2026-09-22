@@ -27,7 +27,7 @@ class VSCodeInspector(BaseInspector):
     description = "Visual Studio Code code editor and CLI integration"
 
     def inspect(self, runner: SafeRunner) -> ToolReport:
-        code_bin = runner.resolve_binary("code") or runner.resolve_binary("code.cmd")
+        code_bin = runner.resolve_binary("code", tool_id=self.id) or runner.resolve_binary("code.cmd", tool_id=self.id)
         app_exe = None
         code_dir = None
 
@@ -208,6 +208,30 @@ class VSCodeInspector(BaseInspector):
                             details="Installed desktop application executable",
                         )
                     )
+
+        # Discovery Pipeline instances (Layer 2-4 Discovery)
+        for disc_p in runner.discovery.discover_all_tool_instances(self.id):
+            cand_bin = None
+            for b_name in ["Code.exe", "code.cmd", "Code - Insiders.exe", "code-insiders.cmd", "VSCodium.exe", "codium.cmd", "code"]:
+                for sub in [disc_p / b_name, disc_p / "bin" / b_name]:
+                    if sub.is_file():
+                        cand_bin = sub
+                        break
+                if cand_bin:
+                    break
+            k = str(cand_bin or disc_p).lower()
+            if k not in seen_bins:
+                seen_bins.add(k)
+                instances.append(
+                    DiscoveredInstance(
+                        path=str(disc_p),
+                        binary_path=str(cand_bin) if cand_bin else None,
+                        version=None,
+                        source="Discovery Pipeline",
+                        is_active=bool(base_report.binary_path and cand_bin and str(cand_bin).lower() == str(base_report.binary_path).lower()),
+                        details="Discovered VS Code installation (Layer 2-4)",
+                    )
+                )
 
         trace.append(f"Discovered {len(instances)} VS Code installations")
 

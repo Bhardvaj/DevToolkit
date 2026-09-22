@@ -26,8 +26,8 @@ class TerraformInspector(BaseInspector):
     description = "HashiCorp Terraform infrastructure as code CLI and OpenTofu compatibility"
 
     def inspect(self, runner: SafeRunner) -> ToolReport:
-        tf_bin = runner.resolve_binary("terraform")
-        tofu_bin = runner.resolve_binary("tofu")
+        tf_bin = runner.resolve_binary("terraform", tool_id=self.id)
+        tofu_bin = runner.resolve_binary("tofu", tool_id=self.id)
 
         active_bin = tf_bin or tofu_bin
         if not active_bin:
@@ -122,6 +122,30 @@ class TerraformInspector(BaseInspector):
                             details=f"Discovered {bin_name} executable in PATH",
                         )
                     )
+
+        # Discovery Pipeline instances (Layer 2-4 Discovery)
+        for disc_p in runner.discovery.discover_all_tool_instances(self.id):
+            cand_bin = None
+            for b_name in ["terraform.exe", "tofu.exe", "terraform", "tofu"]:
+                for sub in [disc_p / "bin" / b_name, disc_p / b_name]:
+                    if sub.is_file():
+                        cand_bin = sub
+                        break
+                if cand_bin:
+                    break
+            k = str(cand_bin or disc_p).lower()
+            if k not in seen_bins:
+                seen_bins.add(k)
+                instances.append(
+                    DiscoveredInstance(
+                        path=str(disc_p),
+                        binary_path=str(cand_bin) if cand_bin else None,
+                        version=None,
+                        source="Discovery Pipeline",
+                        is_active=bool(base_report.binary_path and cand_bin and str(cand_bin).lower() == str(base_report.binary_path).lower()),
+                        details="Discovered Terraform / OpenTofu (Layer 2-4)",
+                    )
+                )
 
         trace.append(f"Discovered {len(instances)} Terraform / OpenTofu instances")
 

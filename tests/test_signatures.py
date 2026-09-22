@@ -118,3 +118,125 @@ def test_signature_mingw(tmp_path):
     assert is_mingw(mingw_dir) is True
 
 
+def test_signature_c_compiler_variants(tmp_path):
+    from devtoolkit.core.signatures import is_c_compiler
+    # Clang
+    clang_dir = tmp_path / "clang_root"
+    clang_dir.mkdir()
+    (clang_dir / "bin").mkdir()
+    (clang_dir / "bin" / "clang.exe").write_text("dummy", encoding="utf-8")
+    (clang_dir / "include").mkdir()
+    assert is_c_compiler(clang_dir) is True
+
+    # MSVC
+    msvc_dir = tmp_path / "msvc_root"
+    msvc_dir.mkdir()
+    (msvc_dir / "vcvarsall.bat").write_text("dummy", encoding="utf-8")
+    assert is_c_compiler(msvc_dir) is True
+
+
+def test_signature_python(tmp_path):
+    from devtoolkit.core.signatures import is_python_sdk
+    py_dir = tmp_path / "custom_python"
+    py_dir.mkdir()
+    (py_dir / "python.exe").write_text("dummy", encoding="utf-8")
+    (py_dir / "Lib").mkdir()
+
+    assert is_python_sdk(py_dir) is True
+
+
+def test_signature_node(tmp_path):
+    from devtoolkit.core.signatures import is_node_sdk
+    node_dir = tmp_path / "custom_node"
+    node_dir.mkdir()
+    (node_dir / "node.exe").write_text("dummy", encoding="utf-8")
+    (node_dir / "npm.cmd").write_text("dummy", encoding="utf-8")
+
+    assert is_node_sdk(node_dir) is True
+
+
+def test_signature_git(tmp_path):
+    from devtoolkit.core.signatures import is_git_install
+    git_dir = tmp_path / "custom_git"
+    git_dir.mkdir()
+    (git_dir / "cmd").mkdir()
+    (git_dir / "cmd" / "git.exe").write_text("dummy", encoding="utf-8")
+    (git_dir / "usr").mkdir()
+
+    assert is_git_install(git_dir) is True
+
+
+def test_signature_docker(tmp_path):
+    from devtoolkit.core.signatures import is_docker_install
+    docker_dir = tmp_path / "custom_docker"
+    docker_dir.mkdir()
+    (docker_dir / "docker.exe").write_text("dummy", encoding="utf-8")
+
+    assert is_docker_install(docker_dir) is True
+
+
+def test_signature_rust(tmp_path):
+    from devtoolkit.core.signatures import is_rust_sdk
+    rust_dir = tmp_path / "custom_rust"
+    rust_dir.mkdir()
+    (rust_dir / "bin").mkdir()
+    (rust_dir / "bin" / "rustc.exe").write_text("dummy", encoding="utf-8")
+    (rust_dir / "bin" / "cargo.exe").write_text("dummy", encoding="utf-8")
+
+    assert is_rust_sdk(rust_dir) is True
+
+
+def test_signature_golang(tmp_path):
+    from devtoolkit.core.signatures import is_go_sdk
+    go_dir = tmp_path / "custom_go"
+    go_dir.mkdir()
+    (go_dir / "bin").mkdir()
+    (go_dir / "bin" / "go.exe").write_text("dummy", encoding="utf-8")
+    (go_dir / "pkg").mkdir()
+
+    assert is_go_sdk(go_dir) is True
+
+
+def test_signature_simple_tools(tmp_path):
+    from devtoolkit.core.signatures import (
+        is_bun_install,
+        is_gh_install,
+        is_kubectl_install,
+        is_ollama_install,
+        is_sqlite_install,
+        is_terraform_install,
+    )
+
+    bun_dir = tmp_path / "custom_bun"
+    bun_dir.mkdir()
+    (bun_dir / "bun.exe").write_text("dummy", encoding="utf-8")
+    assert is_bun_install(bun_dir) is True
+
+    gh_dir = tmp_path / "custom_gh"
+    gh_dir.mkdir()
+    (gh_dir / "bin").mkdir()
+    (gh_dir / "bin" / "gh.exe").write_text("dummy", encoding="utf-8")
+    assert is_gh_install(gh_dir) is True
+
+    k_dir = tmp_path / "custom_kubectl"
+    k_dir.mkdir()
+    (k_dir / "kubectl.exe").write_text("dummy", encoding="utf-8")
+    assert is_kubectl_install(k_dir) is True
+
+    tf_dir = tmp_path / "custom_tf"
+    tf_dir.mkdir()
+    (tf_dir / "tofu.exe").write_text("dummy", encoding="utf-8")
+    assert is_terraform_install(tf_dir) is True
+
+    ol_dir = tmp_path / "custom_ollama"
+    ol_dir.mkdir()
+    (ol_dir / "ollama.exe").write_text("dummy", encoding="utf-8")
+    assert is_ollama_install(ol_dir) is True
+
+    sq_dir = tmp_path / "custom_sqlite"
+    sq_dir.mkdir()
+    (sq_dir / "sqlite3.exe").write_text("dummy", encoding="utf-8")
+    assert is_sqlite_install(sq_dir) is True
+
+
+

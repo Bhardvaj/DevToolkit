@@ -28,7 +28,7 @@ class KubectlInspector(BaseInspector):
     description = "Kubernetes cluster management CLI and container orchestration tools"
 
     def inspect(self, runner: SafeRunner) -> ToolReport:
-        kubectl_bin = runner.resolve_binary("kubectl")
+        kubectl_bin = runner.resolve_binary("kubectl", tool_id=self.id)
         if not kubectl_bin:
             return ToolReport(
                 id=self.id,
@@ -182,6 +182,26 @@ class KubectlInspector(BaseInspector):
                         source="Docker Desktop Bundled",
                         is_active=False,
                         details="Bundled Kubernetes CLI inside Docker Desktop resources",
+                    )
+                )
+
+        # Discovery Pipeline instances (Layer 2-4 Discovery)
+        for disc_p in runner.discovery.discover_all_tool_instances(self.id):
+            cand_bin = disc_p / ("kubectl.exe" if sys.platform == "win32" else "kubectl")
+            if not cand_bin.is_file():
+                cand_bin = disc_p / "bin" / ("kubectl.exe" if sys.platform == "win32" else "kubectl")
+            b_target = cand_bin if cand_bin.is_file() else None
+            k = str(b_target or disc_p).lower()
+            if k not in seen_bins:
+                seen_bins.add(k)
+                instances.append(
+                    DiscoveredInstance(
+                        path=str(disc_p),
+                        binary_path=str(b_target) if b_target else None,
+                        version=None,
+                        source="Discovery Pipeline",
+                        is_active=bool(base_report.binary_path and b_target and str(b_target).lower() == str(base_report.binary_path).lower()),
+                        details="Discovered kubectl binary (Layer 2-4)",
                     )
                 )
 
