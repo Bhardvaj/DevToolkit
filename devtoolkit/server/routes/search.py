@@ -114,10 +114,17 @@ class RealtimeToggleRequest(BaseModel):
 @router.post("/realtime")
 def toggle_realtime(req: RealtimeToggleRequest):
     """Enable or disable live filesystem watchers and persist preference to config."""
-    from devtoolkit.core.config import set_realtime_search
+    from devtoolkit.core.config import load_config, set_realtime_search
 
     engine = get_search_engine()
-    engine.enable_realtime(req.enabled)
+    if req.enabled and not engine._indexed_roots:
+        config = load_config()
+        raw_roots = getattr(config, "search_paths", []) or []
+        target_paths = [Path(r).expanduser().resolve() for r in raw_roots if Path(r).exists() and Path(r).is_dir()]
+        if target_paths:
+            engine._indexed_roots = target_paths
+
+    engine.enable_realtime(req.enabled, reindex=True)
     set_realtime_search(req.enabled)
     return engine.get_telemetry()
 

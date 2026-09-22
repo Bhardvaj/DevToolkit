@@ -132,7 +132,7 @@ def test_fast_search_engine_realtime_lifecycle(tmp_path: Path):
     f1 = tmp_path / "sample.py"
     f1.write_text("content", encoding="utf-8")
 
-    engine = FastSearchEngine()
+    engine = FastSearchEngine(realtime_enabled=True)
     engine.clear()
     assert engine.total_entries == 0
 
@@ -185,3 +185,38 @@ def test_api_realtime_toggle_endpoint():
     assert res2["realtime_enabled"] is True
     cfg2 = load_config()
     assert cfg2.realtime_search is True
+
+
+def test_realtime_enable_triggers_catchup_reindex(tmp_path: Path):
+    """Verify that enabling real-time updating triggers a catch-up re-index for missed disk changes."""
+    f1 = tmp_path / "initial.py"
+    f1.write_text("initial", encoding="utf-8")
+
+    engine = FastSearchEngine(realtime_enabled=True)
+    engine.clear()
+    engine.index_roots([tmp_path])
+    assert len(engine.find_exact("initial.py")) == 1
+
+    # 1. Disable real-time updating
+    engine.enable_realtime(False)
+    assert engine.realtime_enabled is False
+
+    # 2. Modify disk while real-time is disabled
+    f2 = tmp_path / "offline_created.py"
+    f2.write_text("created while disabled", encoding="utf-8")
+    f1.unlink()  # delete initial.py while disabled
+
+    # The in-memory index does not yet reflect changes
+    assert len(engine.find_exact("offline_created.py")) == 0
+    assert len(engine.find_exact("initial.py")) == 1
+
+    # 3. Re-enable real-time updating (triggers catch-up reindex)
+    engine.enable_realtime(True, reindex=True)
+    assert engine.realtime_enabled is True
+
+    # 4. In-memory index should now be completely up-to-date!
+    assert len(engine.find_exact("offline_created.py")) == 1
+    assert len(engine.find_exact("initial.py")) == 0
+
+    engine.clear()
+

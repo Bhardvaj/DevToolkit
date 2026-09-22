@@ -2225,7 +2225,12 @@ let activeTab = 'env';
 
     async function toggleRealtimeSearchSetting(enabled) {
       const toggle = document.getElementById('settings-toggle-realtime');
+      const badge = document.getElementById('settings-realtime-badge');
       if (toggle) toggle.disabled = true;
+      if (badge && enabled) {
+        badge.innerText = 'Syncing...';
+        badge.className = 'px-1.5 py-0.2 rounded text-[10px] font-mono font-semibold bg-[#F59E0B1A] text-[#F59E0B] border border-[#F59E0B40]';
+      }
 
       try {
         const res = await fetch('/api/search/realtime', {
@@ -2239,7 +2244,10 @@ let activeTab = 'env';
         }
         const data = await res.json();
         updateSearchTelemetryUI(data);
-        showToast(enabled ? 'Real-time search updates enabled' : 'Real-time search updates disabled');
+        showToast(enabled ? `Real-time updates enabled (${(data.total_files || 0).toLocaleString()} files synchronized)` : 'Real-time updates disabled');
+        if (currentActiveTab === 'search') {
+          triggerSearch();
+        }
       } catch (err) {
         console.error('Failed to toggle realtime search:', err);
         showToast(`Error updating real-time setting: ${err.message || 'Unknown error'}`, true);

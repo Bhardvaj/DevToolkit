@@ -85,8 +85,6 @@ class ParallelPrunedCrawler:
         # Crawl directories in parallel
         # We start sub-crawls from depth 1 for the expanded top tasks
         sub_targets = [p for p in top_tasks if p not in [str(r) for r in valid_roots]]
-        if not sub_targets:
-            sub_targets = [str(r) for r in valid_roots]
 
         all_batch_results: List[SearchResult] = []
         with ThreadPoolExecutor(max_workers=self.max_workers) as executor:

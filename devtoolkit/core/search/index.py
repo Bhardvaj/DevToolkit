@@ -142,21 +142,41 @@ class SearchIndex:
     def add_entries_batch(self, batch: List[SearchResult]) -> None:
         """Add a batch of SearchResult records efficiently."""
         with self._lock:
-            start_idx = len(self._entries)
-            self._entries.extend(batch)
-            for i, item in enumerate(batch):
-                idx = start_idx + i
+            for item in batch:
                 norm_p = Path(item.path).as_posix()
-                self._path_map[norm_p] = idx
-                if item.is_dir:
-                    self._total_dirs += 1
+                existing_idx = self._path_map.get(norm_p)
+                if existing_idx is not None:
+                    old_res = self._entries[existing_idx]
+                    if old_res.is_dir != item.is_dir:
+                        if item.is_dir:
+                            self._total_dirs += 1
+                            self._total_files = max(0, self._total_files - 1)
+                        else:
+                            self._total_files += 1
+                            self._total_dirs = max(0, self._total_dirs - 1)
+                    self._entries[existing_idx] = item
+                    if old_res.name.lower() != item.name.lower():
+                        old_indices = self._name_map.get(old_res.name.lower(), [])
+                        if existing_idx in old_indices:
+                            old_indices.remove(existing_idx)
+                        lower_name = item.name.lower()
+                        if lower_name not in self._name_map:
+                            self._name_map[lower_name] = [existing_idx]
+                        else:
+                            self._name_map[lower_name].append(existing_idx)
                 else:
-                    self._total_files += 1
-                lower_name = item.name.lower()
-                if lower_name not in self._name_map:
-                    self._name_map[lower_name] = [idx]
-                else:
-                    self._name_map[lower_name].append(idx)
+                    idx = len(self._entries)
+                    self._entries.append(item)
+                    self._path_map[norm_p] = idx
+                    if item.is_dir:
+                        self._total_dirs += 1
+                    else:
+                        self._total_files += 1
+                    lower_name = item.name.lower()
+                    if lower_name not in self._name_map:
+                        self._name_map[lower_name] = [idx]
+                    else:
+                        self._name_map[lower_name].append(idx)
 
     def remove_entry(self, path: str) -> bool:
         """Remove a single file or directory from the index in O(1) time."""

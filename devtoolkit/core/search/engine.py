@@ -70,7 +70,12 @@ class FastSearchEngine:
     - Parallel multi-threaded pruned Win32 directory scanning when non-elevated
     """
 
-    def __init__(self, max_workers: int = 16, max_depth: int = 6) -> None:
+    def __init__(
+        self,
+        max_workers: int = 16,
+        max_depth: int = 6,
+        realtime_enabled: Optional[bool] = None,
+    ) -> None:
         self.index = SearchIndex()
         self.crawler = ParallelPrunedCrawler(max_workers=max_workers, max_depth=max_depth)
         self.usn_reader = NTFSUSNReader()
@@ -79,11 +84,14 @@ class FastSearchEngine:
         self._last_indexed_at: Optional[str] = None
         self._watchers: List[LiveDirectoryWatcher] = []
         self._indexed_roots: List[Path] = []
-        try:
-            cfg = load_config()
-            self._realtime_enabled: bool = getattr(cfg, "realtime_search", True)
-        except Exception:
-            self._realtime_enabled = True
+        if realtime_enabled is not None:
+            self._realtime_enabled = bool(realtime_enabled)
+        else:
+            try:
+                cfg = load_config()
+                self._realtime_enabled = getattr(cfg, "realtime_search", True)
+            except Exception:
+                self._realtime_enabled = True
 
     @property
     def total_entries(self) -> int:
@@ -138,11 +146,16 @@ class FastSearchEngine:
                 pass
         self._watchers.clear()
 
-    def enable_realtime(self, enabled: bool) -> None:
-        """Dynamically toggle live filesystem change watchers."""
+    def enable_realtime(self, enabled: bool, reindex: bool = True) -> None:
+        """Dynamically toggle live filesystem change watchers, re-indexing if enabling to catch up on missed disk changes."""
         self._realtime_enabled = bool(enabled)
         if self._realtime_enabled:
-            self._start_watchers()
+            if reindex and self._indexed_roots:
+                # Catch up on any changes that occurred while real-time watching was disabled
+                self.index.clear()
+                self.index_roots(self._indexed_roots)
+            else:
+                self._start_watchers()
         else:
             self._stop_watchers()
 
