@@ -62,9 +62,6 @@ def warmup_search_engine_background():
 
             config = load_config()
             raw_roots = getattr(config, "search_paths", []) or []
-            if not raw_roots:
-                common_candidates = [Path("D:/Dev"), Path("C:/Dev")]
-                raw_roots = [str(c) for c in common_candidates if c.exists() and c.is_dir()]
             target_paths = [Path(r).expanduser().resolve() for r in raw_roots if Path(r).exists() and Path(r).is_dir()]
             if target_paths:
                 engine = get_search_engine()

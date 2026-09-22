@@ -1899,6 +1899,11 @@ let activeTab = 'env';
       const bannerListEl = document.getElementById('banner-paths-list');
 
       const paths = currentConfig.search_paths || [];
+      const fsBannerListEl = document.getElementById('fs-banner-paths-list');
+      if (fsBannerListEl) {
+        fsBannerListEl.innerText = paths.length > 0 ? paths.join(', ') : 'None configured (Add directories in Settings)';
+      }
+
       if (paths.length === 0) {
         listEl.innerHTML = '<div class="text-xs text-slate-500 italic p-3 bg-[#08090C] rounded border border-[#1F2430] text-center font-mono">No custom search roots configured. Standard OS & ecosystem discovery is active.</div>';
         bannerEl.classList.add('hidden');
@@ -1907,11 +1912,6 @@ let activeTab = 'env';
 
       bannerEl.classList.remove('hidden');
       bannerListEl.innerText = paths.join(', ');
-
-      const fsBannerListEl = document.getElementById('fs-banner-paths-list');
-      if (fsBannerListEl) {
-        fsBannerListEl.innerText = paths.join(', ');
-      }
 
       listEl.innerHTML = paths.map((p, idx) => `
         <div class="flex items-center justify-between p-2.5 bg-[#08090C] rounded border border-[#1F2430] text-xs">
@@ -2077,9 +2077,14 @@ let activeTab = 'env';
           ? data.roots_scanned
           : ((currentConfig && currentConfig.search_paths && currentConfig.search_paths.length > 0)
               ? currentConfig.search_paths
-              : ['Standard developer workspaces (auto-discovered)']);
-        fsBannerList.innerText = roots.join(', ');
-        fsBannerList.title = roots.join('\n');
+              : []);
+        if (roots.length > 0) {
+          fsBannerList.innerText = roots.join(', ');
+          fsBannerList.title = roots.join('\n');
+        } else {
+          fsBannerList.innerText = 'None configured (Add directories in Settings)';
+          fsBannerList.title = 'No custom search roots configured. Click Manage Paths to configure.';
+        }
       }
 
       // 5. Persistent Bottom Status Bar

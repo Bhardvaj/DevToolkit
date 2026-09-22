@@ -91,20 +91,15 @@ def trigger_reindex(req: Optional[ReindexRequest] = None):
     engine = get_search_engine()
 
     raw_roots: List[str] = []
-    if req and req.roots:
+    if req and req.roots is not None:
         raw_roots = req.roots
     else:
         config = load_config()
         raw_roots = getattr(config, "search_paths", []) or []
 
-    # If no search roots configured, check common developer directories
-    if not raw_roots:
-        common_candidates = [Path("D:/Dev"), Path("C:/Dev"), Path.cwd()]
-        raw_roots = [str(c) for c in common_candidates if c.exists() and c.is_dir()]
-
     target_paths = [Path(r).expanduser().resolve() for r in raw_roots if Path(r).exists() and Path(r).is_dir()]
 
-    # Clear previous index and re-index
+    # Clear previous index and re-index only if target paths exist
     engine.clear()
     if target_paths:
         engine.index_roots(target_paths)

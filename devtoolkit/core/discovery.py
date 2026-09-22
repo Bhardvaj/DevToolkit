@@ -27,11 +27,8 @@ class DiscoveryPipeline:
 
     def _get_user_scanned_tools(self) -> Dict[str, List[Path]]:
         if self._user_scan_cache is None:
-            user_roots = [Path(p) for p in self._user_config.search_paths]
-            if not user_roots:
-                common_dev = [Path("D:/Dev"), Path("C:/Dev")]
-                user_roots = [c for c in common_dev if c.exists() and c.is_dir()]
-            self._user_scan_cache = scan_roots_for_tools(user_roots, max_depth=2)
+            user_roots = [Path(p) for p in self._user_config.search_paths if Path(p).exists() and Path(p).is_dir()]
+            self._user_scan_cache = scan_roots_for_tools(user_roots, max_depth=2) if user_roots else {}
         return self._user_scan_cache
 
     def discover_android_sdk(self) -> Optional[Path]:
