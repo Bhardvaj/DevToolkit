@@ -32,7 +32,7 @@ def trigger_reindex(req: Optional[ReindexRequest] = None):
         raw_roots = req.roots
     else:
         config = load_config()
-        raw_roots = config.search_roots or []
+        raw_roots = getattr(config, "search_paths", []) or []
 
     # If no search roots configured, check common developer directories
     if not raw_roots:
@@ -47,3 +47,4 @@ def trigger_reindex(req: Optional[ReindexRequest] = None):
         engine.index_roots(target_paths)
 
     return engine.get_telemetry()
+

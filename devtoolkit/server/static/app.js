@@ -2116,12 +2116,16 @@ let activeTab = 'env';
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({})
         });
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          throw new Error(errData.detail || `Server returned ${res.status}`);
+        }
         const data = await res.json();
         updateSearchTelemetryUI(data);
         showToast(`Search Index updated: ${(data.total_files || 0).toLocaleString()} files in ${data.duration_ms}ms`);
       } catch (err) {
         console.error('Re-indexing error:', err);
-        showToast('Error rebuilding search index', true);
+        showToast(`Error rebuilding search index: ${err.message || 'Unknown error'}`, true);
       } finally {
         if (spinner) spinner.classList.remove('fa-spin');
         if (btnText) btnText.innerText = 'Re-index Now';

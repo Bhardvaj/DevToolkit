@@ -237,7 +237,12 @@ This document is continuously updated to reflect current project status, complet
     - **Settings Tab**: Added dedicated **FastSearch Engine Telemetry** card featuring a 6-metric grid (Engine Strategy, Indexed Files, Indexed Folders, Build Latency, Index Memory, Process RAM) and an interactive **Re-index Now** button with spinning refresh animation and toast feedback.
 - [x] **Verification & Standalone Recompilation**:
   - Authored comprehensive test suite in `tests/test_search_engine.py` and `tests/test_server.py`.
-  - All 170 project tests pass (`170 passed in 103.86s`).
+  - All 170 project tests pass (`170 passed in 99.13s`).
+  - Replaced deprecated `@app.on_event("startup")` with modern FastAPI `lifespan` async context manager.
+  - Resolved `AttributeError: 'DevToolkitConfig' object has no attribute 'search_roots'` in `devtoolkit/server/routes/search.py` by referencing `config.search_paths`.
+  - Resolved 64-bit Windows handle truncation in `get_process_ram_bytes()` by declaring `GetCurrentProcess.restype = wintypes.HANDLE` and PSAPI `argtypes`/`restype`, restoring real-time Win32 process working set RAM reporting.
+  - Implemented automatic background warmup indexing (`warmup_search_engine_background`) on server launch, preventing uninitialized "Idle / None / Never" startup state.
+  - Added smart fallback search roots (`D:\Dev`, `C:\Dev`) in discovery pipeline and re-indexer when custom config search paths are unconfigured.
   - Standalone binary recompiled: `dist/DevToolkit.exe` (21.0 MB).
 
 ---

@@ -8,6 +8,7 @@ import webbrowser
 from pathlib import Path
 from typing import List
 
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
@@ -41,7 +42,36 @@ from devtoolkit.server.routes.search import get_search_status, trigger_reindex
 from devtoolkit.server.routes.system import delete_search_path, get_config, get_system, post_search_path
 from devtoolkit.server.ui import EMBEDDED_UI_HTML, get_dashboard_html
 
-app = FastAPI(title="DevToolkit API", version="0.2.0")
+def warmup_search_engine_background():
+    """Background worker to warm up the search index on server startup."""
+    def _worker():
+        try:
+            from devtoolkit.core.config import load_config
+            from devtoolkit.core.search import get_search_engine
+
+            config = load_config()
+            raw_roots = getattr(config, "search_paths", []) or []
+            if not raw_roots:
+                common_candidates = [Path("D:/Dev"), Path("C:/Dev")]
+                raw_roots = [str(c) for c in common_candidates if c.exists() and c.is_dir()]
+            target_paths = [Path(r).expanduser().resolve() for r in raw_roots if Path(r).exists() and Path(r).is_dir()]
+            if target_paths:
+                engine = get_search_engine()
+                engine.index_roots(target_paths)
+        except Exception:
+            pass
+
+    t = threading.Thread(target=_worker, daemon=True)
+    t.start()
+
+
+@asynccontextmanager
+async def lifespan(application: FastAPI):
+    warmup_search_engine_background()
+    yield
+
+
+app = FastAPI(title="DevToolkit API", version="0.2.0", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -101,7 +131,6 @@ else:
     @app.get("/", response_class=HTMLResponse)
     def serve_dashboard() -> str:
         return get_dashboard_html()
-
 
 def run_server(port: int):
     uvicorn.run(app, host="127.0.0.1", port=port, log_level="warning")

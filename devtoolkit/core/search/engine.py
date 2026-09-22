@@ -34,12 +34,18 @@ def get_process_ram_bytes() -> int:
 
             counters = PROCESS_MEMORY_COUNTERS()
             counters.cb = ctypes.sizeof(PROCESS_MEMORY_COUNTERS)
-            handle = ctypes.windll.kernel32.GetCurrentProcess()
-            func = getattr(ctypes.windll.kernel32, "K32GetProcessMemoryInfo", None)
+            kernel32 = ctypes.windll.kernel32
+            kernel32.GetCurrentProcess.restype = wintypes.HANDLE
+            handle = kernel32.GetCurrentProcess()
+
+            func = getattr(kernel32, "K32GetProcessMemoryInfo", None)
             if not func:
                 func = getattr(ctypes.windll.psapi, "GetProcessMemoryInfo", None)
-            if func and func(handle, ctypes.byref(counters), ctypes.sizeof(counters)):
-                return int(counters.WorkingSetSize)
+            if func:
+                func.argtypes = [wintypes.HANDLE, ctypes.POINTER(PROCESS_MEMORY_COUNTERS), wintypes.DWORD]
+                func.restype = wintypes.BOOL
+                if func(handle, ctypes.byref(counters), ctypes.sizeof(counters)):
+                    return int(counters.WorkingSetSize)
         except Exception:
             pass
     else:
