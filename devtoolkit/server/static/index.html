@@ -388,6 +388,16 @@
 
         <!-- ==================== VIEW 2: FAST SEARCH (EVERYTHING ENGINE) ==================== -->
         <div id="view-search" class="space-y-4 hidden">
+          <!-- Active Monitored Search Roots Banner -->
+          <div id="fs-monitored-paths-banner" class="text-xs bg-[#0E1015] border border-[#06B6D440] rounded-md px-3.5 py-2 flex items-center justify-between">
+            <div class="flex items-center gap-2 truncate mr-3">
+              <i class="fa-solid fa-folder-tree text-[#06B6D4] flex-shrink-0"></i>
+              <span class="text-[#94A3B8] flex-shrink-0">Monitored Search Roots:</span>
+              <span id="fs-banner-paths-list" class="font-mono text-[#06B6D4] truncate">Loading monitored roots...</span>
+            </div>
+            <button onclick="switchTab('settings')" class="text-[#06B6D4] hover:text-white font-medium text-xs flex-shrink-0">Manage Paths &rarr;</button>
+          </div>
+
           <!-- Top Search Control Center -->
           <div class="card-pro p-4 space-y-3.5">
             <!-- Search Input with Clear button and Modifier toggles -->
@@ -480,7 +490,7 @@
               <!-- Scope Selector -->
               <div class="flex items-center gap-1.5">
                 <span class="text-[10px] text-[#475569] font-medium uppercase tracking-wider font-mono">Scope:</span>
-                <select id="fs-scope-select" onchange="onVisualFilterChange()" class="bg-[#141721] border border-[#1F2430] text-xs text-[#F3F4F6] rounded px-2 py-1 outline-none focus:border-[#3B82F6]">
+                <select id="fs-scope-select" onchange="onVisualFilterChange('scope')" class="bg-[#141721] border border-[#1F2430] text-xs text-[#F3F4F6] rounded px-2 py-1 outline-none focus:border-[#3B82F6]">
                   <option value="all">Files & Folders</option>
                   <option value="files">Files Only</option>
                   <option value="folders">Folders Only</option>
@@ -490,7 +500,7 @@
               <!-- Size Filter Dropdown -->
               <div class="flex items-center gap-1.5">
                 <span class="text-[10px] text-[#475569] font-medium uppercase tracking-wider font-mono">Size:</span>
-                <select id="fs-size-select" onchange="onVisualFilterChange()" class="bg-[#141721] border border-[#1F2430] text-xs text-[#F3F4F6] rounded px-2 py-1 outline-none focus:border-[#3B82F6]">
+                <select id="fs-size-select" onchange="onVisualFilterChange('size')" class="bg-[#141721] border border-[#1F2430] text-xs text-[#F3F4F6] rounded px-2 py-1 outline-none focus:border-[#3B82F6]">
                   <option value="any">Any Size</option>
                   <option value="empty">Empty (0 B)</option>
                   <option value="tiny">Tiny (&lt; 10 KB)</option>
@@ -505,7 +515,7 @@
               <!-- Date Modified Dropdown -->
               <div class="flex items-center gap-1.5">
                 <span class="text-[10px] text-[#475569] font-medium uppercase tracking-wider font-mono">Modified:</span>
-                <select id="fs-date-select" onchange="onVisualFilterChange()" class="bg-[#141721] border border-[#1F2430] text-xs text-[#F3F4F6] rounded px-2 py-1 outline-none focus:border-[#3B82F6]">
+                <select id="fs-date-select" onchange="onVisualFilterChange('date')" class="bg-[#141721] border border-[#1F2430] text-xs text-[#F3F4F6] rounded px-2 py-1 outline-none focus:border-[#3B82F6]">
                   <option value="any">Any Time</option>
                   <option value="today">Today</option>
                   <option value="yesterday">Yesterday</option>
@@ -555,10 +565,6 @@
               <button onclick="exportSearchResultsCSV()" class="btn-secondary-pro px-2.5 py-1 text-xs flex items-center gap-1.5" title="Export current search results as CSV">
                 <i class="fa-solid fa-file-csv text-[11px] text-[#10B981]"></i>
                 <span class="hidden sm:inline">Export CSV</span>
-              </button>
-              <button onclick="copySearchResultsText()" class="btn-secondary-pro px-2.5 py-1 text-xs flex items-center gap-1.5" title="Copy file paths to clipboard">
-                <i class="fa-solid fa-copy text-[11px] text-[#06B6D4]"></i>
-                <span class="hidden sm:inline">Copy Paths</span>
               </button>
               <button onclick="triggerFastSearchReindex()" id="fs-reindex-btn" class="btn-secondary-pro px-2.5 py-1 text-xs flex items-center gap-1.5" title="Re-index search roots now">
                 <i class="fa-solid fa-arrows-rotate text-[11px]" id="fs-reindex-icon"></i>

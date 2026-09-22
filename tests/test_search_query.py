@@ -127,5 +127,53 @@ def test_execute_search_filters_and_syntax():
     res_page = execute_search(index, SearchQueryParams(limit=2, offset=0))
     assert len(res_page.results) == 2
     assert res_page.total_matches == 7
+    assert res_page.total_indexed == 7
     assert res_page.limit == 2
     assert res_page.offset == 0
+
+
+def test_folder_and_file_syntax_consistency():
+    index = SearchIndex()
+    now = time.time()
+    index.add_entry(path="D:/Dev/project", name="project", is_dir=True, size=0, mtime=now)
+    index.add_entry(path="D:/Dev/project.txt", name="project.txt", is_dir=False, size=100, mtime=now)
+    index.add_entry(path="D:/Dev/main.py", name="main.py", is_dir=False, size=200, mtime=now)
+    index.add_entry(path="D:/Dev/main", name="main", is_dir=True, size=0, mtime=now)
+
+    # folder:project vs folder: project
+    res_f1 = execute_search(index, SearchQueryParams(query="folder:project"))
+    res_f2 = execute_search(index, SearchQueryParams(query="folder: project"))
+    assert res_f1.total_matches == 1
+    assert res_f1.results[0].name == "project"
+    assert res_f1.results[0].is_dir is True
+    assert res_f2.total_matches == 1
+    assert res_f2.results[0].name == "project"
+
+    # file:main vs file: main
+    res_m1 = execute_search(index, SearchQueryParams(query="file:main"))
+    res_m2 = execute_search(index, SearchQueryParams(query="file: main"))
+    assert res_m1.total_matches == 1
+    assert res_m1.results[0].name == "main.py"
+    assert res_m1.results[0].is_dir is False
+    assert res_m2.total_matches == 1
+    assert res_m2.results[0].name == "main.py"
+
+
+def test_relevance_ranking_prioritization():
+    index = SearchIndex()
+    now = time.time()
+    # Insert in arbitrary order
+    index.add_entry(path="D:/Dev/my_test_runner.py", name="my_test_runner.py", is_dir=False, size=100, mtime=now - 500)
+    index.add_entry(path="D:/Dev/test", name="test", is_dir=True, size=0, mtime=now - 1000)
+    index.add_entry(path="D:/Dev/test_suite.py", name="test_suite.py", is_dir=False, size=200, mtime=now - 200)
+
+    # Query "test" with default relevance sort
+    res = execute_search(index, SearchQueryParams(query="test", sort_by="relevance"))
+    names = [r.name for r in res.results]
+    # Exact name "test" must come first, prefix "test_suite.py" second, substring "my_test_runner.py" third
+    assert names == ["test", "test_suite.py", "my_test_runner.py"]
+
+    # Explicit column sort on top (e.g. name ascending)
+    res_name = execute_search(index, SearchQueryParams(query="test", sort_by="name", sort_desc=False))
+    names_asc = [r.name for r in res_name.results]
+    assert names_asc == ["my_test_runner.py", "test", "test_suite.py"]

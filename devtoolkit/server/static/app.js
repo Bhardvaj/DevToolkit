@@ -1908,6 +1908,11 @@ let activeTab = 'env';
       bannerEl.classList.remove('hidden');
       bannerListEl.innerText = paths.join(', ');
 
+      const fsBannerListEl = document.getElementById('fs-banner-paths-list');
+      if (fsBannerListEl) {
+        fsBannerListEl.innerText = paths.join(', ');
+      }
+
       listEl.innerHTML = paths.map((p, idx) => `
         <div class="flex items-center justify-between p-2.5 bg-[#08090C] rounded border border-[#1F2430] text-xs">
           <div class="flex items-center gap-2 font-mono text-slate-200 truncate" title="${escapeHtml(p)}">
@@ -2001,6 +2006,8 @@ let activeTab = 'env';
       }
     }
 
+    let latestSearchTelemetry = null;
+
     async function fetchSearchTelemetry() {
       try {
         const res = await fetch('/api/search/status');
@@ -2014,20 +2021,40 @@ let activeTab = 'env';
 
     function updateSearchTelemetryUI(data) {
       if (!data) return;
+      latestSearchTelemetry = data;
 
-      // 1. Sidebar Footer indicator
+      const isIndexing = Boolean(data.is_indexing || data.status === 'indexing');
+      const isReady = Boolean(data.status === 'ready');
+      const filesCount = data.total_files >= 1000 ? `${(data.total_files / 1000).toFixed(1)}k` : (data.total_files || 0);
+      const shortCount = data.total_files >= 1000 ? `${(data.total_files / 1000).toFixed(0)}k` : (data.total_files || 0);
+
+      // 1. Sidebar Navigation Button Badge (Fast Search)
+      const sideNavBadge = document.getElementById('side-search-count-badge');
+      if (sideNavBadge) {
+        if (isIndexing) {
+          sideNavBadge.innerText = 'Indexing...';
+          sideNavBadge.className = 'px-1.5 py-0.2 rounded text-[10px] font-mono font-semibold bg-[#F59E0B1A] text-[#F59E0B] border border-[#F59E0B40] flex-shrink-0';
+        } else if (isReady) {
+          sideNavBadge.innerText = `${shortCount}`;
+          sideNavBadge.className = 'px-1.5 py-0.2 rounded text-[10px] font-mono font-semibold bg-[#10B9811A] text-[#10B981] border border-[#10B98140] flex-shrink-0';
+        } else {
+          sideNavBadge.innerText = 'Idle';
+          sideNavBadge.className = 'px-1.5 py-0.2 rounded text-[10px] font-mono font-semibold bg-[#141721] text-[#94A3B8] border border-[#1F2430] flex-shrink-0';
+        }
+      }
+
+      // 2. Sidebar Footer indicator
       const sideStatus = document.getElementById('side-search-status');
       const sideIcon = document.getElementById('side-search-icon');
       if (sideStatus) {
-        if (data.is_indexing || data.status === 'indexing') {
+        if (isIndexing) {
           sideStatus.innerText = 'Indexing...';
           sideStatus.className = 'text-[#F59E0B] font-mono truncate max-w-[120px]';
           if (sideIcon) sideIcon.className = 'fa-solid fa-arrows-rotate fa-spin text-[#F59E0B] text-[10px]';
-        } else if (data.status === 'ready') {
-          const filesCount = data.total_files >= 1000 ? `${(data.total_files / 1000).toFixed(1)}k` : data.total_files;
+        } else if (isReady) {
           sideStatus.innerText = `Ready (${filesCount})`;
           sideStatus.className = 'text-[#10B981] font-mono truncate max-w-[120px]';
-          sideStatus.title = `${data.total_files.toLocaleString()} files indexed in ${data.duration_ms}ms (${data.search_memory_formatted})`;
+          sideStatus.title = `${(data.total_files || 0).toLocaleString()} files indexed in ${data.duration_ms}ms (${data.search_memory_formatted || '0 B'})`;
           if (sideIcon) sideIcon.className = 'fa-solid fa-bolt text-[#10B981] text-[10px]';
         } else {
           sideStatus.innerText = 'Idle';
@@ -2036,7 +2063,26 @@ let activeTab = 'env';
         }
       }
 
-      // 2. Persistent Bottom Status Bar
+      // 3. Fast Search Total Indexed Metrics Badge
+      const fsTotalBadge = document.getElementById('fs-index-total-badge');
+      if (fsTotalBadge) {
+        const memStr = data.search_memory_formatted ? ` (${data.search_memory_formatted})` : '';
+        fsTotalBadge.innerText = `${(data.total_files || 0).toLocaleString()} files indexed${memStr}`;
+      }
+
+      // 4. Fast Search Monitored Paths Banner
+      const fsBannerList = document.getElementById('fs-banner-paths-list');
+      if (fsBannerList) {
+        const roots = (data.roots_scanned && data.roots_scanned.length > 0)
+          ? data.roots_scanned
+          : ((currentConfig && currentConfig.search_paths && currentConfig.search_paths.length > 0)
+              ? currentConfig.search_paths
+              : ['Standard developer workspaces (auto-discovered)']);
+        fsBannerList.innerText = roots.join(', ');
+        fsBannerList.title = roots.join('\n');
+      }
+
+      // 5. Persistent Bottom Status Bar
       const statusSearchRam = document.getElementById('status-search-ram');
       if (statusSearchRam && data.search_memory_formatted) {
         statusSearchRam.innerText = data.search_memory_formatted;
@@ -2046,13 +2092,13 @@ let activeTab = 'env';
         statusProcRam.innerText = data.process_ram_formatted;
       }
 
-      // 3. Settings Tab Search Telemetry Card
+      // 6. Settings Tab Search Telemetry Card
       const badge = document.getElementById('settings-search-badge');
       if (badge) {
-        if (data.is_indexing || data.status === 'indexing') {
+        if (isIndexing) {
           badge.className = 'px-2 py-0.5 rounded text-[10px] font-mono font-semibold bg-[#F59E0B1A] text-[#F59E0B] border border-[#F59E0B40]';
           badge.innerText = 'Indexing...';
-        } else if (data.status === 'ready') {
+        } else if (isReady) {
           badge.className = 'px-2 py-0.5 rounded text-[10px] font-mono font-semibold bg-[#10B9811A] text-[#10B981] border border-[#10B98140]';
           badge.innerText = 'Ready';
         } else {
@@ -2115,6 +2161,13 @@ let activeTab = 'env';
 
       const sideStatus = document.getElementById('side-search-status');
       if (sideStatus) sideStatus.innerText = 'Indexing...';
+      const sideNavBadge = document.getElementById('side-search-count-badge');
+      if (sideNavBadge) {
+        sideNavBadge.innerText = 'Indexing...';
+        sideNavBadge.className = 'px-1.5 py-0.2 rounded text-[10px] font-mono font-semibold bg-[#F59E0B1A] text-[#F59E0B] border border-[#F59E0B40] flex-shrink-0';
+      }
+      const sideIcon = document.getElementById('side-search-icon');
+      if (sideIcon) sideIcon.className = 'fa-solid fa-arrows-rotate fa-spin text-[#F59E0B] text-[10px]';
 
       try {
         const res = await fetch('/api/search/reindex', {
@@ -2147,7 +2200,7 @@ let activeTab = 'env';
     let fsSizeFilter = 'any';
     let fsDateFilter = 'any';
     let fsQuickExt = '';
-    let fsSortBy = 'name';
+    let fsSortBy = 'relevance';
     let fsSortDesc = false;
     let fsLimit = 100;
     let fsOffset = 0;
@@ -2169,6 +2222,7 @@ let activeTab = 'env';
               if (fsQuery.length > 0) clearBtn.classList.remove('hidden');
               else clearBtn.classList.add('hidden');
             }
+            syncVisualFiltersFromQuery();
             if (fsDebounceTimer) clearTimeout(fsDebounceTimer);
             fsDebounceTimer = setTimeout(() => triggerSearch(true), 120);
           });
@@ -2199,6 +2253,7 @@ let activeTab = 'env';
       if (resetOffset) fsOffset = 0;
       fsSelectedRowIndex = -1;
 
+      // Query input is single source of truth for Everything syntax; category pill handles workstation type
       const payload = {
         query: fsQuery,
         case_sensitive: fsModifiers.case,
@@ -2206,10 +2261,10 @@ let activeTab = 'env';
         match_path: fsModifiers.path,
         is_regex: fsModifiers.regex,
         category: fsCategory,
-        scope: fsScope,
-        size_filter: fsSizeFilter,
-        date_filter: fsDateFilter,
-        ext_filter: fsQuickExt,
+        scope: "all",
+        size_filter: "any",
+        date_filter: "any",
+        ext_filter: "",
         sort_by: fsSortBy,
         sort_desc: fsSortDesc,
         limit: fsLimit,
@@ -2234,16 +2289,22 @@ let activeTab = 'env';
       fsCurrentResults = data.results || [];
       fsTotalMatches = data.total_matches || 0;
 
-      // Update counters
+      // Update matching items counter
       const countEl = document.getElementById('fs-results-count');
-      if (countEl) countEl.innerText = `${fsTotalMatches.toLocaleString()} items`;
+      if (countEl) countEl.innerText = `${fsTotalMatches.toLocaleString()} matching items`;
 
       const durationEl = document.getElementById('fs-results-duration');
       if (durationEl) durationEl.innerText = `${data.duration_ms || 0} ms`;
 
-      // Update sidebar badge
-      const sideBadge = document.getElementById('side-search-count-badge');
-      if (sideBadge) sideBadge.innerText = `${fsTotalMatches.toLocaleString()}`;
+      // Update total indexed files in search metrics bar
+      const totalIndexed = data.total_indexed || (latestSearchTelemetry ? latestSearchTelemetry.total_files : 0);
+      const indexBadge = document.getElementById('fs-index-total-badge');
+      if (indexBadge && totalIndexed > 0) {
+        const memStr = latestSearchTelemetry?.search_memory_formatted ? ` (${latestSearchTelemetry.search_memory_formatted})` : '';
+        indexBadge.innerText = `${totalIndexed.toLocaleString()} files indexed${memStr}`;
+      }
+
+      // NOTE: We do not overwrite side-search-count-badge here with query matches, preserving global engine status!
 
       // Update pagination info
       const totalPages = Math.max(1, Math.ceil(fsTotalMatches / fsLimit));
@@ -2375,45 +2436,172 @@ let activeTab = 'env';
       triggerSearch(true);
     }
 
-    function onVisualFilterChange() {
-      const scopeSel = document.getElementById('fs-scope-select');
-      if (scopeSel) fsScope = scopeSel.value;
+    // Helper to inject, replace, or remove a token prefix in the search input
+    function setQueryToken(prefix, value, removeRegex) {
+      const input = document.getElementById('fs-search-input');
+      if (!input) return;
+      let q = input.value;
+      const regex = removeRegex || new RegExp(`(?:^|\\s)${prefix}[^\\s]*`, 'gi');
 
-      const sizeSel = document.getElementById('fs-size-select');
-      if (sizeSel) fsSizeFilter = sizeSel.value;
+      // Clean out existing occurrences of this token
+      q = q.replace(regex, ' ').replace(/\s+/g, ' ').trim();
 
-      const dateSel = document.getElementById('fs-date-select');
-      if (dateSel) fsDateFilter = dateSel.value;
+      // If setting a non-empty value, append it cleanly
+      if (value) {
+        const tokenToAdd = `${prefix}${value}`;
+        q = q ? `${q} ${tokenToAdd}` : tokenToAdd;
+      }
 
-      updateActiveFiltersBadge();
+      input.value = q;
+      fsQuery = q;
+      const clearBtn = document.getElementById('fs-clear-btn');
+      if (clearBtn) {
+        if (q.length > 0) clearBtn.classList.remove('hidden');
+        else clearBtn.classList.add('hidden');
+      }
+      syncVisualFiltersFromQuery();
       triggerSearch(true);
     }
 
-    function setQuickExt(ext) {
-      if (fsQuickExt === ext) {
-        fsQuickExt = '';
-      } else {
-        fsQuickExt = ext;
+    function onVisualFilterChange(target) {
+      if (target === 'scope') {
+        const scopeSel = document.getElementById('fs-scope-select');
+        if (!scopeSel) return;
+        const val = scopeSel.value;
+        const input = document.getElementById('fs-search-input');
+        if (!input) return;
+
+        let q = input.value;
+        // Clean existing scope tokens
+        const scopeRegex = /(?:^|\s)(?:folder:|dir:|is:folder|is:dir|file:|is:file)\b/gi;
+        q = q.replace(scopeRegex, ' ').replace(/\s+/g, ' ').trim();
+
+        if (val === 'files') {
+          q = q ? `file: ${q}` : 'file:';
+        } else if (val === 'folders') {
+          q = q ? `folder: ${q}` : 'folder:';
+        }
+
+        input.value = q;
+        fsQuery = q;
+        const clearBtn = document.getElementById('fs-clear-btn');
+        if (clearBtn) {
+          if (q.length > 0) clearBtn.classList.remove('hidden');
+          else clearBtn.classList.add('hidden');
+        }
+        syncVisualFiltersFromQuery();
+        triggerSearch(true);
+      } else if (target === 'size') {
+        const sizeSel = document.getElementById('fs-size-select');
+        if (!sizeSel) return;
+        const val = sizeSel.value;
+        setQueryToken('size:', val === 'any' ? null : val, /(?:^|\s)size:[^\s]*/gi);
+      } else if (target === 'date') {
+        const dateSel = document.getElementById('fs-date-select');
+        if (!dateSel) return;
+        const val = dateSel.value;
+        setQueryToken('dm:', val === 'any' ? null : val, /(?:^|\s)(?:dm:|date:)[^\s]*/gi);
       }
+    }
+
+    function setQuickExt(ext) {
+      const input = document.getElementById('fs-search-input');
+      if (!input) return;
+      let q = input.value;
+      const extRegex = /(?:^|\s)ext:([^\s]*)/i;
+      const match = q.match(extRegex);
+
+      if (match && match[1].toLowerCase() === ext.toLowerCase()) {
+        // Toggle off if clicking the already active extension
+        q = q.replace(/(?:^|\s)ext:[^\s]*/gi, ' ').replace(/\s+/g, ' ').trim();
+      } else {
+        // Replace or append
+        q = q.replace(/(?:^|\s)ext:[^\s]*/gi, ' ').replace(/\s+/g, ' ').trim();
+        q = q ? `${q} ext:${ext}` : `ext:${ext}`;
+      }
+
+      input.value = q;
+      fsQuery = q;
+      const clearBtn = document.getElementById('fs-clear-btn');
+      if (clearBtn) {
+        if (q.length > 0) clearBtn.classList.remove('hidden');
+        else clearBtn.classList.add('hidden');
+      }
+      syncVisualFiltersFromQuery();
+      triggerSearch(true);
+    }
+
+    function syncVisualFiltersFromQuery() {
+      const q = fsQuery || '';
+
+      // 1. Sync Scope dropdown
+      const scopeSel = document.getElementById('fs-scope-select');
+      if (scopeSel) {
+        if (/(?:^|\s)(?:folder:|dir:|is:folder|is:dir)/i.test(q)) {
+          scopeSel.value = 'folders';
+        } else if (/(?:^|\s)(?:file:|is:file)/i.test(q)) {
+          scopeSel.value = 'files';
+        } else {
+          scopeSel.value = 'all';
+        }
+      }
+
+      // 2. Sync Size dropdown
+      const sizeSel = document.getElementById('fs-size-select');
+      if (sizeSel) {
+        const m = q.match(/(?:^|\s)size:([a-z0-9><=.]+)/i);
+        if (m && ['empty', 'tiny', 'small', 'medium', 'large', 'huge', 'gigantic'].includes(m[1].toLowerCase())) {
+          sizeSel.value = m[1].toLowerCase();
+        } else {
+          sizeSel.value = 'any';
+        }
+      }
+
+      // 3. Sync Date dropdown
+      const dateSel = document.getElementById('fs-date-select');
+      if (dateSel) {
+        const m = q.match(/(?:^|\s)(?:dm:|date:)([a-z0-9-]+)/i);
+        if (m && ['today', 'yesterday', 'past7', 'past30', 'thisweek', 'thismonth', 'thisyear', 'pastyear'].includes(m[1].toLowerCase())) {
+          dateSel.value = m[1].toLowerCase();
+        } else {
+          dateSel.value = 'any';
+        }
+      }
+
+      // 4. Sync Quick Ext chips
       const chips = ['py', 'exe', 'json', 'ts', 'md', 'dll'];
+      const extMatch = q.match(/(?:^|\s)ext:([a-z0-9;,]+)/i);
+      const activeExt = extMatch ? extMatch[1].toLowerCase() : '';
       chips.forEach(c => {
         const el = document.getElementById(`fs-chip-${c}`);
         if (el) {
-          if (c === fsQuickExt) el.classList.add('fs-chip-active');
+          if (activeExt === c) el.classList.add('fs-chip-active');
           else el.classList.remove('fs-chip-active');
         }
       });
+
       updateActiveFiltersBadge();
-      triggerSearch(true);
     }
 
     function updateActiveFiltersBadge() {
       let count = 0;
       if (fsCategory !== 'all') count++;
-      if (fsScope !== 'all') count++;
-      if (fsSizeFilter !== 'any') count++;
-      if (fsDateFilter !== 'any') count++;
-      if (fsQuickExt !== '') count++;
+
+      const scopeSel = document.getElementById('fs-scope-select');
+      if (scopeSel && scopeSel.value !== 'all') count++;
+
+      const sizeSel = document.getElementById('fs-size-select');
+      if (sizeSel && sizeSel.value !== 'any') count++;
+
+      const dateSel = document.getElementById('fs-date-select');
+      if (dateSel && dateSel.value !== 'any') count++;
+
+      const chips = ['py', 'exe', 'json', 'ts', 'md', 'dll'];
+      const hasActiveChip = chips.some(c => {
+        const el = document.getElementById(`fs-chip-${c}`);
+        return el && el.classList.contains('fs-chip-active');
+      });
+      if (hasActiveChip || /(?:^|\s)ext:[^\s]*/i.test(fsQuery)) count++;
 
       const resetBtn = document.getElementById('fs-reset-filters-btn');
       const countEl = document.getElementById('fs-active-filters-count');
@@ -2426,28 +2614,25 @@ let activeTab = 'env';
 
     function resetAllVisualFilters() {
       fsCategory = 'all';
-      fsScope = 'all';
-      fsSizeFilter = 'any';
-      fsDateFilter = 'any';
-      fsQuickExt = '';
-
-      const scopeSel = document.getElementById('fs-scope-select');
-      if (scopeSel) scopeSel.value = 'all';
-
-      const sizeSel = document.getElementById('fs-size-select');
-      if (sizeSel) sizeSel.value = 'any';
-
-      const dateSel = document.getElementById('fs-date-select');
-      if (dateSel) dateSel.value = 'any';
-
-      const chips = ['py', 'exe', 'json', 'ts', 'md', 'dll'];
-      chips.forEach(c => {
-        const el = document.getElementById(`fs-chip-${c}`);
-        if (el) el.classList.remove('fs-chip-active');
-      });
-
       setSearchCategory('all');
-      updateActiveFiltersBadge();
+
+      const input = document.getElementById('fs-search-input');
+      if (input) {
+        let q = input.value;
+        q = q.replace(/(?:^|\s)(?:folder:|dir:|is:folder|is:dir|file:|is:file)\b/gi, ' ')
+             .replace(/(?:^|\s)(?:size:|dm:|date:|ext:)[^\s]*/gi, ' ')
+             .replace(/\s+/g, ' ')
+             .trim();
+        input.value = q;
+        fsQuery = q;
+        const clearBtn = document.getElementById('fs-clear-btn');
+        if (clearBtn) {
+          if (q.length > 0) clearBtn.classList.remove('hidden');
+          else clearBtn.classList.add('hidden');
+        }
+      }
+
+      syncVisualFiltersFromQuery();
       triggerSearch(true);
     }
 
@@ -2460,6 +2645,7 @@ let activeTab = 'env';
       }
       const clearBtn = document.getElementById('fs-clear-btn');
       if (clearBtn) clearBtn.classList.add('hidden');
+      syncVisualFiltersFromQuery();
       triggerSearch(true);
     }
 
@@ -2623,6 +2809,16 @@ let activeTab = 'env';
       const btn = document.getElementById('fs-reindex-btn');
       if (icon) icon.classList.add('fa-spin');
       if (btn) btn.disabled = true;
+
+      const sideStatus = document.getElementById('side-search-status');
+      if (sideStatus) sideStatus.innerText = 'Indexing...';
+      const sideNavBadge = document.getElementById('side-search-count-badge');
+      if (sideNavBadge) {
+        sideNavBadge.innerText = 'Indexing...';
+        sideNavBadge.className = 'px-1.5 py-0.2 rounded text-[10px] font-mono font-semibold bg-[#F59E0B1A] text-[#F59E0B] border border-[#F59E0B40] flex-shrink-0';
+      }
+      const sideIcon = document.getElementById('side-search-icon');
+      if (sideIcon) sideIcon.className = 'fa-solid fa-arrows-rotate fa-spin text-[#F59E0B] text-[10px]';
 
       try {
         const res = await fetch('/api/search/reindex', {

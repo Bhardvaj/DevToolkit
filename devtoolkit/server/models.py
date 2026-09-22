@@ -54,7 +54,7 @@ class SearchQueryAPIRequest(BaseModel):
     size_filter: str = "any"
     date_filter: str = "any"
     ext_filter: str = ""
-    sort_by: str = "name"
+    sort_by: str = "relevance"
     sort_desc: bool = False
     limit: int = 500
     offset: int = 0

@@ -250,25 +250,29 @@ This document is continuously updated to reflect current project status, complet
 ## Milestone Checklist: Phase 9 (Completed - Fast Search Utility Tab & Everything-Class Engine)
 - [x] **Everything Search Query Parser & Engine (`devtoolkit/core/search/query.py`)**:
   - `EverythingQueryParser`: tokenizes queries respecting quotes, boolean AND (spaces), boolean OR (`|`), boolean NOT (`!`), and function directives (`ext:`, `size:`, `dm:`, `path:`, `folder:`, `file:`, `case:`, `regex:`).
+  - Consistent prefix + term syntax support: seamlessly parses `folder:project`, `dir:tests`, `file:main`, `is:folder:app`, as well as `folder: project` without requiring a space.
   - Human-friendly size parser (`100mb`, `10kb`, `500b`, `1mb..10mb`) and presets (`empty`, `tiny`, `small`, `medium`, `large`, `huge`, `gigantic`).
   - Date modified filter ranges (`today`, `yesterday`, `past7`, `past30`, `thisweek`, `thismonth`, `thisyear`, `pastyear`, `YYYY`, `YYYY-MM`).
-  - `execute_search()`: Sub-millisecond filtering across `SearchIndex` with multi-column sorting (name, path, size, mtime, ext) and memory-capped slicing.
+  - Relevance ranking: prioritizes match quality by default (exact name match > exact stem > prefix > word boundary `_`, `-`, `.` > substring > path; favoring cleaner filenames), with column sort applied on top if selected.
+  - `execute_search()`: Sub-millisecond filtering across `SearchIndex` with multi-column sorting (relevance, name, path, size, mtime, ext), total indexed reporting, and memory-capped slicing.
 - [x] **Server API Endpoints & Workstation Actions**:
   - `POST /api/search/query` and `GET /api/search/query` for structured query requests.
   - `POST /api/action/open-file`: Native Windows file launch via `os.startfile(path)`.
   - `POST /api/action/reveal-file`: Native Windows Explorer file reveal via `explorer.exe /select,"path"`.
 - [x] **Comprehensive UI in Side Panel & Workspace**:
   - Added **Fast Search** navigation button directly below **Environment** in the sidebar.
+  - **Status & Count Alignment**: Synchronized status and file counts across sidebar nav badge, sidebar footer, settings telemetry card, and search metrics bar. Removed confusing query match count overwrite on global sidebar badge.
+  - **Monitored Roots Banner**: Added `#fs-monitored-paths-banner` in Fast Search view matching Environment view, listing active scanned roots with direct shortcut to Settings.
+  - **Syntax Injection & Bidirectional Sync**: Scope, Size, Date Modified, and Quick Ext visual controls inject relative Everything syntax directly into the search bar (`folder:`, `file:`, `size:large`, `dm:today`, `ext:py`) leveraging the syntax parser, with instant bidirectional sync when typing.
   - **Search Control Center**: Prominent search bar with clear button (`Esc`), keyboard accelerator badge (`/`), and 4 modifier toggles (`Aa`, `\b`, `PATH`, `.*`).
   - **Category Filter Pills**: Quick filter bar for `All`, `Code`, `Executables`, `Documents`, `Archives`, `Folders`.
-  - **Comprehensive Visual Filter Bar**: Interactive dropdowns for Scope (`Files & Folders`, `Files Only`, `Folders Only`), Size Presets (`Any`, `Tiny`, `Small`, `Medium`, `Large`, `Huge`, `Gigantic`), Date Modified (`Any`, `Today`, `Yesterday`, `Past 7 Days`, `This Year`), and Quick Extension chips (`.py`, `.exe`, `.json`, `.ts`, `.md`, `.dll`) with active filter count and 1-click Reset.
   - **Collapsible Syntax Cheat Sheet**: Interactive accordion detailing Everything search operators.
   - **Results Data Grid**: High-density sortable table with file-type icons, parent folder linking, double-click launch, hover actions (Open, Reveal, Copy), and pagination controls.
-  - **Export Options**: 1-click Export to CSV and Copy Paths to Clipboard.
+  - **Clean Toolbar**: Removed redundant "Copy Paths" button next to "Export CSV".
   - **Keyboard Accelerators**: `1` (Env), `2` (Search), `3` (Ports), `4` (Project), `5` (Settings), `/` (Focus Search), `↑ / ↓` (Navigate rows), `Enter` (Open), `Ctrl+C` (Copy path).
 - [x] **Automated Testing & Standalone Build**:
-  - Added unit tests in `tests/test_search_query.py` and server tests in `tests/test_server.py`.
-  - Full test suite: **175 / 175 passed in 97.66s**.
+  - Added unit tests in `tests/test_search_query.py` covering prefix-term syntax consistency and relevance ranking.
+  - Full test suite: **177 / 177 passed in 100.20s**.
   - Recompiled standalone executable: `dist/DevToolkit.exe` (**21.02 MB**).
 
 ---

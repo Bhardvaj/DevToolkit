@@ -271,11 +271,38 @@ class EverythingQueryParser:
     @staticmethod
     def _parse_single(token: str, default_case: bool, default_path: bool, default_regex: bool, default_word: bool) -> QueryToken:
         low = token.lower()
-
-        # folder: / dir:
-        if low in ("folder:", "dir:", "is:folder", "is:dir"):
+        # folder:<term> / dir:<term> / is:folder:<term> / is:dir:<term>
+        if low.startswith("folder:") or low.startswith("dir:") or low.startswith("is:folder:") or low.startswith("is:dir:"):
+            if low.startswith("folder:"):
+                sub_term = token[7:].strip()
+            elif low.startswith("dir:"):
+                sub_term = token[4:].strip()
+            elif low.startswith("is:folder:"):
+                sub_term = token[10:].strip()
+            else:
+                sub_term = token[7:].strip()
+            return QueryToken(
+                raw=sub_term,
+                is_dir=True,
+                is_regex=default_regex,
+                case_sensitive=default_case,
+                match_path=default_path,
+                whole_word=default_word,
+            )
+        if low in ("is:folder", "is:dir"):
             return QueryToken(raw="", is_dir=True)
-        # file:
+
+        # file:<term> / is:file:<term>
+        if low.startswith("file:") or low.startswith("is:file:"):
+            sub_term = token[5:].strip() if low.startswith("file:") else token[8:].strip()
+            return QueryToken(
+                raw=sub_term,
+                is_dir=False,
+                is_regex=default_regex,
+                case_sensitive=default_case,
+                match_path=default_path,
+                whole_word=default_word,
+            )
         if low in ("file:", "is:file"):
             return QueryToken(raw="", is_dir=False)
 
@@ -456,24 +483,63 @@ def execute_search(index: SearchIndex, params: SearchQueryParams) -> SearchQuery
 
     total_matches = len(matched)
 
-    # 4. Multi-column Sorting
-    sort_by = (params.sort_by or "name").lower()
+    # 4. Multi-column Sorting & Relevance Prioritization
+    sort_by = (params.sort_by or "relevance").lower()
     sort_desc = params.sort_desc
 
-    if sort_by == "size":
+    if sort_by in ("relevance", "default", "", None):
+        # Extract positive search terms for relevance scoring
+        positive_terms: List[str] = []
+        for tok in tokens:
+            if not tok.is_not:
+                if tok.raw:
+                    positive_terms.append(tok.raw.lower())
+                if tok.or_alternatives:
+                    for alt in tok.or_alternatives:
+                        if alt.raw and not alt.is_not:
+                            positive_terms.append(alt.raw.lower())
+
+        if positive_terms:
+            def _calc_relevance(entry: SearchResult) -> Tuple[int, float]:
+                name_low = entry.name.lower()
+                stem_low = Path(entry.name).stem.lower()
+                path_low = entry.path.lower()
+                score = 0
+                for t in positive_terms:
+                    if not t:
+                        continue
+                    if name_low == t:
+                        score += 1000
+                    elif stem_low == t:
+                        score += 900
+                    elif name_low.startswith(t):
+                        score += 700
+                    elif any(sep + t in name_low for sep in ("_", "-", ".", " ")):
+                        score += 550
+                    elif t in name_low:
+                        score += 400
+                    elif t in path_low:
+                        score += 200
+                score -= min(len(entry.name), 100)
+                return (score, entry.mtime)
+
+            matched.sort(key=_calc_relevance, reverse=not sort_desc)
+        else:
+            matched.sort(key=lambda e: e.name.lower(), reverse=sort_desc)
+    elif sort_by == "size":
         matched.sort(key=lambda e: e.size, reverse=sort_desc)
-    elif sort_by == "mtime" or sort_by == "date":
+    elif sort_by in ("mtime", "date"):
         matched.sort(key=lambda e: e.mtime, reverse=sort_desc)
-    elif sort_by == "path" or sort_by == "folder":
+    elif sort_by in ("path", "folder"):
         matched.sort(key=lambda e: e.path.lower(), reverse=sort_desc)
-    elif sort_by == "ext" or sort_by == "type":
+    elif sort_by in ("ext", "type"):
         def _ext_key(e: SearchResult):
             if e.is_dir:
                 return ""
             parts = e.name.rsplit(".", 1)
             return parts[1].lower() if len(parts) > 1 else ""
         matched.sort(key=_ext_key, reverse=sort_desc)
-    else:  # default: name
+    else:  # default or explicit: name
         matched.sort(key=lambda e: e.name.lower(), reverse=sort_desc)
 
     # 5. Pagination / Slice
@@ -506,6 +572,7 @@ def execute_search(index: SearchIndex, params: SearchQueryParams) -> SearchQuery
     return SearchQueryResult(
         results=results,
         total_matches=total_matches,
+        total_indexed=len(all_entries),
         duration_ms=round(duration_ms, 2),
         query=params.query,
         offset=offset,

@@ -72,7 +72,7 @@ class SearchQueryParams:
     size_filter: str = "any"  # any, empty, tiny, small, medium, large, huge, gigantic
     date_filter: str = "any"  # any, today, yesterday, past7, past30, thisyear, pastyear
     ext_filter: str = ""    # e.g. "py", "exe;dll"
-    sort_by: str = "name"   # name, path, size, mtime, ext
+    sort_by: str = "relevance"   # relevance, name, path, size, mtime, ext
     sort_desc: bool = False
     limit: int = 500
     offset: int = 0
@@ -84,6 +84,7 @@ class SearchQueryResult:
 
     results: List[SearchItemDTO] = field(default_factory=list)
     total_matches: int = 0
+    total_indexed: int = 0
     duration_ms: float = 0.0
     query: str = ""
     offset: int = 0
