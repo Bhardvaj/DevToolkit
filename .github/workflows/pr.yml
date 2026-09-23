@@ -1,0 +1,92 @@
+name: PR Build & Validate
+
+on:
+  pull_request:
+    types: [ opened, synchronize, reopened, edited ]
+    branches: [ main ]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  validate-pr:
+    name: Validate PR Title & Naming Convention
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate PR Title and Branch Convention
+        shell: python
+        run: |
+          import re
+          import sys
+
+          title = """${{ github.event.pull_request.title }}""".strip()
+          branch = """${{ github.head_ref }}""".strip()
+
+          print("=================================================")
+          print(" DevToolkit Pull Request Convention Validator    ")
+          print("=================================================")
+          print(f"PR Title:  '{title}'")
+          print(f"PR Branch: '{branch}'\n")
+
+          errors = []
+
+          # 1. PR Title Check: "Phase <N> - <M>: <Description>"
+          title_pattern = r"^Phase \d+ - \d+:\s+.+$"
+          if not re.match(title_pattern, title, re.IGNORECASE):
+              errors.append(
+                  f"PR title does not match required convention.\n"
+                  f"  Current Title: '{title}'\n"
+                  f"  Required Format: 'Phase <N> - <M>: <PR Title>'\n"
+                  f"  Example: 'Phase 10 - 04: Comprehensive signature detection' or 'Phase 12 - 05: Fix buggy UI issue'"
+              )
+
+          # 2. Branch Name Check: Must not be main
+          if branch.lower() == "main":
+              errors.append("Pull requests must not be opened directly from the 'main' branch.")
+
+          # Branch naming convention recommendation
+          branch_pattern = r"^(?i)phase[-/]?\d+[-_]?\d*[-/]?.+$"
+          if not re.match(branch_pattern, branch):
+              print(f"::warning::Branch '{branch}' does not start with 'phase-<N>-<M>/...' (Recommended: phase-12-05/fixed-buggy-ui-issue or Phase-12-05-fixed-buggy-ui-issue)")
+
+          if errors:
+              print("::error::PR Convention Validation Failed:")
+              for err in errors:
+                  print(f"::error::{err}")
+              sys.exit(1)
+
+          print("✓ PR title and branch convention validation passed successfully!")
+
+  test-and-package:
+    name: Test & Package Validation
+    needs: [validate-pr]
+    runs-on: windows-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .
+          pip install pytest pyinstaller
+
+      - name: Run Test Suite
+        run: |
+          pytest -v
+
+      - name: Build Standalone DevToolkit.exe
+        run: |
+          powershell -ExecutionPolicy Bypass -File scripts/build_standalone.ps1
+
+      - name: Verify Standalone Binary (Smoke Test)
+        run: |
+          ./dist/DevToolkit.exe --help
+          ./dist/DevToolkit.exe inspect
