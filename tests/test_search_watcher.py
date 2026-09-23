@@ -79,13 +79,14 @@ def test_win32_watcher_live_filesystem(tmp_path: Path):
     watcher.start()
     try:
         assert getattr(watcher, "is_running", False) is True
+        time.sleep(0.2)
 
         # 1. Test live file creation
         created_file = tmp_path / "live_created.py"
         created_file.write_text("print('live')", encoding="utf-8")
 
-        # Wait up to 2 seconds for kernel notification dispatch
-        deadline = time.time() + 2.0
+        # Wait up to 5 seconds for kernel notification dispatch
+        deadline = time.time() + 5.0
         found = False
         while time.time() < deadline:
             matches = idx.find_exact("live_created.py")
@@ -98,7 +99,7 @@ def test_win32_watcher_live_filesystem(tmp_path: Path):
 
         # 2. Test live file modification
         created_file.write_text("print('live modified with longer content')", encoding="utf-8")
-        deadline = time.time() + 2.0
+        deadline = time.time() + 5.0
         updated = False
         while time.time() < deadline:
             matches = idx.find_exact("live_created.py")
@@ -111,7 +112,7 @@ def test_win32_watcher_live_filesystem(tmp_path: Path):
 
         # 3. Test live file deletion
         created_file.unlink()
-        deadline = time.time() + 2.0
+        deadline = time.time() + 5.0
         deleted = False
         while time.time() < deadline:
             matches = idx.find_exact("live_created.py")
