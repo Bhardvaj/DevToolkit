@@ -5,6 +5,7 @@ import platform
 import shutil
 import subprocess
 import sys
+import threading
 from pathlib import Path
 from typing import Dict, List, Optional
 from pydantic import BaseModel
@@ -31,6 +32,7 @@ class SafeRunner:
     def __init__(self, default_timeout: float = 5.0):
         self.default_timeout = default_timeout
         self._discovery = None
+        self._local = threading.local()
 
     @property
     def discovery(self):
@@ -138,9 +140,10 @@ class SafeRunner:
                     return p.resolve()
 
         # 4. Discovery Pipeline Fallback (Layer 2-4 Discovery)
-        if use_discovery and not getattr(self, "_in_discovery", False):
+        in_discovery = getattr(self._local, "in_discovery", False)
+        if use_discovery and not in_discovery:
             try:
-                self._in_discovery = True
+                self._local.in_discovery = True
                 from devtoolkit.core.signatures import TARGET_TOOL_BINARIES
                 inferred_tool_id = tool_id
                 if not inferred_tool_id:
@@ -170,9 +173,14 @@ class SafeRunner:
                                     if target.is_file():
                                         return target.resolve()
             finally:
-                self._in_discovery = False
+                self._local.in_discovery = False
 
         return None
+
+    def clear_cache(self) -> None:
+        """Clear discovery and resolution caches."""
+        if self._discovery is not None:
+            self._discovery.clear_scan_cache()
 
     # Alias for convenience across inspectors
     find_binary = resolve_binary
@@ -228,9 +236,10 @@ class SafeRunner:
                         _add(target)
 
         # 4. Multi-instance discovery pipeline fallback
-        if use_discovery and not getattr(self, "_in_discovery_all", False):
+        in_discovery_all = getattr(self._local, "in_discovery_all", False)
+        if use_discovery and not in_discovery_all:
             try:
-                self._in_discovery_all = True
+                self._local.in_discovery_all = True
                 from devtoolkit.core.signatures import TARGET_TOOL_BINARIES
                 inferred_tool_id = tool_id
                 if not inferred_tool_id:
@@ -259,7 +268,7 @@ class SafeRunner:
                                     if target.is_file():
                                         _add(target)
             finally:
-                self._in_discovery_all = False
+                self._local.in_discovery_all = False
 
         return results
 

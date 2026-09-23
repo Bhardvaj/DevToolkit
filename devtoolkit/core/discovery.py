@@ -10,6 +10,7 @@ Provides a generalized, portable discovery engine that coordinates:
 import glob
 import os
 import sys
+import threading
 from pathlib import Path
 from typing import Callable, Dict, List, Optional
 
@@ -27,30 +28,37 @@ class DiscoveryPipeline:
         self.runner = runner or SafeRunner()
         self._user_config = load_config()
         self._user_scan_cache: Optional[Dict[str, List[Path]]] = None
+        self._scan_lock = threading.Lock()
 
     def _get_user_scanned_tools(self) -> Dict[str, List[Path]]:
         """Query user search roots or warm search engine index for tool signatures."""
-        if self._user_scan_cache is None:
-            roots_to_scan = [
-                Path(p).expanduser().resolve()
-                for p in self._user_config.search_paths
-                if Path(p).exists() and Path(p).is_dir()
-            ]
-            if not roots_to_scan:
-                try:
-                    from devtoolkit.core.search import get_search_engine
-                    engine = get_search_engine()
-                    if engine.roots:
-                        roots_to_scan = [r for r in engine.roots if r.exists() and r.is_dir()]
-                except Exception:
-                    pass
+        if self._user_scan_cache is not None:
+            return self._user_scan_cache
 
-            self._user_scan_cache = scan_roots_for_tools(roots_to_scan, max_depth=3) if roots_to_scan else {}
-        return self._user_scan_cache
+        with self._scan_lock:
+            if self._user_scan_cache is None:
+                config = self._user_config or load_config()
+                roots_to_scan = [
+                    Path(p).expanduser().resolve()
+                    for p in config.search_paths
+                    if Path(p).exists() and Path(p).is_dir()
+                ]
+                if not roots_to_scan:
+                    try:
+                        from devtoolkit.core.search import get_search_engine
+                        engine = get_search_engine()
+                        if engine.roots:
+                            roots_to_scan = [r for r in engine.roots if r.exists() and r.is_dir()]
+                    except Exception:
+                        pass
+
+                self._user_scan_cache = scan_roots_for_tools(roots_to_scan) if roots_to_scan else {}
+            return self._user_scan_cache
 
     def clear_scan_cache(self) -> None:
         """Invalidate in-memory discovery scan cache."""
-        self._user_scan_cache = None
+        with self._scan_lock:
+            self._user_scan_cache = None
 
     # =========================================================================
     # Specialized 4-Layer Tool Resolvers

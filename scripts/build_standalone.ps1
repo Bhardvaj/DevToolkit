@@ -105,6 +105,10 @@ $EntryScript = Join-Path $WorkspaceRoot "devtoolkit\cli\main.py"
 if ($LASTEXITCODE -eq 0) {
     $TargetExe = Join-Path $DistPath "$BinaryName.exe"
     if (Test-Path $TargetExe) {
+        $SourceConfig = Join-Path $WorkspaceRoot "devtoolkit.config.yaml"
+        if (Test-Path $SourceConfig) {
+            Copy-Item -Path $SourceConfig -Destination (Join-Path $DistPath "devtoolkit.config.yaml") -Force
+        }
         $Item = Get-Item $TargetExe
         $Size = [math]::Round($Item.Length / 1MB, 2)
         Write-Host "`n[+] SUCCESS: Standalone binary compiled successfully!" -ForegroundColor Green

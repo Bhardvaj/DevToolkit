@@ -3,6 +3,8 @@
 from datetime import datetime, timezone
 from pathlib import Path
 import sys
+import threading
+import time
 from typing import Any, Dict, Iterable, List, Optional, Set
 
 from devtoolkit.core.config import load_config
@@ -79,6 +81,7 @@ class FastSearchEngine:
         self.index = SearchIndex()
         self.crawler = ParallelPrunedCrawler(max_workers=max_workers, max_depth=max_depth)
         self.usn_reader = NTFSUSNReader()
+        self._indexing_lock = threading.Lock()
         self._last_stats: Optional[IndexStats] = None
         self._is_indexing: bool = False
         self._last_indexed_at: Optional[str] = None
@@ -125,12 +128,22 @@ class FastSearchEngine:
     def roots(self) -> List[Path]:
         return list(self._indexed_roots)
 
+    def wait_until_indexed(self, timeout: float = 10.0) -> bool:
+        """Wait until any active background indexing completes."""
+        t0 = time.time()
+        while self._is_indexing:
+            time.sleep(0.05)
+            if time.time() - t0 > timeout:
+                return False
+        return True
+
     def clear(self) -> None:
-        self._stop_watchers()
-        self.index.clear()
-        self._last_stats = None
-        self._last_indexed_at = None
-        self._indexed_roots = []
+        with self._indexing_lock:
+            self._stop_watchers()
+            self.index.clear()
+            self._last_stats = None
+            self._last_indexed_at = None
+            self._indexed_roots = []
 
     def _start_watchers(self) -> None:
         self._stop_watchers()
@@ -193,68 +206,71 @@ class FastSearchEngine:
 
     def index_roots(self, roots: List[Path], force_crawler: bool = False) -> IndexStats:
         """Index one or more root directories using the fastest accessible strategy."""
-        valid_roots = [r.resolve() for r in roots if r.exists() and r.is_dir()]
-        self._indexed_roots = list(valid_roots)
-        if not valid_roots:
-            self._stop_watchers()
-            stats = IndexStats(total_files=0, total_dirs=0, duration_ms=0.0, roots_scanned=[])
-            self._last_stats = stats
-            return stats
+        with self._indexing_lock:
+            valid_roots = [r.resolve() for r in roots if r.exists() and r.is_dir()]
+            if not valid_roots:
+                self._stop_watchers()
+                self._indexed_roots = []
+                stats = IndexStats(total_files=0, total_dirs=0, duration_ms=0.0, roots_scanned=[])
+                self._last_stats = stats
+                return stats
 
-        self._is_indexing = True
-        try:
-            # Check if we can use NTFS USN Journal for whole drive roots
-            can_usn = not force_crawler and sys.platform == "win32" and self.usn_reader.is_elevated()
+            self._is_indexing = True
+            try:
+                # Check if we can use NTFS USN Journal for whole drive roots
+                can_usn = not force_crawler and sys.platform == "win32" and self.usn_reader.is_elevated()
 
-            crawler_roots: List[Path] = []
-            usn_stats: Optional[IndexStats] = None
+                crawler_roots: List[Path] = []
+                usn_stats: Optional[IndexStats] = None
 
-            for root in valid_roots:
-                # Check if root is a drive root like 'C:\' or 'D:\'
-                is_drive_root = (
-                    sys.platform == "win32"
-                    and len(str(root).rstrip("\\/")) <= 3
-                    and str(root)[1:2] == ":"
-                )
-                if can_usn and is_drive_root:
-                    drive_letter = str(root)[:2]
-                    usn_res = self.usn_reader.scan_volume(drive_letter, self.index)
-                    if usn_res:
-                        usn_stats = usn_res
+                for root in valid_roots:
+                    # Check if root is a drive root like 'C:\' or 'D:\'
+                    is_drive_root = (
+                        sys.platform == "win32"
+                        and len(str(root).rstrip("\\/")) <= 3
+                        and str(root)[1:2] == ":"
+                    )
+                    if can_usn and is_drive_root:
+                        drive_letter = str(root)[:2]
+                        usn_res = self.usn_reader.scan_volume(drive_letter, self.index)
+                        if usn_res:
+                            usn_stats = usn_res
+                        else:
+                            crawler_roots.append(root)
                     else:
                         crawler_roots.append(root)
+
+                if crawler_roots:
+                    crawler_stats = self.crawler.crawl_roots(crawler_roots, self.index)
+                    if usn_stats:
+                        combined_duration = usn_stats.duration_ms + crawler_stats.duration_ms
+                        all_scanned = usn_stats.roots_scanned + crawler_stats.roots_scanned
+                        stats = IndexStats(
+                            total_files=self.index.total_files,
+                            total_dirs=self.index.total_dirs,
+                            duration_ms=combined_duration,
+                            roots_scanned=all_scanned,
+                            engine_used="Hybrid_USN_and_Crawler",
+                        )
+                    else:
+                        stats = crawler_stats
+                elif usn_stats:
+                    stats = usn_stats
                 else:
-                    crawler_roots.append(root)
+                    stats = IndexStats(total_files=0, total_dirs=0, duration_ms=0.0, roots_scanned=[])
 
-            if crawler_roots:
-                crawler_stats = self.crawler.crawl_roots(crawler_roots, self.index)
-                if usn_stats:
-                    combined_duration = usn_stats.duration_ms + crawler_stats.duration_ms
-                    all_scanned = usn_stats.roots_scanned + crawler_stats.roots_scanned
-                    stats = IndexStats(
-                        total_files=self.index.total_files,
-                        total_dirs=self.index.total_dirs,
-                        duration_ms=combined_duration,
-                        roots_scanned=all_scanned,
-                        engine_used="Hybrid_USN_and_Crawler",
-                    )
-                else:
-                    stats = crawler_stats
-            elif usn_stats:
-                stats = usn_stats
-            else:
-                stats = IndexStats(total_files=0, total_dirs=0, duration_ms=0.0, roots_scanned=[])
+                # Commit indexed roots now that the index has been fully populated
+                self._indexed_roots = list(valid_roots)
+                self._last_stats = stats
+                self._last_indexed_at = datetime.now(timezone.utc).isoformat()
 
-            self._last_stats = stats
-            self._last_indexed_at = datetime.now(timezone.utc).isoformat()
+                # Start real-time watchers for active roots if enabled
+                if self._realtime_enabled:
+                    self._start_watchers()
 
-            # Start real-time watchers for active roots if enabled
-            if self._realtime_enabled:
-                self._start_watchers()
-
-            return stats
-        finally:
-            self._is_indexing = False
+                return stats
+            finally:
+                self._is_indexing = False
 
     def find_exact(self, name: str, case_sensitive: bool = False) -> List[SearchResult]:
         """Find entries matching exact name in O(1) time (<0.1ms)."""

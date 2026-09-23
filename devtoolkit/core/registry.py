@@ -87,6 +87,7 @@ class PluginRegistry:
             norm_ids = {t.lower() for t in tool_ids}
             target_inspectors = [i for i in target_inspectors if i.id.lower() in norm_ids]
 
+        self.runner.clear_cache()
         reports: List[ToolReport] = []
         worker_count = max_workers if max_workers is not None else min(32, max(len(target_inspectors), 1))
 
@@ -166,6 +167,7 @@ class PluginRegistry:
             "system": sys_info.model_dump(mode="json"),
         }
 
+        self.runner.clear_cache()
         reports: List[ToolReport] = []
         with ThreadPoolExecutor(max_workers=worker_count) as executor:
             future_to_inspector = {

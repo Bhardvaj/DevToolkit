@@ -41,7 +41,7 @@ class GoInspector(BaseInspector):
                 diagnostics=[DiagnosticIssue(level=DiagnosticLevel.ERROR, message="Go compiler is not installed", suggested_fix="Install Go from https://go.dev/dl/")],
             )
 
-        res = runner.run_command(["go", "version"])
+        res = runner.run_command([str(go_bin), "version"])
         version = None
         if res.ok and res.stdout:
             # "go version go1.22.1 windows/amd64"
@@ -50,7 +50,7 @@ class GoInspector(BaseInspector):
                 version = m.group(1)
 
         # Inspect env vars
-        env_res = runner.run_command(["go", "env", "-json"])
+        env_res = runner.run_command([str(go_bin), "env", "-json"])
         gopath = None
         goroot = None
         if env_res.ok and env_res.stdout:
@@ -67,10 +67,21 @@ class GoInspector(BaseInspector):
             diagnostics.append(DiagnosticIssue(level=DiagnosticLevel.WARNING, message="GOPATH is not defined", suggested_fix="export GOPATH=$HOME/go"))
             status = HealthStatus.WARNING
 
+        in_path = runner.find_binary("go", use_discovery=False) is not None
+        if not in_path:
+            diagnostics.append(
+                DiagnosticIssue(
+                    level=DiagnosticLevel.WARNING,
+                    message=f"Go executable was found at '{go_bin}', but is not in system PATH.",
+                    suggested_fix=f'setx PATH "%PATH%;{go_bin.parent}"',
+                )
+            )
+            status = HealthStatus.WARNING
+
         # Companions
         companions = []
         for c in ["gopls", "golangci-lint", "dlv"]:
-            cb = runner.find_binary(c)
+            cb = runner.find_binary(c, extra_paths=[str(go_bin.parent)])
             companions.append(CompanionTool(name=c, installed=cb is not None, binary_path=str(cb) if cb else None))
 
         return ToolReport(

@@ -58,7 +58,7 @@ class CMakeInspector(BaseInspector):
             companions.append(CompanionTool(name="ninja", installed=False))
 
         # Companion: CTest
-        ctest_bin = runner.resolve_binary("ctest")
+        ctest_bin = runner.resolve_binary("ctest", extra_paths=[str(cmake_bin.parent)])
         companions.append(
             CompanionTool(
                 name="ctest",
@@ -68,7 +68,7 @@ class CMakeInspector(BaseInspector):
         )
 
         # Companion: CPack
-        cpack_bin = runner.resolve_binary("cpack")
+        cpack_bin = runner.resolve_binary("cpack", extra_paths=[str(cmake_bin.parent)])
         companions.append(
             CompanionTool(
                 name="cpack",
@@ -78,6 +78,18 @@ class CMakeInspector(BaseInspector):
         )
 
         diagnostics: List[DiagnosticIssue] = []
+        in_path = runner.find_binary("cmake", use_discovery=False) is not None
+        status = HealthStatus.HEALTHY
+        if not in_path:
+            diagnostics.append(
+                DiagnosticIssue(
+                    level=DiagnosticLevel.WARNING,
+                    message=f"CMake executable was found at '{cmake_bin}', but is not in system PATH.",
+                    suggested_fix=f'setx PATH "%PATH%;{cmake_bin.parent}"',
+                )
+            )
+            status = HealthStatus.WARNING
+
         if not ninja_bin:
             diagnostics.append(
                 DiagnosticIssue(
@@ -96,7 +108,7 @@ class CMakeInspector(BaseInspector):
             version=version,
             binary_path=str(cmake_bin),
             home_path=str(cmake_bin.parent.parent if cmake_bin.parent.name == "bin" else cmake_bin.parent),
-            status=HealthStatus.HEALTHY,
+            status=status,
             companions=companions,
             diagnostics=diagnostics,
             metadata={"ninja_installed": ninja_bin is not None},

@@ -575,7 +575,7 @@ TARGET_TOOL_BINARIES: Dict[str, List[str]] = {
 }
 
 
-def scan_roots_for_tools(roots: List[Path], max_depth: int = 6) -> Dict[str, List[Path]]:
+def scan_roots_for_tools(roots: List[Path], max_depth: Optional[int] = None) -> Dict[str, List[Path]]:
     """Scan root directories using FastSearchEngine and classify directories by content signature."""
     from devtoolkit.core.search import get_search_engine
 
@@ -585,14 +585,16 @@ def scan_roots_for_tools(roots: List[Path], max_depth: int = 6) -> Dict[str, Lis
         return results
 
     engine = get_search_engine()
+    # If engine is actively indexing in background, wait for it to complete
+    if engine.is_indexing:
+        engine.wait_until_indexed(timeout=10.0)
+
     # Check if engine is already warm and indexing all valid_roots
-    all_covered = engine.total_entries > 0 and bool(engine.roots) and all(
+    all_covered = not engine.is_indexing and engine.total_entries > 0 and bool(engine.roots) and all(
         any(str(vr).lower() == str(er).lower() for er in engine.roots)
         for vr in valid_roots
     )
     if not all_covered:
-        crawler_depth = max_depth + 2
-        engine.crawler.max_depth = crawler_depth
         engine.index_roots(valid_roots)
 
     matches = engine.find_exact_names(TARGET_TOOL_BINARIES.keys())
