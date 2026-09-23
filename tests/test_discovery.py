@@ -51,6 +51,7 @@ def test_zero_path_search_engine_discovery(tmp_path, monkeypatch):
     (portable_mingw / "include").mkdir()
 
     runner = SafeRunner()
+    monkeypatch.setattr(runner, "resolve_binary", lambda *args, **kwargs: None)
     pipeline = DiscoveryPipeline(runner)
 
     # Mock user config search_paths to include custom_tools
