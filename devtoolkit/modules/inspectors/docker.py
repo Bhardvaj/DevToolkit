@@ -2,7 +2,7 @@ import re
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Optional
+from typing import Any, Optional
 from devtoolkit.core.base import BaseInspector
 from devtoolkit.core.inventory import OSInventory
 from devtoolkit.core.models import (

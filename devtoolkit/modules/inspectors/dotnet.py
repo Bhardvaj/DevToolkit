@@ -4,7 +4,7 @@ import os
 import re
 import sys
 from pathlib import Path
-from typing import List
+from typing import Any, List, Optional
 
 from datetime import datetime, timezone
 from devtoolkit.core.base import BaseInspector

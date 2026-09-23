@@ -6,7 +6,7 @@ completely independent of directory names or drive letters.
 
 import sys
 from pathlib import Path
-from typing import Dict, List, Set
+from typing import Dict, List, Optional, Set
 
 IGNORE_DIR_NAMES: Set[str] = {
     ".git",
