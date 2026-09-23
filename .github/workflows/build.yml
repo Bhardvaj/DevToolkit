@@ -11,7 +11,7 @@ on:
         type: boolean
         default: false
       tag_name:
-        description: "Release tag (e.g. v0.5.0, only used if publishing release)"
+        description: "Release tag (optional, e.g. v0.6.0 - overrides automatic bump)"
         required: false
         type: string
         default: ""
@@ -29,6 +29,8 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up Python 3.12
         uses: actions/setup-python@v5
@@ -64,11 +66,101 @@ jobs:
             dist/devtoolkit.config.yaml
           if-no-files-found: error
 
+      - name: Resolve Release Tag
+        id: resolve_tag
+        if: github.event_name == 'release' || (github.event_name == 'workflow_dispatch' && inputs.create_release)
+        shell: python
+        env:
+          INPUT_TAG: ${{ inputs.tag_name }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          import json
+          import os
+          import re
+          import subprocess
+          import sys
+
+          input_tag = os.environ.get("INPUT_TAG", "").strip()
+
+          if input_tag:
+              tag = input_tag if input_tag.startswith("v") else f"v{input_tag}"
+              print(f"Using explicitly provided release tag: {tag}")
+          elif os.environ.get("GITHUB_REF_NAME") and os.environ.get("GITHUB_EVENT_NAME") == "release":
+              tag = os.environ.get("GITHUB_REF_NAME")
+              print(f"Using GitHub release ref tag: {tag}")
+          else:
+              # Query latest release tag from GitHub
+              last_tag = ""
+              try:
+                  res = subprocess.run(
+                      ["gh", "release", "view", "--json", "tagName", "-q", ".tagName"],
+                      capture_output=True,
+                      text=True,
+                  )
+                  if res.returncode == 0 and res.stdout.strip():
+                      last_tag = res.stdout.strip()
+              except Exception as e:
+                  print(f"Notice querying gh release: {e}")
+
+              if not last_tag:
+                  try:
+                      res = subprocess.run(
+                          ["git", "describe", "--tags", "--abbrev=0"],
+                          capture_output=True,
+                          text=True,
+                      )
+                      if res.returncode == 0 and res.stdout.strip():
+                          last_tag = res.stdout.strip()
+                  except Exception as e:
+                      print(f"Notice querying git describe: {e}")
+
+              print(f"Last detected release tag: '{last_tag}'")
+
+              if not last_tag:
+                  tag = "v0.1.0"
+              else:
+                  m = re.match(r"^v?(\d+)\.(\d+)(?:\.(\d+))?$", last_tag)
+                  if m:
+                      major = int(m.group(1))
+                      minor = int(m.group(2))
+                      patch = int(m.group(3)) if m.group(3) is not None else 0
+                      cand_tag = f"v{major}.{minor}.{patch + 1}"
+
+                      # If pyproject.toml has a higher version, respect that
+                      try:
+                          with open("pyproject.toml", "r", encoding="utf-8") as pf:
+                              for line in pf:
+                                  if line.strip().startswith("version ="):
+                                      p_ver = line.split("=")[1].strip().strip('"').strip("'")
+                                      pm = re.match(r"^v?(\d+)\.(\d+)(?:\.(\d+))?$", p_ver)
+                                      if pm:
+                                          p_maj = int(pm.group(1))
+                                          p_min = int(pm.group(2))
+                                          p_pat = int(pm.group(3)) if pm.group(3) is not None else 0
+                                          if (p_maj, p_min, p_pat) > (major, minor, patch):
+                                              cand_tag = f"v{p_maj}.{p_min}.{p_pat}"
+                                      break
+                      except Exception:
+                          pass
+
+                      tag = cand_tag
+                  else:
+                      tag = f"{last_tag}.1"
+
+              print(f"Automatically determined next release tag: {tag}")
+
+          # Export output to GitHub Actions step outputs
+          github_output = os.environ.get("GITHUB_OUTPUT")
+          if github_output:
+              with open(github_output, "a", encoding="utf-8") as out:
+                  out.write(f"release_tag={tag}\n")
+
       - name: Attach Binary to GitHub Release
-        if: github.event_name == 'release' || (github.event_name == 'workflow_dispatch' && inputs.create_release && inputs.tag_name != '')
+        if: github.event_name == 'release' || (github.event_name == 'workflow_dispatch' && inputs.create_release)
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ inputs.tag_name != '' && inputs.tag_name || github.ref_name }}
+          tag_name: ${{ steps.resolve_tag.outputs.release_tag }}
+          name: DevToolkit ${{ steps.resolve_tag.outputs.release_tag }}
           files: |
             dist/DevToolkit.exe
             dist/devtoolkit.config.yaml
