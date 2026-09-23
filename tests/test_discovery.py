@@ -52,6 +52,7 @@ def test_zero_path_search_engine_discovery(tmp_path, monkeypatch):
 
     runner = SafeRunner()
     monkeypatch.setattr(runner, "resolve_binary", lambda *args, **kwargs: None)
+    monkeypatch.setenv("ProgramFiles", str(tmp_path / "fake_program_files"))
     pipeline = DiscoveryPipeline(runner)
 
     # Mock user config search_paths to include custom_tools
