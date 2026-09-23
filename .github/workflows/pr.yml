@@ -46,8 +46,8 @@ jobs:
               errors.append("Pull requests must not be opened directly from the 'main' branch.")
 
           # Branch naming convention recommendation
-          branch_pattern = r"^(?i)phase[-/]?\d+[-_]?\d*[-/]?.+$"
-          if not re.match(branch_pattern, branch):
+          branch_pattern = r"^phase[-/]?\d+[-_]?\d*[-/]?.+$"
+          if not re.match(branch_pattern, branch, re.IGNORECASE):
               print(f"::warning::Branch '{branch}' does not start with 'phase-<N>-<M>/...' (Recommended: phase-12-05/fixed-buggy-ui-issue or Phase-12-05-fixed-buggy-ui-issue)")
 
           if errors:
