@@ -2,6 +2,8 @@
 
 To ensure code quality, build reliability, and clear project tracking across development phases, all work in this repository must follow these rules.
 
+*Last Updated: Phase 12 Rules Enforcement*
+
 ---
 
 ## 1. Protected Main Branch
