@@ -15,6 +15,13 @@ from devtoolkit import __version__
 from devtoolkit.client.api import DevToolkitClient
 from devtoolkit.client.state import ClientState
 from devtoolkit.client.theme import Colors, Fonts, apply_theme
+from devtoolkit.client.views import (
+    EnvironmentView,
+    PortManagerView,
+    ProjectAuditorView,
+    SearchView,
+    SettingsView,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -41,7 +48,7 @@ class DevToolkitApp:
         # Apply dark modern theme
         self.style = apply_theme(self.root)
 
-        # Track navigation buttons
+        # Track navigation buttons and active frame
         self._nav_buttons: Dict[str, ttk.Button] = {}
         self._content_container: Optional[ttk.Frame] = None
         self._active_view_frame: Optional[ttk.Frame] = None
@@ -50,6 +57,9 @@ class DevToolkitApp:
         self._build_header()
         self._build_main_layout()
         self._build_footer()
+
+        # Keyboard Navigation Shortcuts
+        self._bind_shortcuts()
 
         # Subscribe to State Changes
         self.state.subscribe("view_changed", self._on_view_changed)
@@ -61,6 +71,21 @@ class DevToolkitApp:
         # Initial View and Background Sync
         self._switch_view("environment")
         self._start_background_sync()
+
+    # -------------------------------------------------------------------------
+    # Keyboard Shortcuts
+    # -------------------------------------------------------------------------
+
+    def _bind_shortcuts(self) -> None:
+        """Bind productivity hotkeys across application."""
+        self.root.bind("<Control-Key-1>", lambda e: self.state.set_active_view("environment"))
+        self.root.bind("<Control-Key-2>", lambda e: self.state.set_active_view("ports"))
+        self.root.bind("<Control-Key-3>", lambda e: self.state.set_active_view("projects"))
+        self.root.bind("<Control-Key-4>", lambda e: self.state.set_active_view("search"))
+        self.root.bind("<Control-Key-5>", lambda e: self.state.set_active_view("settings"))
+        self.root.bind("<Control-f>", lambda e: self.state.set_active_view("search"))
+        self.root.bind("<Control-r>", lambda e: self._trigger_rescan())
+        self.root.bind("<F5>", lambda e: self._refresh_active_view())
 
     # -------------------------------------------------------------------------
     # UI Layout Construction
@@ -188,321 +213,62 @@ class DevToolkitApp:
         if self._active_view_frame:
             self._active_view_frame.destroy()
 
-        self._active_view_frame = ttk.Frame(self._content_container, style="Main.TFrame")
-        self._active_view_frame.pack(fill="both", expand=True)
-
         if view_name == "environment":
-            self._render_environment_view(self._active_view_frame)
+            self._active_view_frame = EnvironmentView(
+                self._content_container, client=self.client, state=self.state
+            )
         elif view_name == "ports":
-            self._render_ports_view(self._active_view_frame)
+            self._active_view_frame = PortManagerView(
+                self._content_container, client=self.client, state=self.state
+            )
         elif view_name == "projects":
-            self._render_projects_view(self._active_view_frame)
+            self._active_view_frame = ProjectAuditorView(
+                self._content_container, client=self.client, state=self.state
+            )
         elif view_name == "search":
-            self._render_search_view(self._active_view_frame)
+            self._active_view_frame = SearchView(
+                self._content_container, client=self.client, state=self.state
+            )
         elif view_name == "settings":
-            self._render_settings_view(self._active_view_frame)
+            self._active_view_frame = SettingsView(
+                self._content_container, client=self.client, state=self.state
+            )
+        else:
+            self._active_view_frame = EnvironmentView(
+                self._content_container, client=self.client, state=self.state
+            )
+
+        self._active_view_frame.pack(fill="both", expand=True)
 
     def _on_view_changed(self, view_name: str) -> None:
         """Callback on reactive active_view change."""
         self.root.after(0, lambda: self._switch_view(view_name))
 
     # -------------------------------------------------------------------------
-    # View Renderers
-    # -------------------------------------------------------------------------
-
-    def _render_environment_view(self, parent: ttk.Frame) -> None:
-        """Render Environment Diagnostics dashboard cards and tool list."""
-        header_row = ttk.Frame(parent, style="Main.TFrame")
-        header_row.pack(fill="x", pady=(0, 16))
-
-        title = ttk.Label(header_row, text="Workstation Environment Diagnostics", style="Header.TLabel")
-        title.pack(side="left")
-
-        # Summary Metrics Frame
-        metrics_frame = ttk.Frame(parent, style="Main.TFrame")
-        metrics_frame.pack(fill="x", pady=(0, 16))
-
-        # Metric Cards
-        tools = self.state.tools or []
-        installed_count = sum(1 for t in tools if t.get("status") == "healthy" or t.get("installed"))
-        total_count = len(tools)
-        health_pct = round((installed_count / total_count * 100), 1) if total_count else 0.0
-
-        for col, (title_text, val_text, badge_style) in enumerate([
-            ("Total Tools", str(total_count or "--"), "CardTitle.TLabel"),
-            ("Installed", str(installed_count or "--"), "BadgeSuccess.TLabel"),
-            ("Missing", str(max(0, total_count - installed_count) if total_count else "--"), "BadgeError.TLabel"),
-            ("Health Score", f"{health_pct}%" if total_count else "--", "BadgeSuccess.TLabel"),
-        ]):
-            card = ttk.Frame(metrics_frame, style="Card.TFrame", padding=(16, 12))
-            card.grid(row=0, column=col, sticky="nsew", padx=6 if col > 0 else 0)
-            metrics_frame.columnconfigure(col, weight=1)
-
-            t_lbl = ttk.Label(card, text=title_text, style="CardMuted.TLabel")
-            t_lbl.pack(anchor="w")
-            v_lbl = ttk.Label(card, text=val_text, style=badge_style)
-            v_lbl.pack(anchor="w", pady=(4, 0))
-
-        # Tool Table
-        table_frame = ttk.Frame(parent, style="Card.TFrame", padding=1)
-        table_frame.pack(fill="both", expand=True)
-
-        columns = ("id", "name", "category", "version", "status")
-        tree = ttk.Treeview(table_frame, columns=columns, show="headings", selectmode="browse")
-
-        tree.heading("id", text="ID")
-        tree.heading("name", text="Tool Name")
-        tree.heading("category", text="Category")
-        tree.heading("version", text="Resolved Version")
-        tree.heading("status", text="Health Status")
-
-        tree.column("id", width=120)
-        tree.column("name", width=180)
-        tree.column("category", width=140)
-        tree.column("version", width=160)
-        tree.column("status", width=120)
-
-        for t in tools:
-            status_display = "✓ Healthy" if t.get("status") == "healthy" or t.get("installed") else "✗ Missing"
-            tree.insert(
-                "",
-                "end",
-                values=(
-                    t.get("id", ""),
-                    t.get("name", t.get("id", "")),
-                    t.get("category", ""),
-                    t.get("version", "Not found"),
-                    status_display,
-                ),
-            )
-
-        tree.pack(side="left", fill="both", expand=True)
-
-        scrollbar = ttk.Scrollbar(table_frame, orient="vertical", command=tree.yview)
-        tree.configure(yscrollcommand=scrollbar.set)
-        scrollbar.pack(side="right", fill="y")
-
-    def _render_ports_view(self, parent: ttk.Frame) -> None:
-        """Render Port Manager view."""
-        header_row = ttk.Frame(parent, style="Main.TFrame")
-        header_row.pack(fill="x", pady=(0, 16))
-
-        title = ttk.Label(header_row, text="Active Network Ports & Sockets", style="Header.TLabel")
-        title.pack(side="left")
-
-        refresh_btn = ttk.Button(
-            header_row,
-            text="🔄 Refresh Ports",
-            style="TButton",
-            command=self._refresh_ports,
-        )
-        refresh_btn.pack(side="right")
-
-        # Table
-        table_frame = ttk.Frame(parent, style="Card.TFrame", padding=1)
-        table_frame.pack(fill="both", expand=True)
-
-        columns = ("port", "protocol", "pid", "process", "address")
-        tree = ttk.Treeview(table_frame, columns=columns, show="headings", selectmode="browse")
-
-        tree.heading("port", text="Port")
-        tree.heading("protocol", text="Protocol")
-        tree.heading("pid", text="PID")
-        tree.heading("process", text="Process Name")
-        tree.heading("address", text="Local Address")
-
-        for p in self.state.ports or []:
-            tree.insert(
-                "",
-                "end",
-                values=(
-                    p.get("port", ""),
-                    p.get("protocol", "TCP"),
-                    p.get("pid", ""),
-                    p.get("process_name", ""),
-                    p.get("address", "127.0.0.1"),
-                ),
-            )
-
-        tree.pack(side="left", fill="both", expand=True)
-        scrollbar = ttk.Scrollbar(table_frame, orient="vertical", command=tree.yview)
-        tree.configure(yscrollcommand=scrollbar.set)
-        scrollbar.pack(side="right", fill="y")
-
-    def _render_projects_view(self, parent: ttk.Frame) -> None:
-        """Render Project Hygiene Auditor view."""
-        header_row = ttk.Frame(parent, style="Main.TFrame")
-        header_row.pack(fill="x", pady=(0, 16))
-
-        title = ttk.Label(header_row, text="Project Environment Auditor", style="Header.TLabel")
-        title.pack(side="left")
-
-        # Selector Frame
-        card = ttk.Frame(parent, style="Card.TFrame", padding=(16, 16))
-        card.pack(fill="x", pady=(0, 16))
-
-        prompt_lbl = ttk.Label(
-            card,
-            text="Select a project directory to audit framework hygiene, dependencies, and environment health:",
-            style="CardText.TLabel",
-        )
-        prompt_lbl.pack(anchor="w", pady=(0, 12))
-
-        input_row = ttk.Frame(card, style="Card.TFrame")
-        input_row.pack(fill="x")
-
-        self.project_path_var = tk.StringVar(value=os.getcwd())
-        entry = ttk.Entry(input_row, textvariable=self.project_path_var)
-        entry.pack(side="left", fill="x", expand=True, padx=(0, 8))
-
-        audit_btn = ttk.Button(
-            input_row,
-            text="🔍 Audit Project",
-            style="Primary.TButton",
-            command=self._trigger_project_audit,
-        )
-        audit_btn.pack(side="right")
-
-    def _render_search_view(self, parent: ttk.Frame) -> None:
-        """Render Fast Filesystem Search view."""
-        header_row = ttk.Frame(parent, style="Main.TFrame")
-        header_row.pack(fill="x", pady=(0, 16))
-
-        title = ttk.Label(header_row, text="Fast Multi-Root File Search", style="Header.TLabel")
-        title.pack(side="left")
-
-        # Search Card
-        card = ttk.Frame(parent, style="Card.TFrame", padding=(16, 16))
-        card.pack(fill="x", pady=(0, 16))
-
-        self.search_var = tk.StringVar()
-        entry = ttk.Entry(card, textvariable=self.search_var)
-        entry.pack(side="left", fill="x", expand=True, padx=(0, 8))
-        entry.bind("<Return>", lambda e: self._trigger_search())
-
-        search_btn = ttk.Button(card, text="Search", style="Primary.TButton", command=self._trigger_search)
-        search_btn.pack(side="right")
-
-        # Results Table
-        table_frame = ttk.Frame(parent, style="Card.TFrame", padding=1)
-        table_frame.pack(fill="both", expand=True)
-
-        columns = ("name", "path", "size")
-        tree = ttk.Treeview(table_frame, columns=columns, show="headings")
-        tree.heading("name", text="File Name")
-        tree.heading("path", text="Directory Path")
-        tree.heading("size", text="Size")
-        tree.column("name", width=220)
-        tree.column("path", width=500)
-        tree.column("size", width=100)
-
-        for res in self.state.search_results or []:
-            tree.insert(
-                "",
-                "end",
-                values=(
-                    res.get("filename", ""),
-                    res.get("path", ""),
-                    f"{res.get('size_bytes', 0) // 1024} KB",
-                ),
-            )
-
-        tree.pack(side="left", fill="both", expand=True)
-        scrollbar = ttk.Scrollbar(table_frame, orient="vertical", command=tree.yview)
-        tree.configure(yscrollcommand=scrollbar.set)
-        scrollbar.pack(side="right", fill="y")
-
-    def _render_settings_view(self, parent: ttk.Frame) -> None:
-        """Render Configuration and Settings view."""
-        header_row = ttk.Frame(parent, style="Main.TFrame")
-        header_row.pack(fill="x", pady=(0, 16))
-
-        title = ttk.Label(header_row, text="DevToolkit Preferences & Settings", style="Header.TLabel")
-        title.pack(side="left")
-
-        # Close Action Preference Card
-        card = ttk.Frame(parent, style="Card.TFrame", padding=(16, 16))
-        card.pack(fill="x", pady=(0, 16))
-
-        card_title = ttk.Label(card, text="Window Close Behavior", style="CardTitle.TLabel")
-        card_title.pack(anchor="w", pady=(0, 8))
-
-        desc = ttk.Label(
-            card,
-            text="Choose what happens when the workstation inspector window is closed:",
-            style="CardText.TLabel",
-        )
-        desc.pack(anchor="w", pady=(0, 12))
-
-        current_action = (self.state.config or {}).get("close_action", "ask")
-        self.close_action_var = tk.StringVar(value=current_action)
-
-        for val, label_text in [
-            ("ask", "Ask every time (Prompt between Minimize to System Tray and Exit Completely)"),
-            ("minimize", "Always minimize to System Tray in background"),
-            ("exit", "Always exit completely and shut down all background services"),
-        ]:
-            rb = ttk.Radiobutton(
-                card,
-                text=label_text,
-                value=val,
-                variable=self.close_action_var,
-                command=self._update_close_action,
-            )
-            rb.pack(anchor="w", pady=4)
-
-    # -------------------------------------------------------------------------
-    # Action & Background Handlers
+    # Actions & Synchronizations
     # -------------------------------------------------------------------------
 
     def _trigger_rescan(self) -> None:
-        """Trigger background environment audit rescan."""
-        self.client.run_async(
-            self.client.run_audit,
-            callback=lambda res: self.root.after(0, lambda: self._on_audit_finished(res)),
-        )
+        """Trigger background workstation audit scan."""
+        def _task():
+            return self.client.run_audit()
 
-    def _on_audit_finished(self, audit_res: Dict[str, Any]) -> None:
-        self.state.set_audit_report(audit_res)
-        # Refresh tools
-        self.client.run_async(
-            self.client.get_tools,
-            callback=lambda tools: self.root.after(0, lambda: self.state.set_tools(tools)),
-        )
+        def _on_success(summary: Dict[str, Any]):
+            tools = summary.get("reports", [])
+            self.state.set_tools(tools)
+            self.state.set_audit_report(summary)
 
-    def _refresh_ports(self) -> None:
-        """Fetch active ports in background."""
-        self.client.run_async(
-            self.client.get_ports,
-            callback=lambda ports: self.root.after(0, lambda: self.state.set_ports(ports)),
-        )
+        self.client.run_async(_task, callback=_on_success)
 
-    def _trigger_project_audit(self) -> None:
-        """Run project audit on chosen directory."""
-        path = self.project_path_var.get()
-        if not path:
-            return
-        self.client.run_async(
-            self.client.run_project_audit,
-            path,
-            callback=lambda report: self.root.after(0, lambda: self.state.set_project_report(report)),
-        )
-
-    def _trigger_search(self) -> None:
-        """Run fast filesystem query."""
-        q = self.search_var.get()
-        self.client.run_async(
-            self.client.search_query,
-            q,
-            callback=lambda data: self.root.after(
-                0, lambda: self.state.set_search_results(data.get("results", []), query=q)
-            ),
-        )
-
-    def _update_close_action(self) -> None:
-        """Persist close_action selection to daemon config."""
-        action = self.close_action_var.get()
-        self.client.run_async(self.client.set_close_action, action)
+    def _refresh_active_view(self) -> None:
+        """Refresh active view data."""
+        current = self.state.active_view
+        if current == "ports" and hasattr(self._active_view_frame, "_refresh_ports"):
+            self._active_view_frame._refresh_ports()
+        elif current == "environment":
+            self._trigger_rescan()
+        elif current == "settings" and hasattr(self._active_view_frame, "_load_config"):
+            self._active_view_frame._load_config()
 
     def _on_daemon_status(self, payload: Dict[str, Any]) -> None:
         """Update status badge based on daemon telemetry."""
