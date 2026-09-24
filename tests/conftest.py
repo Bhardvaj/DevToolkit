@@ -33,3 +33,5 @@ def tk_root(session_tk_root):
                 child.destroy()
             except Exception:
                 pass
+        import gc
+        gc.collect()

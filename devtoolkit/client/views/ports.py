@@ -206,12 +206,20 @@ class PortManagerView(ttk.Frame):
             return self.client.get_ports()
 
         def _on_success(ports: List[Dict[str, Any]]):
-            self.after(0, lambda: self.state.set_ports(ports))
-            self.after(0, lambda: self.refresh_btn.configure(text="🔄 Refresh Ports", state="normal"))
+            try:
+                if self.winfo_exists():
+                    self.after(0, lambda: self.state.set_ports(ports))
+                    self.after(0, lambda: self.refresh_btn.configure(text="🔄 Refresh Ports", state="normal"))
+            except Exception:
+                pass
 
         def _on_error(err: Exception):
             logger.debug(f"Failed to fetch ports: {err}")
-            self.after(0, lambda: self.refresh_btn.configure(text="🔄 Refresh Ports", state="normal"))
+            try:
+                if self.winfo_exists():
+                    self.after(0, lambda: self.refresh_btn.configure(text="🔄 Refresh Ports", state="normal"))
+            except Exception:
+                pass
 
         self.client.run_async(_task, callback=_on_success, errback=_on_error)
 

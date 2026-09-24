@@ -178,13 +178,58 @@ devtoolkit config add-path C:\Tools
 
 ---
 
-### 6. Desktop UI Launcher (`devtoolkit ui`)
-Launch the modern graphical interface:
+### 6. Background Daemon & System Tray (`devtoolkit daemon`)
+Run DevToolkit as a detached background service with a native Windows notification icon:
 ```powershell
-# Launch in native desktop window (PyWebView with Edge Chromium backend)
+# Start background daemon on port 4321 with System Tray icon
+devtoolkit daemon start
+
+# Start on custom port
+devtoolkit daemon start --port 5000
+
+# Inspect daemon health, PID, and uptime
+devtoolkit daemon status
+
+# Gracefully terminate background daemon and remove tray icon
+devtoolkit daemon stop
+```
+
+---
+
+### 7. Python Native Desktop UI (`devtoolkit native`)
+Launch the lightweight, decoupled Python Native desktop interface (Tkinter/ttk):
+```powershell
+# Launch Python Native UI (auto-spawns daemon if not running)
+devtoolkit native
+
+# Connect to specific daemon port
+devtoolkit native --port 5000
+
+# Quick flag alternative
+devtoolkit --native
+```
+
+---
+
+### 8. Web Browser Dashboard (`devtoolkit web`)
+Open the DevToolkit workstation dashboard directly in your default web browser:
+```powershell
+# Open browser dashboard (auto-attaches to background daemon)
+devtoolkit web
+
+# Specify port
+devtoolkit web --port 5000
+```
+
+---
+
+### 9. Embedded Desktop UI Launcher (`devtoolkit ui`)
+Launch the modern embedded PyWebView desktop interface:
+```powershell
+# Launch embedded desktop window
 devtoolkit ui
 
-# Open directly in your default web browser
+# Open in browser mode
 devtoolkit ui --web
 
 # Specify custom port
@@ -192,7 +237,7 @@ devtoolkit ui --port 8080
 ```
 
 > [!TIP]
-> Running `devtoolkit` with no arguments or double-clicking `DevToolkit.exe` automatically launches the Desktop UI!
+> Running `devtoolkit` with no arguments or double-clicking `DevToolkit.exe` automatically launches the Desktop UI! If closed, you can configure it to minimize to the System Tray or exit completely in **Settings**.
 
 ---
 

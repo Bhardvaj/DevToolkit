@@ -36,7 +36,14 @@ def test_apply_theme_headless(tk_root):
 
 def test_devtoolkit_app_shell_views(tk_root):
     """Verify DevToolkitApp builds layout and navigates across views."""
-    client = DevToolkitClient()
+    client = MagicMock(spec=DevToolkitClient)
+    client.port = 4321
+    client.host = "127.0.0.1"
+    client.base_url = "http://127.0.0.1:4321"
+    client.get_ports.return_value = []
+    client.get_config.return_value = {}
+    client.get_tools.return_value = []
+    client.get_system.return_value = {}
     state = ClientState()
 
     app = DevToolkitApp(root=tk_root, client=client, state=state)
