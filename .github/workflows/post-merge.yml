@@ -1,0 +1,51 @@
+name: Post-Merge CI
+
+on:
+  push:
+    branches: [ main ]
+
+permissions:
+  contents: read
+
+jobs:
+  test-and-package:
+    name: Test & Package Main Branch
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .
+          pip install pytest pyinstaller
+
+      - name: Run Test Suite
+        run: |
+          pytest -v
+
+      - name: Build Standalone DevToolkit.exe
+        run: |
+          powershell -ExecutionPolicy Bypass -File scripts/build_standalone.ps1
+
+      - name: Verify Standalone Binary (Smoke Test)
+        run: |
+          ./dist/DevToolkit.exe --help
+          ./dist/DevToolkit.exe inspect
+
+      - name: Upload Standalone Binary Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: DevToolkit-Main-Windows-x64
+          path: |
+            dist/DevToolkit.exe
+            dist/devtoolkit.config.yaml
+          if-no-files-found: error

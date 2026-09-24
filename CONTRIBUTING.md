@@ -44,8 +44,16 @@ Runs automatically whenever a PR targeting `main` is opened, edited, or synchron
 2. **Test & Package Validation**: Runs the entire test suite on Windows (`pytest -v`), builds the standalone `DevToolkit.exe` binary, and verifies CLI smoke tests (`--help`, `inspect`).
 3. **Status Check Requirement**: This check must pass successfully before a PR can be merged into `main`.
 
-### B. Build & Release DevToolkit (`.github/workflows/build.yml`)
-Runs automatically **only when a PR is merged into `main`** (or when manually dispatched/released):
-1. Runs full test suite and packages the standalone Windows binary.
-2. Generates and uploads the `DevToolkit-Windows-x64` artifact (`DevToolkit.exe` + `devtoolkit.config.yaml`).
-3. If a release tag is specified or an official release is published, automatically attaches the standalone binary to the GitHub Release.
+### B. Post-Merge CI (`.github/workflows/post-merge.yml`)
+Runs automatically **whenever a PR is merged into `main`**:
+1. Runs the entire test suite on Windows (`pytest -v`).
+2. Packages the standalone Windows binary (`DevToolkit.exe`).
+3. Runs CLI smoke tests (`--help`, `inspect`) to guarantee `main` branch stability.
+4. Generates and uploads the `DevToolkit-Main-Windows-x64` artifact for immediate download and verification.
+5. Does *not* create or publish a GitHub release tag.
+
+### C. Build & Release DevToolkit (`.github/workflows/build.yml`)
+Automated release pipeline that publishes official GitHub Releases:
+1. **Daily Scheduled Run**: Runs every day at **7:00 AM EDT (11:00 UTC)**. If new commits or PRs have been merged into `main` since the previous release, it automatically increments the patch version (e.g. `v0.5.1` -> `v0.5.2`), generates GitHub release notes, builds the standalone binary, and attaches release assets. If no new commits were merged, the release creation is safely skipped to avoid empty duplicates.
+2. **Manual Dispatch**: Can be triggered manually with `create_release: true` (with an optional custom `tag_name` override).
+3. **Official Release**: Triggers whenever a release is published via GitHub.

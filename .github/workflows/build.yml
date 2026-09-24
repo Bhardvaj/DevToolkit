@@ -1,8 +1,9 @@
 name: Build & Release DevToolkit
 
 on:
-  push:
-    branches: [ main ]
+  schedule:
+    # Everyday in the morning at 7:00 AM EDT (11:00 UTC)
+    - cron: "0 11 * * *"
   workflow_dispatch:
     inputs:
       create_release:
@@ -68,7 +69,7 @@ jobs:
 
       - name: Resolve Release Tag
         id: resolve_tag
-        if: github.event_name == 'release' || (github.event_name == 'workflow_dispatch' && inputs.create_release)
+        if: github.event_name == 'release' || github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.create_release)
         shell: python
         env:
           INPUT_TAG: ${{ inputs.tag_name }}
@@ -80,87 +81,117 @@ jobs:
           import subprocess
           import sys
 
+          event_name = os.environ.get("GITHUB_EVENT_NAME", "")
           input_tag = os.environ.get("INPUT_TAG", "").strip()
+          github_output = os.environ.get("GITHUB_OUTPUT")
 
+          def write_output(should_release: bool, tag: str = ""):
+              if github_output:
+                  with open(github_output, "a", encoding="utf-8") as out:
+                      out.write(f"should_release={'true' if should_release else 'false'}\n")
+                      if tag:
+                          out.write(f"release_tag={tag}\n")
+
+          # 1. Explicit input tag provided (workflow_dispatch)
           if input_tag:
               tag = input_tag if input_tag.startswith("v") else f"v{input_tag}"
               print(f"Using explicitly provided release tag: {tag}")
-          elif os.environ.get("GITHUB_REF_NAME") and os.environ.get("GITHUB_EVENT_NAME") == "release":
+              write_output(True, tag)
+              sys.exit(0)
+
+          # 2. Triggered by published GitHub Release
+          if os.environ.get("GITHUB_REF_NAME") and event_name == "release":
               tag = os.environ.get("GITHUB_REF_NAME")
               print(f"Using GitHub release ref tag: {tag}")
-          else:
-              # Query latest release tag from GitHub
-              last_tag = ""
+              write_output(True, tag)
+              sys.exit(0)
+
+          # 3. Query latest release tag from GitHub / git tags
+          last_tag = ""
+          try:
+              res = subprocess.run(
+                  ["gh", "release", "view", "--json", "tagName", "-q", ".tagName"],
+                  capture_output=True,
+                  text=True,
+              )
+              if res.returncode == 0 and res.stdout.strip():
+                  last_tag = res.stdout.strip()
+          except Exception as e:
+              print(f"Notice querying gh release: {e}")
+
+          if not last_tag:
               try:
                   res = subprocess.run(
-                      ["gh", "release", "view", "--json", "tagName", "-q", ".tagName"],
+                      ["git", "describe", "--tags", "--abbrev=0"],
                       capture_output=True,
                       text=True,
                   )
                   if res.returncode == 0 and res.stdout.strip():
                       last_tag = res.stdout.strip()
               except Exception as e:
-                  print(f"Notice querying gh release: {e}")
+                  print(f"Notice querying git describe: {e}")
 
-              if not last_tag:
+          print(f"Last detected release tag: '{last_tag}'")
+
+          # If triggered by daily schedule (cron), only create release if new commits exist
+          if event_name == "schedule" and last_tag:
+              try:
+                  res = subprocess.run(
+                      ["git", "rev-list", f"{last_tag}..HEAD", "--count"],
+                      capture_output=True,
+                      text=True,
+                  )
+                  if res.returncode == 0 and res.stdout.strip().isdigit():
+                      commit_count = int(res.stdout.strip())
+                      print(f"Found {commit_count} new commits on main since {last_tag}")
+                      if commit_count == 0:
+                          print(f"No new commits on main since last release {last_tag}. Skipping daily scheduled release.")
+                          write_output(False)
+                          sys.exit(0)
+              except Exception as e:
+                  print(f"Notice checking git rev-list: {e}")
+
+          if not last_tag:
+              tag = "v0.1.0"
+          else:
+              m = re.match(r"^v?(\d+)\.(\d+)(?:\.(\d+))?$", last_tag)
+              if m:
+                  major = int(m.group(1))
+                  minor = int(m.group(2))
+                  patch = int(m.group(3)) if m.group(3) is not None else 0
+                  cand_tag = f"v{major}.{minor}.{patch + 1}"
+
+                  # If pyproject.toml has a higher version, respect that
                   try:
-                      res = subprocess.run(
-                          ["git", "describe", "--tags", "--abbrev=0"],
-                          capture_output=True,
-                          text=True,
-                      )
-                      if res.returncode == 0 and res.stdout.strip():
-                          last_tag = res.stdout.strip()
-                  except Exception as e:
-                      print(f"Notice querying git describe: {e}")
+                      with open("pyproject.toml", "r", encoding="utf-8") as pf:
+                          for line in pf:
+                              if line.strip().startswith("version ="):
+                                  p_ver = line.split("=")[1].strip().strip('"').strip("'")
+                                  pm = re.match(r"^v?(\d+)\.(\d+)(?:\.(\d+))?$", p_ver)
+                                  if pm:
+                                      p_maj = int(pm.group(1))
+                                      p_min = int(pm.group(2))
+                                      p_pat = int(pm.group(3)) if pm.group(3) is not None else 0
+                                      if (p_maj, p_min, p_pat) > (major, minor, patch):
+                                          cand_tag = f"v{p_maj}.{p_min}.{p_pat}"
+                                  break
+                  except Exception:
+                      pass
 
-              print(f"Last detected release tag: '{last_tag}'")
-
-              if not last_tag:
-                  tag = "v0.1.0"
+                  tag = cand_tag
               else:
-                  m = re.match(r"^v?(\d+)\.(\d+)(?:\.(\d+))?$", last_tag)
-                  if m:
-                      major = int(m.group(1))
-                      minor = int(m.group(2))
-                      patch = int(m.group(3)) if m.group(3) is not None else 0
-                      cand_tag = f"v{major}.{minor}.{patch + 1}"
+                  tag = f"{last_tag}.1"
 
-                      # If pyproject.toml has a higher version, respect that
-                      try:
-                          with open("pyproject.toml", "r", encoding="utf-8") as pf:
-                              for line in pf:
-                                  if line.strip().startswith("version ="):
-                                      p_ver = line.split("=")[1].strip().strip('"').strip("'")
-                                      pm = re.match(r"^v?(\d+)\.(\d+)(?:\.(\d+))?$", p_ver)
-                                      if pm:
-                                          p_maj = int(pm.group(1))
-                                          p_min = int(pm.group(2))
-                                          p_pat = int(pm.group(3)) if pm.group(3) is not None else 0
-                                          if (p_maj, p_min, p_pat) > (major, minor, patch):
-                                              cand_tag = f"v{p_maj}.{p_min}.{p_pat}"
-                                      break
-                      except Exception:
-                          pass
-
-                      tag = cand_tag
-                  else:
-                      tag = f"{last_tag}.1"
-
-              print(f"Automatically determined next release tag: {tag}")
-
-          # Export output to GitHub Actions step outputs
-          github_output = os.environ.get("GITHUB_OUTPUT")
-          if github_output:
-              with open(github_output, "a", encoding="utf-8") as out:
-                  out.write(f"release_tag={tag}\n")
+          print(f"Automatically determined next release tag: {tag}")
+          write_output(True, tag)
 
       - name: Attach Binary to GitHub Release
-        if: github.event_name == 'release' || (github.event_name == 'workflow_dispatch' && inputs.create_release)
+        if: (github.event_name == 'release' || github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.create_release)) && steps.resolve_tag.outputs.should_release == 'true'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.resolve_tag.outputs.release_tag }}
           name: DevToolkit ${{ steps.resolve_tag.outputs.release_tag }}
+          generate_release_notes: true
           files: |
             dist/DevToolkit.exe
             dist/devtoolkit.config.yaml
