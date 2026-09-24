@@ -85,9 +85,12 @@ def test_cli_native_command():
     """Test 'devtoolkit native --help' CLI command output."""
     res = runner.invoke(cli_app, ["native", "--help"])
     assert res.exit_code == 0
-    assert "Launch the Python Native desktop workstation inspector UI." in res.stdout
-    assert "--port" in res.stdout
-    assert "--host" in res.stdout
+    import re
+
+    clean_stdout = re.sub(r"\x1b\[[0-9;]*[a-zA-Z]", "", res.stdout)
+    assert "Launch the Python Native desktop workstation inspector UI." in clean_stdout
+    assert "--port" in clean_stdout
+    assert "--host" in clean_stdout
 
 
 def test_cli_native_flag():
