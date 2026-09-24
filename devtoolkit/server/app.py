@@ -15,6 +15,7 @@ from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 import uvicorn
 
+from devtoolkit import __version__
 from devtoolkit.core.models import AuditSummary, DeepTelemetryReport
 from devtoolkit.modules.utilities.ports import PortInfo, PortKillResult
 from devtoolkit.modules.utilities.project_auditor import ProjectAuditReport
@@ -80,7 +81,7 @@ async def lifespan(application: FastAPI):
     yield
 
 
-app = FastAPI(title="DevToolkit API", version="0.2.0", lifespan=lifespan)
+app = FastAPI(title="DevToolkit API", version=__version__, lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,

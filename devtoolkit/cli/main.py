@@ -38,11 +38,26 @@ app.add_typer(config_app, name="config")
 console = Console()
 
 
+def version_callback(value: bool) -> None:
+    if value:
+        from devtoolkit import __version__
+        print(f"DevToolkit v{__version__}")
+        raise typer.Exit()
+
+
 @app.callback(invoke_without_command=True)
 def default_callback(
     ctx: typer.Context,
     port: int = typer.Option(4321, "--port", "-p", help="Local server port when launching UI."),
     web: bool = typer.Option(False, "--web", help="Open in default browser instead of native desktop window."),
+    version: Optional[bool] = typer.Option(
+        None,
+        "--version",
+        "-v",
+        help="Show application version and exit.",
+        callback=version_callback,
+        is_eager=True,
+    ),
 ) -> None:
     """DevToolkit: Extensible developer environment auditor and workstation utility."""
     if ctx.invoked_subcommand is None:

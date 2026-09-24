@@ -47,10 +47,11 @@ def test_server_routes_registered():
 
 
 def test_get_system_handler():
+    from devtoolkit import __version__
     info = get_system()
     assert info.os_name is not None
     assert info.arch is not None
-    assert info.app_version == "0.2.0"
+    assert info.app_version == __version__
 
 
 def test_get_tools_handler():
