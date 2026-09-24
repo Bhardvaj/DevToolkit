@@ -39,3 +39,19 @@ def delete_search_path(req: SearchPathRequest):
 @router.get("/system")
 def get_system():
     return SafeRunner().get_system_info()
+
+
+@router.get("/health")
+def get_health():
+    import os
+    import time
+    from devtoolkit import __version__
+
+    return {
+        "status": "ok",
+        "app": "devtoolkit",
+        "version": __version__,
+        "pid": os.getpid(),
+        "timestamp": time.time(),
+    }
+

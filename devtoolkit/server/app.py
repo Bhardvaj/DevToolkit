@@ -52,7 +52,7 @@ from devtoolkit.server.routes.search import (
     toggle_realtime,
     trigger_reindex,
 )
-from devtoolkit.server.routes.system import delete_search_path, get_config, get_system, post_search_path
+from devtoolkit.server.routes.system import delete_search_path, get_config, get_health, get_system, post_search_path
 from devtoolkit.server.ui import EMBEDDED_UI_HTML, get_dashboard_html
 
 def warmup_search_engine_background():
@@ -99,6 +99,7 @@ def register_routes(application: FastAPI) -> None:
     application.add_api_route("/api/config/search-paths", post_search_path, methods=["POST"], tags=["system"])
     application.add_api_route("/api/config/search-paths", delete_search_path, methods=["DELETE"], tags=["system"])
     application.add_api_route("/api/system", get_system, methods=["GET"], tags=["system"])
+    application.add_api_route("/api/health", get_health, methods=["GET"], tags=["system"])
 
     # Environment Audit & Tools
     application.add_api_route("/api/audit", get_audit, methods=["GET"], response_model=AuditSummary, tags=["audit"])
@@ -152,11 +153,18 @@ def run_server(port: int):
 
 
 def launch_ui(port: int = 4321, web_only: bool = False, dev: bool = False):
-    """Launch server and open either native desktop window (PyWebView) or browser dashboard."""
-    server_thread = threading.Thread(target=run_server, args=(port,), daemon=True)
-    server_thread.start()
+    """Launch or attach to background daemon and open native desktop window or browser."""
+    from devtoolkit.daemon.manager import is_daemon_alive, start_daemon
 
-    time.sleep(0.8)
+    if not is_daemon_alive(port=port):
+        try:
+            start_daemon(port=port)
+        except Exception as e:
+            # Fallback: run server in-process background thread
+            server_thread = threading.Thread(target=run_server, args=(port,), daemon=True)
+            server_thread.start()
+            time.sleep(0.8)
+
     url = f"http://127.0.0.1:{port}"
 
     if web_only or dev:
@@ -166,7 +174,7 @@ def launch_ui(port: int = 4321, web_only: bool = False, dev: bool = False):
             while True:
                 time.sleep(1)
         except KeyboardInterrupt:
-            print("\nShutting down DevToolkit.")
+            print("\nExiting DevToolkit client.")
     else:
         try:
             import webview
@@ -206,6 +214,7 @@ __all__ = [
     "SelectFolderRequest",
     "ApplyFixRequest",
     "get_system",
+    "get_health",
     "get_config",
     "post_search_path",
     "delete_search_path",
