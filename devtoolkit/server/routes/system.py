@@ -1,13 +1,20 @@
 """System and Configuration API routes."""
 
 from pathlib import Path
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 
-from devtoolkit.core.config import add_search_path, load_config, remove_search_path, remove_search_path_by_index
+from devtoolkit.core.config import (
+    add_search_path,
+    load_config,
+    remove_search_path,
+    remove_search_path_by_index,
+    set_close_action,
+)
 from devtoolkit.core.runner import SafeRunner
-from devtoolkit.server.models import SearchPathRequest
+from devtoolkit.server.models import CloseActionRequest, DaemonNotifyRequest, SearchPathRequest
 
 router = APIRouter(prefix="/api", tags=["system"])
+
 
 
 @router.get("/config")
@@ -54,4 +61,25 @@ def get_health():
         "pid": os.getpid(),
         "timestamp": time.time(),
     }
+
+
+@router.post("/config/close-action")
+def post_close_action(req: CloseActionRequest):
+    updated = set_close_action(req.action)
+    if not updated:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid close_action '{req.action}'. Expected 'ask', 'minimize', or 'exit'.",
+        )
+    return {"status": "ok", "action": req.action.lower(), "config": load_config()}
+
+
+@router.post("/daemon/notify")
+def post_daemon_notify(req: DaemonNotifyRequest, request: Request):
+    tray = getattr(request.app.state, "tray", None)
+    if tray and hasattr(tray, "show_notification"):
+        delivered = tray.show_notification(title=req.title, message=req.message, icon_type=req.icon_type)
+        return {"status": "ok", "delivered": bool(delivered)}
+    return {"status": "ok", "delivered": False, "note": "Tray icon not active"}
+
 

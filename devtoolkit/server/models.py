@@ -59,3 +59,14 @@ class SearchQueryAPIRequest(BaseModel):
     limit: int = 500
     offset: int = 0
 
+
+class CloseActionRequest(BaseModel):
+    action: str  # "ask", "minimize", "exit"
+
+
+class DaemonNotifyRequest(BaseModel):
+    title: str = "DevToolkit"
+    message: str = ""
+    icon_type: int = 1  # 1 = Info, 2 = Warning, 3 = Error
+
+
