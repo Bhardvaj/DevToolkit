@@ -92,6 +92,7 @@ $EntryScript = Join-Path $WorkspaceRoot "devtoolkit\cli\main.py"
     --hidden-import "pyyaml" `
     --hidden-import "devtoolkit" `
     --hidden-import "devtoolkit.core" `
+    --hidden-import "devtoolkit.daemon" `
     --hidden-import "devtoolkit.modules.inspectors" `
     --hidden-import "devtoolkit.modules.utilities" `
     --collect-submodules "devtoolkit" `

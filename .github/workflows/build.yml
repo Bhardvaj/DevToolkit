@@ -208,6 +208,7 @@ jobs:
         run: |
           ./dist/DevToolkit.exe --help
           ./dist/DevToolkit.exe --version
+          ./dist/DevToolkit.exe daemon status
           ./dist/DevToolkit.exe inspect
 
       - name: Upload Standalone Binary Artifact
