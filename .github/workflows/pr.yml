@@ -91,4 +91,6 @@ jobs:
           ./dist/DevToolkit.exe --help
           ./dist/DevToolkit.exe --version
           ./dist/DevToolkit.exe daemon status
+          ./dist/DevToolkit.exe native --help
           ./dist/DevToolkit.exe inspect
+
