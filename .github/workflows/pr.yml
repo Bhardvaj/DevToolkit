@@ -89,4 +89,5 @@ jobs:
       - name: Verify Standalone Binary (Smoke Test)
         run: |
           ./dist/DevToolkit.exe --help
+          ./dist/DevToolkit.exe --version
           ./dist/DevToolkit.exe inspect
