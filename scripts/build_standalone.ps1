@@ -93,15 +93,20 @@ $EntryScript = Join-Path $WorkspaceRoot "devtoolkit\cli\main.py"
     --hidden-import "devtoolkit" `
     --hidden-import "devtoolkit.core" `
     --hidden-import "devtoolkit.daemon" `
+    --hidden-import "devtoolkit.client" `
     --hidden-import "devtoolkit.modules.inspectors" `
     --hidden-import "devtoolkit.modules.utilities" `
     --collect-submodules "devtoolkit" `
     --collect-data "devtoolkit" `
+    --hidden-import "tkinter" `
+    --hidden-import "tkinter.ttk" `
+    --hidden-import "tkinter.messagebox" `
     --hidden-import "webview" `
     --hidden-import "webview.platforms" `
     --hidden-import "webview.platforms.winforms" `
     --hidden-import "webview.platforms.edgechromium" `
     $EntryScript
+
 
 if ($LASTEXITCODE -eq 0) {
     $TargetExe = Join-Path $DistPath "$BinaryName.exe"
