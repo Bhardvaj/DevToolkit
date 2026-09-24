@@ -17,6 +17,8 @@ class DevToolkitConfig(BaseModel):
     enabled_categories: Optional[List[str]] = None
     custom_env: Dict[str, str] = Field(default_factory=dict)
     realtime_search: bool = True
+    close_action: str = Field(default="ask")  # "ask" | "minimize" | "exit"
+
 
 
 def get_app_dir() -> Path:
@@ -127,6 +129,17 @@ def set_realtime_search(enabled: bool) -> bool:
     """Set realtime_search enabled flag in persistent configuration."""
     config = load_config()
     config.realtime_search = bool(enabled)
+    save_config(config)
+    return True
+
+
+def set_close_action(action: str) -> bool:
+    """Set close_action preference ('ask', 'minimize', 'exit') in persistent configuration."""
+    action_clean = action.strip().lower()
+    if action_clean not in ("ask", "minimize", "exit"):
+        return False
+    config = load_config()
+    config.close_action = action_clean
     save_config(config)
     return True
 
