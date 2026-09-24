@@ -2,11 +2,13 @@
 
 from devtoolkit.client.api import DevToolkitClient
 from devtoolkit.client.app import DevToolkitApp, launch_native_ui
+from devtoolkit.client.dialogs.tool_inspector import ToolInspectorModal
 from devtoolkit.client.state import ClientState
 
 __all__ = [
     "DevToolkitClient",
     "ClientState",
     "DevToolkitApp",
+    "ToolInspectorModal",
     "launch_native_ui",
 ]

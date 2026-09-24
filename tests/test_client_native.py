@@ -27,44 +27,33 @@ def test_theme_colors_and_fonts():
     assert Fonts.TITLE[1] == 16
 
 
-def test_apply_theme_headless():
+def test_apply_theme_headless(tk_root):
     """Verify apply_theme runs cleanly on Tk root."""
-    root = tk.Tk()
-    root.withdraw()
-    try:
-        style = apply_theme(root)
-        assert style is not None
-        assert root.cget("bg") == Colors.BG_MAIN
-    finally:
-        root.destroy()
+    style = apply_theme(tk_root)
+    assert style is not None
+    assert tk_root.cget("bg") == Colors.BG_MAIN
 
 
-def test_devtoolkit_app_shell_views():
+def test_devtoolkit_app_shell_views(tk_root):
     """Verify DevToolkitApp builds layout and navigates across views."""
-    root = tk.Tk()
-    root.withdraw()
-
     client = DevToolkitClient()
     state = ClientState()
 
-    try:
-        app = DevToolkitApp(root=root, client=client, state=state)
-        assert root.title() == WINDOW_TITLE
-        assert app.sidebar is not None
-        assert len(app._nav_buttons) == 5
+    app = DevToolkitApp(root=tk_root, client=client, state=state)
+    assert tk_root.title() == WINDOW_TITLE
+    assert app.sidebar is not None
+    assert len(app._nav_buttons) == 5
 
-        # Navigate views
-        for view_name in ["ports", "projects", "search", "settings", "environment"]:
-            app._switch_view(view_name)
-            assert app._active_view_frame is not None
+    # Navigate views
+    for view_name in ["ports", "projects", "search", "settings", "environment"]:
+        app._switch_view(view_name)
+        assert app._active_view_frame is not None
 
-        # Verify close action 'minimize'
-        state.set_config({"close_action": "minimize"})
-        with patch.object(client, "send_notification") as mock_notif:
-            app._on_window_closing()
-            mock_notif.assert_called_once()
-    finally:
-        root.destroy()
+    # Verify close action 'minimize'
+    state.set_config({"close_action": "minimize"})
+    with patch.object(client, "send_notification") as mock_notif:
+        app._on_window_closing()
+        mock_notif.assert_called_once()
 
 
 def test_launch_native_ui_mocked():
