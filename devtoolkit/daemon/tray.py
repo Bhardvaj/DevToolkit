@@ -112,11 +112,17 @@ def activate_or_launch_ui(port: int = 4321, title: str = WINDOW_TITLE) -> bool:
     if getattr(sys, "frozen", False):
         cmd = [sys.executable, "--port", str(port)]
     else:
-        cmd = [sys.executable, "-m", "devtoolkit.cli.main", "--port", str(port)]
+        py_exe = sys.executable
+        if sys.platform == "win32":
+            pyw = Path(py_exe).with_name("pythonw.exe")
+            if pyw.is_file():
+                py_exe = str(pyw)
+        cmd = [py_exe, "-m", "devtoolkit.cli.main", "--port", str(port)]
 
     try:
         if sys.platform == "win32":
-            creationflags = subprocess.DETACHED_PROCESS | subprocess.CREATE_NEW_PROCESS_GROUP
+            CREATE_NO_WINDOW = 0x08000000
+            creationflags = CREATE_NO_WINDOW | subprocess.DETACHED_PROCESS | subprocess.CREATE_NEW_PROCESS_GROUP
             subprocess.Popen(
                 cmd,
                 creationflags=creationflags,
