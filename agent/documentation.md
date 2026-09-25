@@ -1,7 +1,7 @@
 # DevToolkit: Master Software Reference & Technical Manual
 
 > **Author**: Bhardvaj  
-> **Version**: 0.3.0 (Phase 7: Deep Tool Inspection & 7-Zone Process Flow)  
+> **Version**: 0.5.1 (Phase 14: Decoupled Daemon, Fast Search & Portable Storage)  
 > **Repository**: [https://github.com/Bhardvaj/DevToolkit](https://github.com/Bhardvaj/DevToolkit)  
 > **Document Purpose**: Authoritative reference manual documenting the software architecture, discovery algorithms, deep inspection heuristics, utility modules, REST APIs, desktop UI, and distribution pipelines.
 
@@ -9,75 +9,96 @@
 
 ## 1. System Architecture & Core Philosophy
 
-DevToolkit is engineered as an extensible workstation environment auditor, port manager, and developer productivity suite. It bridges the gap between terminal CLI speed and native desktop ergonomics, giving engineers instant insight into their tools, sockets, and project readiness.
+DevToolkit is engineered as a decoupled workstation environment auditor, port manager, file search engine, and developer productivity suite. It bridges the gap between terminal CLI speed and native desktop ergonomics, giving engineers instant insight into their tools, sockets, and project readiness.
 
 ### Core Architectural Principles
 
 1. **Zero Hardcoded Paths**:
-   No tool location is assumed. SDKs installed in custom drives (e.g. `D:\Dev`, `E:\Tools`), package managers (`nvm-windows`, `pyenv-win`, `scoop`, `winget`, `choco`), or embedded inside IDEs (e.g. Android Studio JBR) are resolved dynamically.
-2. **Strictly Sandboxed Execution (`SafeRunner`)**:
-   External commands are run with strict timeouts (1.5s - 5s), suppressed console window flashing (`SW_HIDE`, `STARTF_USESHOWWINDOW`), detached standard input (`DEVNULL`), and non-destructive read-only queries.
-3. **Decoupled Architecture**:
-   The core auditing engine is 100% decoupled from the UI. The same audit logic drives:
-   - Colored terminal tables and formatted JSON/YAML output.
-   - FastAPI local REST endpoints.
-   - Native PyWebView desktop window (using Edge Chromium/WebView2).
-   - In-browser dashboards (`localhost:4321`).
-4. **Dual-Mode Executable**:
-   A single compiled binary (`DevToolkit.exe`) serves dual roles: double-clicking launches the GUI, while terminal commands execute CLI operations.
+   No tool location is assumed. SDKs installed in custom drives (e.g. `D:\Dev`, `E:\Tools`), package managers (`nvm-windows`, `pyenv-win`, `scoop`, `winget`, `choco`), or embedded inside IDEs (e.g. Android Studio JBR) are resolved dynamically via the 4-layer pipeline.
+2. **Decoupled Background Daemon Service**:
+   The central host service is a headless, detached background daemon (`devtoolkit.daemon.server`) that runs independently of client windows, serving FastAPI REST/SSE endpoints, managing real-time file index watchers, and displaying a native Windows system tray icon (`devtoolkit.daemon.tray`).
+3. **Zero Host Pollution & Portable Co-Location**:
+   DevToolkit leaves no footprints in the user's home profile (`Path.home() / ".devtoolkit"` is never created). Configuration (`devtoolkit.config.yaml`), daemon state (`daemon.json`), and rotating logs (`daemon.log`, `client.log`) reside strictly beside the executable or repository root.
+4. **Everything-Class Fast Search Engine**:
+   Embeds an in-memory, sub-millisecond file search engine (`FastSearchEngine`) leveraging direct NTFS USN Change Journal volume streaming (`DeviceIoControl`) when elevated, a 16-worker parallel directory crawler, and real-time Win32 `ReadDirectoryChangesW` filesystem watchers.
+5. **Windowless PE Subsystem & Single-Instance Activation**:
+   Compiled with `--windowed` PE GUI subsystem. Explorer double-clicks never spawn a terminal console window. If already running, launching the executable activates the existing window using Win32 `FindWindowW` and brings it to the foreground. Terminal invocations attach via `kernel32.AttachConsole(-1)`.
 
 ### Architecture Topology Diagram
 
 ```mermaid
 flowchart TD
-    subgraph UI_Layer ["Interface Layer"]
-        CLI["Typer CLI (inspect, doctor, ports, project)"]
-        GUI["PyWebView Desktop App (Edge WebView2)"]
-        Browser["Local Web Browser (localhost:4321)"]
+    subgraph Client_Layer ["Client & Interface Layer"]
+        CLI["Terminal CLI (devtoolkit.cli / Typer + Rich)"]
+        GUI["Desktop UI (PyWebView Edge Chromium)"]
+        Browser["Web Browser (http://127.0.0.1:4321)"]
+        ClientSDK["Client SDK (devtoolkit.client.api)"]
     end
 
-    subgraph API_Layer ["Application & Server Layer"]
-        FastAPI["FastAPI Local Server (Uvicorn)"]
-        AppCallback["Typer Main Callback (Dual-Mode Dispatch)"]
+    subgraph Entry_Layer ["Unified Launcher (devtoolkit.entry)"]
+        MainEntry["devtoolkit.entry:main (Windowless GUI)"]
+        SingleInstance["HWND Single-Instance Check"]
     end
 
-    subgraph Core_Engine ["DevToolkit Core Engine"]
-        Registry["PluginRegistry"]
-        Runner["SafeRunner (Timeouts, SW_HIDE)"]
-        Config["Configuration Manager (devtoolkit.json)"]
+    subgraph Daemon_Layer ["Background Daemon & System Tray"]
+        DaemonService["DaemonServer (server.py)"]
+        DaemonManager["DaemonManager (manager.py)"]
+        ActivityTracker["ActivityTracker (activity.py)"]
+        Tray["SystemTrayIcon (tray.py - Shell_NotifyIconW)"]
     end
 
-    subgraph Discovery_Pipeline ["4-Layer Discovery Pipeline"]
-        L1["Layer 1: PATH & Environment Variables"]
-        L2["Layer 2: Windows Uninstall Registry (HKLM/HKCU)"]
-        L3["Layer 3: Cross-Tool Ecosystem (IDE Configs)"]
-        L4["Layer 4: Content Signature Fingerprinting"]
+    subgraph Server_Layer ["FastAPI Server & Modular Routes"]
+        FastAPI["FastAPI Orchestrator (server/app.py)"]
+        AuditRoute["routes/audit.py (SSE & Deep Inspection)"]
+        SearchRoute["routes/search.py (Fast Search & Realtime)"]
+        PortsRoute["routes/ports.py (Sockets & Port Killer)"]
+        ProjectRoute["routes/project.py (Manifest Auditor)"]
+        SystemRoute["routes/system.py (Telemetry & Config)"]
     end
 
-    subgraph Utility_Modules ["Workstation Utilities"]
-        PortManager["PortManager (netstat / tasklist)"]
-        PortKiller["PortKiller (Taskkill / OS Safeguards)"]
-        ProjectAuditor["ProjectAuditor (Manifest Inspection)"]
+    subgraph Search_Engine ["FastSearchEngine"]
+        SearchIndex["SearchIndex (In-Memory Array & Map)"]
+        USNReader["NTFSUSNReader (FSCTL_ENUM_USN_DATA)"]
+        Crawler["ParallelPrunedCrawler (16 Workers)"]
+        Watcher["LiveDirectoryWatcher (ReadDirectoryChangesW)"]
     end
 
-    CLI --> AppCallback
-    AppCallback --> CLI
-    AppCallback --> FastAPI
-    GUI --> FastAPI
+    subgraph Core_Engine ["DevToolkit Kernel"]
+        Registry["PluginRegistry (22 Tool Inspectors)"]
+        SafeRunner["SafeRunner (Timeouts, SW_HIDE, where.exe)"]
+        Config["Portable Config (devtoolkit.config.yaml)"]
+        Logging["Co-located Logging (daemon.log, client.log)"]
+    end
+
+    MainEntry --> SingleInstance
+    SingleInstance -->|Focus Existing| GUI
+    SingleInstance -->|Spawn/Connect| DaemonManager
+    DaemonManager --> DaemonService
+    DaemonService --> FastAPI
+    DaemonService --> Tray
+    DaemonService --> ActivityTracker
+
+    GUI --> ClientSDK
+    ClientSDK --> FastAPI
     Browser --> FastAPI
-
-    FastAPI --> Registry
-    FastAPI --> PortManager
-    FastAPI --> ProjectAuditor
-
     CLI --> Registry
-    CLI --> PortManager
-    CLI --> ProjectAuditor
 
-    Registry --> Discovery_Pipeline
-    Discovery_Pipeline --> Runner
-    PortManager --> Runner
-    ProjectAuditor --> Registry
+    FastAPI --> AuditRoute
+    FastAPI --> SearchRoute
+    FastAPI --> PortsRoute
+    FastAPI --> ProjectRoute
+    FastAPI --> SystemRoute
+
+    AuditRoute --> Registry
+    SearchRoute --> Search_Engine
+    PortsRoute --> SafeRunner
+    SystemRoute --> Config
+    SystemRoute --> ActivityTracker
+
+    Search_Engine --> USNReader
+    Search_Engine --> Crawler
+    Search_Engine --> Watcher
+    Search_Engine --> SearchIndex
 ```
 
 ---
@@ -364,7 +385,8 @@ The DevToolkit UI uses consistent, color-coded visual tokens across the dashboar
 - **`deep_inspect()` Forensic Flow Branches & Condition Cases**:
   1. *Multi-Instance Precedence*:
      - Scans `runner.resolve_all_binaries("docker")`. Sets index 0 as active.
-     - Checks Docker Desktop Program Files: `C:\Program Files\Docker\Dockeresourcesin\docker.exe` and `Docker Desktop.exe`.
+     - Checks Docker Desktop Program Files: `C:\Program Files\Docker\Docker
+esourcesin\docker.exe` and `Docker Desktop.exe`.
      - Queries Windows Registry uninstall keys via `OSInventory.find_app_locations("Docker Desktop")`.
   2. *Monitored Environment Variables*:
      - `DOCKER_HOST`: Status: `aligned` (custom daemon socket or default named pipe `//./pipe/docker_engine`).

@@ -70,10 +70,6 @@ def default_callback(
 ) -> None:
     """DevToolkit: Extensible developer environment auditor and workstation utility."""
     if ctx.invoked_subcommand is None:
-        if not web:
-            from devtoolkit.core.console import hide_console_window
-
-            hide_console_window()
         from devtoolkit.server.app import launch_ui
         launch_ui(port=port, web_only=web)
 

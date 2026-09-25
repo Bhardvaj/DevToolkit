@@ -1,4 +1,4 @@
-"""Project Workstation Auditor: Verifies if a machine meets repository prerequisites."""
+from __future__ import annotations
 
 import json
 import re
@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import List, Optional
 from pydantic import BaseModel, Field
 
+from devtoolkit.core.models import AuditSummary
 from devtoolkit.core.registry import PluginRegistry
 from devtoolkit.core.runner import SafeRunner
 
@@ -34,7 +35,11 @@ class ProjectAuditor:
         self.runner = runner or SafeRunner(default_timeout=3.0)
         self.registry = registry or PluginRegistry(self.runner)
 
-    def audit_project(self, project_path: Path) -> ProjectAuditReport:
+    def audit_project(
+        self,
+        project_path: Path,
+        audit_summary: Optional[AuditSummary] = None,
+    ) -> ProjectAuditReport:
         p_dir = Path(project_path).expanduser().resolve()
         if not p_dir.exists() or not p_dir.is_dir():
             return ProjectAuditReport(
@@ -52,32 +57,29 @@ class ProjectAuditor:
                 ],
             )
 
-        # Gather machine environment
-        summary = self.registry.run_audit()
-        installed_tools = {r.id: r for r in summary.reports if r.installed}
-
         checks: List[RequirementCheck] = []
         detected_types: List[str] = []
         suggested_actions: List[str] = []
+        required_tools: set = set()
 
         # 1. Node.js & Web Project Check
         pkg_json = p_dir / "package.json"
         if pkg_json.exists():
             detected_types.append("Node.js / Frontend")
-            self._check_node_project(pkg_json, installed_tools, checks, suggested_actions)
+            required_tools.add("node")
 
         # 2. Python Project Check
         pyproject = p_dir / "pyproject.toml"
         req_txt = p_dir / "requirements.txt"
         if pyproject.exists() or req_txt.exists():
             detected_types.append("Python")
-            self._check_python_project(pyproject, req_txt, installed_tools, checks, suggested_actions)
+            required_tools.add("python")
 
         # 3. Flutter / Dart Project Check
         pubspec = p_dir / "pubspec.yaml"
         if pubspec.exists():
             detected_types.append("Flutter / Dart")
-            self._check_flutter_project(pubspec, installed_tools, checks, suggested_actions)
+            required_tools.add("flutter")
 
         # 4. Android Project Check
         build_gradle = p_dir / "build.gradle"
@@ -85,25 +87,58 @@ class ProjectAuditor:
         app_build_gradle = p_dir / "app" / "build.gradle"
         if build_gradle.exists() or build_gradle_kts.exists() or app_build_gradle.exists():
             detected_types.append("Android")
-            self._check_android_project(p_dir, installed_tools, checks, suggested_actions)
+            required_tools.update(["android", "java"])
 
         # 5. Docker Project Check
         dockerfile = p_dir / "Dockerfile"
-        compose_file = p_dir / "docker-compose.yml" or p_dir / "compose.yaml"
-        if dockerfile.exists() or compose_file.exists():
+        compose_file = p_dir / "docker-compose.yml"
+        compose_yaml = p_dir / "compose.yaml"
+        if dockerfile.exists() or compose_file.exists() or compose_yaml.exists():
             detected_types.append("Docker")
-            self._check_docker_project(installed_tools, checks, suggested_actions)
+            required_tools.add("docker")
 
         # 6. Rust Project Check
         cargo_toml = p_dir / "Cargo.toml"
         if cargo_toml.exists():
             detected_types.append("Rust")
-            self._check_rust_project(cargo_toml, installed_tools, checks, suggested_actions)
+            required_tools.add("rust")
 
         # 7. Go Project Check
         go_mod = p_dir / "go.mod"
         if go_mod.exists():
             detected_types.append("Go")
+            required_tools.add("golang")
+
+        # Gather machine environment only for required tools
+        if audit_summary is not None:
+            summary = audit_summary
+        elif required_tools:
+            summary = self.registry.run_audit(tool_ids=list(required_tools))
+        else:
+            summary = None
+
+        installed_tools = {r.id: r for r in summary.reports if r.installed} if summary else {}
+
+        # Run checks for detected types
+        if pkg_json.exists():
+            self._check_node_project(pkg_json, installed_tools, checks, suggested_actions)
+
+        if pyproject.exists() or req_txt.exists():
+            self._check_python_project(pyproject, req_txt, installed_tools, checks, suggested_actions)
+
+        if pubspec.exists():
+            self._check_flutter_project(pubspec, installed_tools, checks, suggested_actions)
+
+        if build_gradle.exists() or build_gradle_kts.exists() or app_build_gradle.exists():
+            self._check_android_project(p_dir, installed_tools, checks, suggested_actions)
+
+        if dockerfile.exists() or compose_file.exists() or compose_yaml.exists():
+            self._check_docker_project(installed_tools, checks, suggested_actions)
+
+        if cargo_toml.exists():
+            self._check_rust_project(cargo_toml, installed_tools, checks, suggested_actions)
+
+        if go_mod.exists():
             self._check_go_project(go_mod, installed_tools, checks, suggested_actions)
 
         if not detected_types:

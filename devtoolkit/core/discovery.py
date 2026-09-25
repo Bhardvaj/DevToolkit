@@ -741,7 +741,7 @@ class DiscoveryPipeline:
         # Map tool_id to target binary names
         bin_names = [k for k, v in TARGET_TOOL_BINARIES.items() if tool_id in v]
         for b_name in bin_names[:4]:  # limit to primary binary names
-            for found_bin in self.runner.resolve_all_binaries(b_name):
+            for found_bin in self.runner.resolve_all_binaries(b_name, use_discovery=False):
                 parent = found_bin.parent
                 cand_root = parent.parent if parent.name in ["bin", "cmd", "Scripts", "platform-tools"] else parent
                 _add(cand_root)

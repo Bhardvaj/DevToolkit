@@ -29,6 +29,9 @@ class CommandResult(BaseModel):
 class SafeRunner:
     """Executes safe, non-destructive external commands with timeouts and resolves paths."""
 
+    _cmd_cache: Dict[tuple, CommandResult] = {}
+    _cache_lock = threading.Lock()
+
     def __init__(self, default_timeout: float = 5.0):
         self.default_timeout = default_timeout
         self._discovery = None
@@ -47,9 +50,20 @@ class SafeRunner:
         timeout: Optional[float] = None,
         env: Optional[Dict[str, str]] = None,
         timeout_seconds: Optional[float] = None,
+        use_cache: bool = True,
     ) -> CommandResult:
-        """Run a command with guaranteed timeout and non-blocking capture."""
+        """Run a command with guaranteed timeout, memoization, and non-blocking capture."""
         effective_timeout = timeout if timeout is not None else (timeout_seconds if timeout_seconds is not None else self.default_timeout)
+
+        cache_key = None
+        bypass_cmds = {"taskkill", "kill", "netstat", "tasklist", "lsof"}
+        should_cache = use_cache and cmd and str(cmd[0]).lower() not in bypass_cmds
+        if should_cache:
+            cache_key = (tuple(str(c) for c in cmd), tuple(sorted(env.items())) if env else ())
+            with self._cache_lock:
+                cached = self._cmd_cache.get(cache_key)
+                if cached is not None:
+                    return cached
         
         # Merge custom env with os.environ
         run_env = os.environ.copy()
@@ -78,13 +92,17 @@ class SafeRunner:
                 shell=use_shell,
                 errors="replace",
             )
-            return CommandResult(
+            res = CommandResult(
                 command=cmd,
                 exit_code=process.returncode,
                 stdout=process.stdout.strip(),
                 stderr=process.stderr.strip(),
                 timed_out=False,
             )
+            if should_cache and cache_key is not None and res.ok:
+                with self._cache_lock:
+                    self._cmd_cache[cache_key] = res
+            return res
         except subprocess.TimeoutExpired:
             return CommandResult(
                 command=cmd,
@@ -177,13 +195,58 @@ class SafeRunner:
 
         return None
 
-    def clear_cache(self) -> None:
-        """Clear discovery and resolution caches."""
+    @classmethod
+    def clear_command_cache(cls) -> None:
+        """Clear the shared command cache."""
+        with cls._cache_lock:
+            cls._cmd_cache.clear()
+
+    def clear_cache(self, clear_commands: bool = False) -> None:
+        """Clear discovery, command, and resolution caches."""
+        if clear_commands:
+            self.clear_command_cache()
         if self._discovery is not None:
             self._discovery.clear_scan_cache()
+        try:
+            from devtoolkit.core.inventory import OSInventory
+            OSInventory.clear_cache()
+            from devtoolkit.core.ecosystem import EcosystemResolvers
+            EcosystemResolvers.clear_cache()
+        except Exception:
+            pass
 
     # Alias for convenience across inspectors
     find_binary = resolve_binary
+
+    @staticmethod
+    def _find_all_in_path(name: str) -> List[Path]:
+        """Find all matching executable occurrences in system PATH in order of precedence without subprocesses."""
+        found: List[Path] = []
+        path_str = os.environ.get("PATH", "")
+        if not path_str:
+            return found
+
+        if sys.platform == "win32":
+            raw_pathext = os.environ.get("PATHEXT", ".COM;.EXE;.BAT;.CMD")
+            pathext = [ext.lower() for ext in raw_pathext.split(";") if ext]
+            name_lower = name.lower()
+            has_ext = any(name_lower.endswith(ext) for ext in pathext)
+            candidates = [name] if has_ext else [f"{name}{ext}" for ext in pathext]
+        else:
+            candidates = [name]
+
+        for d in path_str.split(os.pathsep):
+            if not d:
+                continue
+            dir_path = Path(d)
+            for cand_name in candidates:
+                cand = dir_path / cand_name
+                try:
+                    if cand.is_file() and (sys.platform == "win32" or os.access(cand, os.X_OK)):
+                        found.append(cand)
+                except (OSError, PermissionError):
+                    continue
+        return found
 
     def resolve_all_binaries(
         self,
@@ -211,14 +274,9 @@ class SafeRunner:
         if primary:
             _add(Path(primary))
 
-        # 2. Windows where.exe (returns ALL occurrences in PATH in precedence order)
-        if sys.platform == "win32":
-            res = self.run_command(["where.exe", name], timeout=2.5)
-            if res.ok and res.stdout:
-                for line in res.stdout.splitlines():
-                    clean = line.strip()
-                    if clean:
-                        _add(Path(clean))
+        # 2. Pure Python PATH search (returns ALL occurrences in PATH in precedence order without subprocesses)
+        for cand in self._find_all_in_path(name):
+            _add(cand)
 
         # 3. Check extra paths
         if extra_paths:

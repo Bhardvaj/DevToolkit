@@ -58,6 +58,9 @@ target/
 Thumbs.db
 desktop.ini
 
-# User Configuration
+# User Configuration & Logs
 devtoolkit.config.yaml
+daemon.json
+*.log
+scratch/
 

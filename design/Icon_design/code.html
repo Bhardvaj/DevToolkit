@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="markGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#34d399"/>
+      <stop offset="50%" stop-color="#10b981"/>
+      <stop offset="100%" stop-color="#059669"/>
+    </linearGradient>
+    <filter id="markGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="8" stdDeviation="16" flood-color="#000000" flood-opacity="0.5"/>
+    </filter>
+  </defs>
+
+  <!-- Centered Icon Mark Container Tile (Standalone Squircle) -->
+  <g filter="url(#markGlow)">
+    <rect x="46" y="46" width="420" height="420" rx="96" fill="#16181e" stroke="#282c37" stroke-width="4"/>
+  </g>
+  
+  <!-- Subtle Precision Grid Accent inside tile -->
+  <line x1="46" y1="256" x2="466" y2="256" stroke="#ffffff" stroke-opacity="0.04" stroke-width="3"/>
+  <line x1="256" y1="46" x2="256" y2="466" stroke="#ffffff" stroke-opacity="0.04" stroke-width="3"/>
+
+  <!-- Code Chevron Brackets in Mark -->
+  <path d="M172 192 L114 256 L172 320" fill="none" stroke="#4b5563" stroke-width="20" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M340 192 L398 256 L340 320" fill="none" stroke="#4b5563" stroke-width="20" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- Central Lightning Bolt in Mark -->
+  <path d="M282 108 L190 256 L256 256 L224 404 L330 250 L264 250 Z" fill="url(#markGrad)"/>
+  <path d="M272 130 L204 248 L250 248 L232 362 L308 254 L262 254 Z" fill="#a7f3d0" opacity="0.6"/>
+</svg>

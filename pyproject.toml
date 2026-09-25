@@ -27,7 +27,7 @@ dev = [
 ]
 
 [project.scripts]
-devtoolkit = "devtoolkit.cli.main:app"
+devtoolkit = "devtoolkit.entry:main"
 
 [tool.setuptools.packages.find]
 where = ["."]

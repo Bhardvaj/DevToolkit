@@ -137,11 +137,12 @@ class CCompilerInspector(BaseInspector):
                 if str(bin_p).lower() not in seen_bins:
                     seen_bins.add(str(bin_p).lower())
                     is_act = bool(base_report.binary_path and str(bin_p).lower() == str(base_report.binary_path).lower())
-                    ver_str = None
-                    res_v = runner.run_command([str(bin_p), "--version"], timeout=2.0)
-                    if res_v.ok and res_v.stdout:
-                        m = re.search(r"(?:gcc|clang version|MSVC)\s+.*?([\d\.]+)", res_v.stdout, re.IGNORECASE)
-                        ver_str = m.group(1) if m else None
+                    ver_str = base_report.version if is_act else None
+                    if not is_act:
+                        res_v = runner.run_command([str(bin_p), "--version"], timeout=1.0)
+                        if res_v.ok and res_v.stdout:
+                            m = re.search(r"(?:gcc|clang version|MSVC)\s+.*?([\d\.]+)", res_v.stdout, re.IGNORECASE)
+                            ver_str = m.group(1) if m else None
                     instances.append(
                         DiscoveredInstance(
                             path=str(bin_p.parent),

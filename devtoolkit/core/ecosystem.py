@@ -18,9 +18,25 @@ from devtoolkit.core.runner import SafeRunner
 class EcosystemResolvers:
     """Interrogates cross-tool ecosystem configs to find SDK and runtime locations."""
 
+    _cached_flutter: Optional[dict] = None
+    _cached_options_dirs: Optional[List[Path]] = None
+    _cached_studio_sdk: Optional[Path] = None
+    _cached_gradle_java: Optional[Path] = None
+
     @classmethod
-    def get_android_studio_options_dirs(cls) -> List[Path]:
+    def clear_cache(cls) -> None:
+        """Clear all cached ecosystem resolution results."""
+        cls._cached_flutter = None
+        cls._cached_options_dirs = None
+        cls._cached_studio_sdk = None
+        cls._cached_gradle_java = None
+
+    @classmethod
+    def get_android_studio_options_dirs(cls, use_cache: bool = True) -> List[Path]:
         """Find Google/Android Studio configuration directories across platforms."""
+        if cls._cached_options_dirs is not None and use_cache:
+            return cls._cached_options_dirs
+
         options_dirs: List[Path] = []
         candidates: List[Path] = []
 
@@ -41,11 +57,15 @@ class EcosystemResolvers:
                         if opt.exists() and opt.is_dir():
                             options_dirs.append(opt)
 
+        cls._cached_options_dirs = options_dirs
         return options_dirs
 
     @classmethod
-    def resolve_android_sdk_from_studio(cls) -> Optional[Path]:
+    def resolve_android_sdk_from_studio(cls, use_cache: bool = True) -> Optional[Path]:
         """Read Android SDK path from Android Studio's android.sdk.path.xml or jdk.table.xml."""
+        if cls._cached_studio_sdk is not None and use_cache:
+            return cls._cached_studio_sdk
+
         for opt_dir in cls.get_android_studio_options_dirs():
             # 1. Check android.sdk.path.xml
             sdk_xml = opt_dir / "android.sdk.path.xml"
@@ -59,6 +79,7 @@ class EcosystemResolvers:
                             if val:
                                 p = Path(val).resolve()
                                 if p.exists():
+                                    cls._cached_studio_sdk = p
                                     return p
                 except Exception:
                     pass
@@ -78,6 +99,7 @@ class EcosystemResolvers:
                                 if val:
                                     p = Path(val).resolve()
                                     if p.exists():
+                                        cls._cached_studio_sdk = p
                                         return p
                 except Exception:
                     pass
@@ -85,10 +107,14 @@ class EcosystemResolvers:
         return None
 
     @classmethod
-    def resolve_from_flutter(cls, runner: SafeRunner) -> dict:
+    def resolve_from_flutter(cls, runner: SafeRunner, use_cache: bool = True) -> dict:
         """Query Flutter's machine configuration for configured SDK and JDK directories."""
+        if cls._cached_flutter is not None and use_cache:
+            return cls._cached_flutter
+
         flutter_bin = runner.resolve_binary("flutter") or runner.resolve_binary("flutter.bat")
         if not flutter_bin:
+            cls._cached_flutter = {}
             return {}
 
         res = runner.run_command([str(flutter_bin), "config", "--machine"], timeout=4.0)
@@ -108,15 +134,20 @@ class EcosystemResolvers:
                     p = Path(data["jdk-dir"]).resolve()
                     if p.exists():
                         result["jdk_dir"] = p
+                cls._cached_flutter = result
                 return result
             except Exception:
                 pass
 
+        cls._cached_flutter = {}
         return {}
 
     @classmethod
-    def resolve_from_gradle(cls) -> Optional[Path]:
+    def resolve_from_gradle(cls, use_cache: bool = True) -> Optional[Path]:
         """Read Java home from ~/.gradle/gradle.properties."""
+        if cls._cached_gradle_java is not None and use_cache:
+            return cls._cached_gradle_java
+
         gradle_props = Path.home() / ".gradle" / "gradle.properties"
         if not gradle_props.exists():
             return None
@@ -128,6 +159,7 @@ class EcosystemResolvers:
                     val = line.split("=", 1)[1].strip()
                     p = Path(val).resolve()
                     if p.exists():
+                        cls._cached_gradle_java = p
                         return p
         except Exception:
             pass

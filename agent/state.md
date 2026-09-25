@@ -4,9 +4,9 @@ This document is continuously updated to reflect current project status, complet
 
 ---
 
-## Current Status: Phase 10 Complete (Real-Time Live Updating & Settings Toggle Control)
-- **Active Task**: Real-Time Live Updating (Native Win32 ReadDirectoryChangesW live filesystem change monitor, O(1) in-memory index additions, deletions, renames, and tree pruning, `POST /api/search/realtime` toggle endpoint, Settings UI switch with instant persistence, non-distracting clean `Ready (live)` status, and 181 passing tests) 100% complete with standalone binary `dist/DevToolkit.exe` (21.04 MB).
-- **Architecture**: Decoupled Engine + 22 Comprehensive Tool Inspectors + 4-Layer Generalized Discovery + Standalone Everything-Class FastSearchEngine (`SearchIndex`, `ParallelPrunedCrawler`, `NTFSUSNReader`, `Win32DirectoryWatcher`) + Native Win32 RAM Telemetry (`K32GetProcessMemoryInfo`) + Modular Server Architecture + Google Stitch Precision UI + Live Search Engine Telemetry, Real-Time Updating & On-Demand Re-indexing + Multi-Instance Precedence Engine (`where.exe`) + Environment Variable Alignment Matrix + On-Demand Telemetry API (`GET /api/tool/{tool_id}/deep`) + Safe Copyable Remediations.
+## Current Status: Phase 14 Complete (Decoupled Background Daemon, Windowless GUI, Portable Logging & Test Optimization)
+- **Active Task**: Decoupled Architecture overhaul 100% complete: Background Daemon (`devtoolkit.daemon.server`), pure Win32 system tray (`devtoolkit.daemon.tray`), Windowless GUI PE subsystem (`devtoolkit.entry:main`), Client SDK (`devtoolkit.client.api`), centralized co-located rotating logging (`daemon.log`, `client.log`), zero host pollution (`daemon.json` beside executable), Everything-class Fast Search Engine (`FastSearchEngine`, `NTFSUSNReader`, `ParallelPrunedCrawler`, `LiveDirectoryWatcher`), repository de-bloating, and test suite optimization (234 passing tests in ~60s). Standalone executable `dist/DevToolkit.exe` (28.51 MB).
+- **Architecture**: Decoupled Host Daemon + 22 Tool Inspectors + 4-Layer Generalized Discovery + Standalone FastSearchEngine + Client SDK + PyWebView Edge Chromium Desktop Client + Native Win32 Tray + Synchronized Activity Telemetry + Co-located Portable Configuration & Logging.
 - **Repository**: Synced on GitHub at [https://github.com/Bhardvaj/DevToolkit](https://github.com/Bhardvaj/DevToolkit).
 
 ---
@@ -340,6 +340,36 @@ This document is continuously updated to reflect current project status, complet
   - Updated `activate_or_launch_ui` in `devtoolkit/daemon/tray.py` with identical silent process creation flags.
   - Guarantees zero terminal or console windows appear when starting the background daemon.
   - Ensures daemon process stays alive when user closes their spawning command prompt or PowerShell window.
+- [x] **Task 14 - 03**: Windowless GUI Subsystem & Unified Single Entrypoint:
+  - Configured PyInstaller with `--windowed` / `--noconfirm` targeting the Windows GUI subsystem so Explorer double-clicks never spawn a console window.
+  - Built universal entry point in `devtoolkit/entry.py` (`devtoolkit.entry:main`).
+  - Added single-instance HWND detection via Win32 `FindWindowW` and window foreground restoration (`restore_window_by_hwnd`).
+  - Enabled terminal console attachment via `kernel32.AttachConsole(-1)` when invoked with CLI commands from cmd or PowerShell.
+- [x] **Task 14 - 04**: Centralized Co-located Portable Logging:
+  - Implemented `devtoolkit/core/logging.py` providing rotating handlers (5 MB max, 3 backups) strictly beside `devtoolkit.config.yaml` / `DevToolkit.exe`.
+  - `daemon.log`: Captures background server, uvicorn, search engine, indexing, and tray events.
+  - `client.log`: Captures desktop window lifecycle, PyWebView events, and client actions.
+- [x] **Task 14 - 05**: Custom Brand Assets, System Tray & Windows Shell Refresh:
+  - Generated multi-resolution Windows executable and tray icons (`assets/icon.ico`, `assets/icon.png`) from custom user designs in `design/Icon_design/`.
+  - Bound custom static icon to `dist/DevToolkit.exe` and native Win32 system tray.
+  - Implemented `SHChangeNotify(SHCNE_ASSOCCHANGED)` in build pipeline to immediately refresh Windows Explorer icon cache.
+- [x] **Task 14 - 06**: Synchronized Background Activity Tracking:
+  - Implemented thread-safe `devtoolkit.daemon.activity:ActivityTracker`.
+  - Exposed activity telemetry via `GET /api/daemon/activity`.
+  - Connected background tasks across environment scans and search re-indexing to desktop UI badges/spinners and tray menu status.
+- [x] **Task 14 - 07**: Repository Debloat & Test Suite Optimization:
+  - Deleted legacy `devtoolkit.core.console` wrappers and migrated CLI to direct Rich usage.
+  - Implemented session-level config isolation fixture in `tests/conftest.py` setting `DEVTOOLKIT_TESTING=1`.
+  - Reduced test suite runtime from 334s down to ~60s across all 234 automated tests (100% pass rate).
+- [x] **Task 14 - 08**: Zero Host Pollution & Portable Daemon State:
+  - Replaced legacy `Path.home() / ".devtoolkit"` in `devtoolkit/daemon/manager.py` with portable application directory (`get_config_path().parent / "daemon.json"`).
+  - Deleted obsolete `C:\Users\bhard\.devtoolkit` folder from user home.
+  - Added automated unit test in `tests/test_daemon.py` verifying no state files are written to user profile.
+- [x] **Task 14 - 09**: Fast Search Startup & Re-indexing Synchronization:
+  - Synchronized `devtoolkit.config.yaml` and `dist/devtoolkit.config.yaml` with configured drive roots (`D:\`, `C:\`).
+  - Added intelligent fallback drive resolution when unconfigured, keeping search fully functional while suppressing test walks.
+  - Linked re-index operations across server route, daemon worker, system tray, and UI.
+  - Standalone binary recompiled: `dist/DevToolkit.exe` (28.51 MB, Windowless GUI).
 
 
 

@@ -47,7 +47,7 @@ class GitHubCLIInspector(BaseInspector):
             version = m.group(1) if m else res.stdout.splitlines()[0].strip()
 
         # Check authentication status: `gh auth status`
-        auth_res = runner.run_command([str(gh_bin), "auth", "status"])
+        auth_res = runner.run_command([str(gh_bin), "auth", "status"], timeout=1.5)
         is_authenticated = auth_res.ok
         account_name = None
 

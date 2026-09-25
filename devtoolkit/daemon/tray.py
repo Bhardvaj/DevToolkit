@@ -117,7 +117,7 @@ def activate_or_launch_ui(port: int = 4321, title: str = WINDOW_TITLE) -> bool:
             pyw = Path(py_exe).with_name("pythonw.exe")
             if pyw.is_file():
                 py_exe = str(pyw)
-        cmd = [py_exe, "-m", "devtoolkit.cli.main", "--port", str(port)]
+        cmd = [py_exe, "-m", "devtoolkit.entry", "--port", str(port)]
 
     try:
         if sys.platform == "win32":
@@ -359,16 +359,54 @@ class DevToolkitTray:
             logger.debug(f"Failed to display tray notification: {e}")
             return False
 
+    def set_tooltip(self, text: str) -> bool:
+        """Dynamically update tray icon hover tooltip text."""
+        if sys.platform != "win32" or not self._is_running or not self._hwnd:
+            return False
+
+        try:
+            nid = NOTIFYICONDATAW()
+            nid.cbSize = ctypes.sizeof(NOTIFYICONDATAW)
+            nid.hWnd = self._hwnd
+            nid.uID = 1001
+            nid.uFlags = NIF_TIP
+            nid.szTip = str(text)[:127]
+            return bool(shell32.Shell_NotifyIconW(NIM_MODIFY, ctypes.byref(nid)))
+        except Exception as e:
+            logger.debug(f"Failed to update tray tooltip: {e}")
+            return False
+
+
     def _get_icon_handle(self):
         """Retrieve standard or custom application icon handle."""
         try:
-            # Check if custom icon exists beside app or in assets
-            for candidate in ["assets/icon.ico", "icon.ico"]:
-                p = Path(candidate)
+            # 1. Check embedded executable icon resource (resource ID 1 or default app icon)
+            if self._hinst:
+                h = user32.LoadIconW(self._hinst, ctypes.cast(1, wintypes.LPCWSTR))
+                if h:
+                    return h
+
+            # 2. Check candidate paths: PyInstaller bundle directory, executable directory, repo assets
+            candidates = []
+            if getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS"):
+                candidates.append(Path(sys._MEIPASS) / "assets" / "icon.ico")
+                candidates.append(Path(sys._MEIPASS) / "icon.ico")
+            if getattr(sys, "frozen", False):
+                candidates.append(Path(sys.executable).resolve().parent / "assets" / "icon.ico")
+                candidates.append(Path(sys.executable).resolve().parent / "icon.ico")
+
+            # Workspace / development candidates
+            package_root = Path(__file__).resolve().parent.parent.parent
+            candidates.append(package_root / "assets" / "icon.ico")
+            candidates.append(Path("assets/icon.ico").resolve())
+            candidates.append(Path("icon.ico").resolve())
+
+            for p in candidates:
                 if p.is_file():
-                    h = user32.LoadImageW(None, str(p.resolve()), 1, 0, 0, 0x00000010 | 0x00000040)
+                    h = user32.LoadImageW(None, str(p), 1, 0, 0, 0x00000010 | 0x00000040)
                     if h:
                         return h
+
             # Default: standard Windows application icon (IDI_APPLICATION = 32512)
             return user32.LoadIconW(None, ctypes.cast(32512, wintypes.LPCWSTR))
         except Exception:
@@ -467,15 +505,37 @@ class DevToolkitTray:
 
     def _show_context_menu(self):
         """Build and display the native Win32 context popup menu."""
+        from devtoolkit.daemon.activity import get_activity_tracker
+
+        act = get_activity_tracker().get_status()
         hmenu = user32.CreatePopupMenu()
         try:
             user32.AppendMenuW(hmenu, MF_STRING, ID_OPEN_WINDOW, "Open DevToolkit Window (Embedded)")
             user32.AppendMenuW(hmenu, MF_STRING, ID_OPEN_BROWSER, "Open in Web Browser")
             user32.AppendMenuW(hmenu, MF_SEPARATOR, 0, None)
-            user32.AppendMenuW(hmenu, MF_STRING, ID_RESCAN, "Re-scan Workstation Environment")
-            user32.AppendMenuW(hmenu, MF_STRING, ID_REINDEX, "Search Engine Re-index")
+
+            # Rescan item with live status
+            if act["is_scanning"]:
+                user32.AppendMenuW(hmenu, MF_STRING | MF_GRAYED, ID_RESCAN, "Re-scan Workstation Environment ⏳ (Scanning...)")
+            else:
+                user32.AppendMenuW(hmenu, MF_STRING, ID_RESCAN, "Re-scan Workstation Environment")
+
+            # Reindex item with live status
+            if act["is_indexing"]:
+                user32.AppendMenuW(hmenu, MF_STRING | MF_GRAYED, ID_REINDEX, "Search Engine Re-index ⏳ (Indexing...)")
+            else:
+                user32.AppendMenuW(hmenu, MF_STRING, ID_REINDEX, "Search Engine Re-index")
+
             user32.AppendMenuW(hmenu, MF_SEPARATOR, 0, None)
-            user32.AppendMenuW(hmenu, MF_STRING | MF_GRAYED, ID_STATUS, f"Status: Running (Port {self.port})")
+
+            # Contextual Status indicator
+            if act["is_scanning"]:
+                user32.AppendMenuW(hmenu, MF_STRING | MF_GRAYED, ID_STATUS, "Status: Scanning Environment... ⏳")
+            elif act["is_indexing"]:
+                user32.AppendMenuW(hmenu, MF_STRING | MF_GRAYED, ID_STATUS, "Status: Indexing Search Engine... ⏳")
+            else:
+                user32.AppendMenuW(hmenu, MF_STRING | MF_GRAYED, ID_STATUS, f"Status: Running (Port {self.port})")
+
             user32.AppendMenuW(hmenu, MF_STRING, ID_EXIT, "Exit DevToolkit")
 
             pt = wintypes.POINT()
@@ -528,7 +588,7 @@ class DevToolkitTray:
         webbrowser.open(f"http://{self.host}:{self.port}")
 
     def _handle_rescan(self):
-        """Trigger background workstation environment audit."""
+        """Trigger background workstation environment audit with status updates."""
         if self.on_rescan:
             try:
                 self.on_rescan()
@@ -536,8 +596,16 @@ class DevToolkitTray:
             except Exception:
                 pass
 
+        from devtoolkit.daemon.activity import get_activity_tracker
+
+        tracker = get_activity_tracker()
+        tracker.start_scan("Workstation scan in progress...")
+        self.set_tooltip(f"DevToolkit ⚡ Scanning workstation environment... (Port {self.port})")
+        self.show_notification("DevToolkit", "Workstation scan started: Auditing environment...")
+
         def _worker():
             try:
+                import json
                 import urllib.request
                 req = urllib.request.Request(
                     f"http://{self.host}:{self.port}/api/audit",
@@ -545,19 +613,27 @@ class DevToolkitTray:
                     headers={"Content-Type": "application/json", "User-Agent": "DevToolkit-Tray"},
                     method="POST",
                 )
-                with urllib.request.urlopen(req, timeout=30.0) as resp:
+                with urllib.request.urlopen(req, timeout=45.0) as resp:
                     if resp.status == 200:
+                        payload = json.loads(resp.read().decode("utf-8"))
+                        count = len(payload.get("reports", []))
+                        tracker.finish_scan(f"Workstation scan completed! ({count} tools inspected)")
                         self.show_notification(
                             "DevToolkit",
-                            "Workstation environment re-scanned successfully!",
+                            f"Workstation environment scan complete! ({count} tools inspected)",
                         )
+                    else:
+                        tracker.finish_scan(f"Scan returned HTTP {resp.status}", success=False)
             except Exception as e:
+                tracker.finish_scan(f"Scan failed: {e}", success=False)
                 logger.warning(f"Tray re-scan trigger failed: {e}")
+            finally:
+                self.set_tooltip(f"DevToolkit ⚡ Workstation Inspector (Port {self.port})")
 
         threading.Thread(target=_worker, daemon=True).start()
 
     def _handle_reindex(self):
-        """Trigger background search re-indexing."""
+        """Trigger background search re-indexing with status updates."""
         if self.on_reindex:
             try:
                 self.on_reindex()
@@ -565,8 +641,16 @@ class DevToolkitTray:
             except Exception:
                 pass
 
+        from devtoolkit.daemon.activity import get_activity_tracker
+
+        tracker = get_activity_tracker()
+        tracker.start_index("Search re-indexing in progress...")
+        self.set_tooltip(f"DevToolkit ⚡ Indexing search engine... (Port {self.port})")
+        self.show_notification("DevToolkit Search", "Search engine re-indexing started in background.")
+
         def _worker():
             try:
+                import json
                 import urllib.request
                 req = urllib.request.Request(
                     f"http://{self.host}:{self.port}/api/search/reindex",
@@ -574,14 +658,23 @@ class DevToolkitTray:
                     headers={"Content-Type": "application/json", "User-Agent": "DevToolkit-Tray"},
                     method="POST",
                 )
-                with urllib.request.urlopen(req, timeout=10.0) as resp:
+                with urllib.request.urlopen(req, timeout=30.0) as resp:
                     if resp.status == 200:
+                        payload = json.loads(resp.read().decode("utf-8"))
+                        count = payload.get("total_files", 0)
+                        duration = payload.get("duration_ms", 0)
+                        tracker.finish_index(f"Search index updated: {count:,} files in {duration}ms")
                         self.show_notification(
                             "DevToolkit Search",
-                            "Workstation search re-indexing started in background.",
+                            f"Search re-index complete: {count:,} files indexed ({duration}ms)!",
                         )
+                    else:
+                        tracker.finish_index(f"Indexing returned HTTP {resp.status}", success=False)
             except Exception as e:
+                tracker.finish_index(f"Indexing failed: {e}", success=False)
                 logger.warning(f"Tray re-index trigger failed: {e}")
+            finally:
+                self.set_tooltip(f"DevToolkit ⚡ Workstation Inspector (Port {self.port})")
 
         threading.Thread(target=_worker, daemon=True).start()
 
