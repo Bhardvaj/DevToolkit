@@ -334,7 +334,13 @@ This document is continuously updated to reflect current project status, complet
   - Created dedicated `clients/README.md` integration specification and API catalogue for future UI applications (React, Vue, TUI, etc.).
   - Cleaned CLI (`devtoolkit/cli/main.py`), System Tray (`devtoolkit/daemon/tray.py`), PyInstaller build (`scripts/build_standalone.ps1`), and CI smoke tests (`pr.yml`, `post-merge.yml`).
   - Compiled slim standalone binary: `dist/DevToolkit.exe` (**21.11 MB**, down from 24.13 MB).
-  - All 224 automated unit and integration tests passing (100%).
+- [x] **Task 14 - 02**: Headless Daemon Terminal Suppression & Process Decoupling:
+  - Configured daemon process spawner in `devtoolkit/daemon/manager.py` with `CREATE_NO_WINDOW = 0x08000000 | DETACHED_PROCESS | CREATE_NEW_PROCESS_GROUP`.
+  - On Windows source invocations, automatically selects windowless `pythonw.exe` if present beside `python.exe`.
+  - Updated `activate_or_launch_ui` in `devtoolkit/daemon/tray.py` with identical silent process creation flags.
+  - Guarantees zero terminal or console windows appear when starting the background daemon.
+  - Ensures daemon process stays alive when user closes their spawning command prompt or PowerShell window.
+
 
 
 

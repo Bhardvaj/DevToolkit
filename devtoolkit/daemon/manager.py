@@ -123,13 +123,21 @@ def start_daemon(
     if getattr(sys, "frozen", False):
         cmd = [sys.executable, "daemon", "run", "--port", str(port), "--host", host]
     else:
-        cmd = [sys.executable, "-m", "devtoolkit.cli.main", "daemon", "run", "--port", str(port), "--host", host]
+        py_exe = sys.executable
+        if sys.platform == "win32":
+            pyw = Path(py_exe).with_name("pythonw.exe")
+            if pyw.is_file():
+                py_exe = str(pyw)
+        cmd = [py_exe, "-m", "devtoolkit.cli.main", "daemon", "run", "--port", str(port), "--host", host]
 
     # 3. Spawn detached process
     creationflags = 0
     if sys.platform == "win32":
-        # DETACHED_PROCESS (0x08) | CREATE_NEW_PROCESS_GROUP (0x200)
-        creationflags = subprocess.DETACHED_PROCESS | subprocess.CREATE_NEW_PROCESS_GROUP
+        # CREATE_NO_WINDOW (0x08000000) guarantees no terminal window is created
+        # DETACHED_PROCESS (0x08) detaches process from parent console
+        # CREATE_NEW_PROCESS_GROUP (0x200) creates independent process group
+        CREATE_NO_WINDOW = 0x08000000
+        creationflags = CREATE_NO_WINDOW | subprocess.DETACHED_PROCESS | subprocess.CREATE_NEW_PROCESS_GROUP
         proc = subprocess.Popen(
             cmd,
             creationflags=creationflags,
