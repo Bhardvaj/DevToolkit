@@ -23,9 +23,11 @@ def get_daemon_state_path() -> Path:
         p.parent.mkdir(parents=True, exist_ok=True)
         return p
 
-    daemon_dir = Path.home() / ".devtoolkit"
-    daemon_dir.mkdir(parents=True, exist_ok=True)
-    return daemon_dir / "daemon.json"
+    from devtoolkit.core.config import get_config_path
+
+    state_dir = get_config_path().parent
+    state_dir.mkdir(parents=True, exist_ok=True)
+    return state_dir / "daemon.json"
 
 
 def read_daemon_state() -> Optional[DaemonState]:
@@ -121,14 +123,14 @@ def start_daemon(
 
     # 2. Build spawn command
     if getattr(sys, "frozen", False):
-        cmd = [sys.executable, "daemon", "run", "--port", str(port), "--host", host]
+        cmd = [sys.executable, "--daemon", "--port", str(port), "--host", host]
     else:
         py_exe = sys.executable
         if sys.platform == "win32":
             pyw = Path(py_exe).with_name("pythonw.exe")
             if pyw.is_file():
                 py_exe = str(pyw)
-        cmd = [py_exe, "-m", "devtoolkit.cli.main", "daemon", "run", "--port", str(port), "--host", host]
+        cmd = [py_exe, "-m", "devtoolkit.entry", "--daemon", "--port", str(port), "--host", host]
 
     # 3. Spawn detached process
     creationflags = 0

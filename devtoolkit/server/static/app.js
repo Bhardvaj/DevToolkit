@@ -3074,6 +3074,60 @@ let activeTab = 'env';
     // Background Telemetry Polling (4s interval)
     setInterval(fetchSearchTelemetry, 4000);
 
+    // Real-Time Daemon Activity Polling (2s interval for tray/background task sync)
+    let lastSeenScanCount = -1;
+    let lastSeenIndexCount = -1;
+
+    async function pollDaemonActivity() {
+      try {
+        const res = await fetch('/api/daemon/activity');
+        if (!res.ok) return;
+        const act = await res.json();
+
+        // 1. Environment Scanning Indicator
+        const rescanIcon = document.getElementById('rescan-icon');
+        const rescanTimer = document.getElementById('rescan-timer');
+        if (act.is_scanning) {
+          if (rescanIcon) rescanIcon.classList.add('fa-spin');
+          if (rescanTimer) rescanTimer.innerText = '(scanning...)';
+        }
+
+        // If a scan just finished in background (from tray or other client)
+        if (lastSeenScanCount !== -1 && act.scan_count > lastSeenScanCount) {
+          if (rescanIcon) rescanIcon.classList.remove('fa-spin');
+          showToast(act.last_scan_message || 'Workstation environment scan completed!');
+          fetchAudit();
+        }
+        lastSeenScanCount = act.scan_count;
+
+        // 2. Search Indexing Indicator
+        const sideNavBadge = document.getElementById('side-search-count-badge');
+        const sideIcon = document.getElementById('side-search-icon');
+        const fsReindexIcon = document.getElementById('fs-reindex-icon');
+        if (act.is_indexing) {
+          if (sideNavBadge) {
+            sideNavBadge.innerText = 'Indexing...';
+            sideNavBadge.className = 'px-1.5 py-0.2 rounded text-[10px] font-mono font-semibold bg-[#F59E0B1A] text-[#F59E0B] border border-[#F59E0B40] flex-shrink-0';
+          }
+          if (sideIcon) sideIcon.className = 'fa-solid fa-arrows-rotate fa-spin text-[#F59E0B] text-[10px]';
+          if (fsReindexIcon) fsReindexIcon.classList.add('fa-spin');
+        }
+
+        // If an index just finished in background
+        if (lastSeenIndexCount !== -1 && act.index_count > lastSeenIndexCount) {
+          if (fsReindexIcon) fsReindexIcon.classList.remove('fa-spin');
+          fetchSearchTelemetry();
+          showToast(act.last_index_message || 'Search index refreshed!');
+        }
+        lastSeenIndexCount = act.index_count;
+      } catch (err) {
+        // Silently ignore transient network errors
+      }
+    }
+
+    setInterval(pollDaemonActivity, 2000);
+
+
     // Deep Link & Query Param Support
     try {
       const urlParams = new URLSearchParams(window.location.search);

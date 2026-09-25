@@ -1,6 +1,6 @@
 """Module execution entrypoint for `python -m devtoolkit`."""
 
-from devtoolkit.cli.main import app
+from devtoolkit.entry import main
 
 if __name__ == "__main__":
-    app()
+    main()

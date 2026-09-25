@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width,initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #000;
+    }
+  </style>
+</head>
+<body>
+<!-- STITCH_SVG_START:ANIMATION_37 class="fixed inset-0 w-full h-full" --><div class="fixed inset-0 w-full h-full" id="animated-svg-ANIMATION_37" style="display:block;"><svg height="512" viewbox="0 0 512 512" width="512" xmlns="http://www.w3.org/2000/svg">
+<defs>
+<lineargradient id="markGrad3" x1="0%" x2="100%" y1="0%" y2="100%">
+<stop offset="0%" stop-color="#34d399"></stop>
+<stop offset="50%" stop-color="#10b981"></stop>
+<stop offset="100%" stop-color="#059669"></stop>
+</lineargradient>
+<lineargradient id="spinnerGrad" x1="0%" x2="100%" y1="0%" y2="100%">
+<stop offset="0%" stop-color="#10b981"></stop>
+<stop offset="40%" stop-color="#34d399"></stop>
+<stop offset="100%" stop-color="#10b981" stop-opacity="0"></stop>
+</lineargradient>
+<filter height="140%" id="markGlow3" width="140%" x="-20%" y="-20%">
+<fedropshadow dx="0" dy="8" flood-color="#000000" flood-opacity="0.5" stddeviation="16"></fedropshadow>
+</filter>
+<filter height="160%" id="neonPipGlow" width="160%" x="-30%" y="-30%">
+<fedropshadow dx="0" dy="0" flood-color="#34d399" flood-opacity="0.9" stddeviation="10"></fedropshadow>
+</filter>
+<clippath id="squircleClip3">
+<rect height="420" rx="96" width="420" x="46" y="46"></rect>
+</clippath>
+<style>
+      @keyframes linearRingSpin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+      @keyframes bracketTypingLeft {
+        0%, 100% { stroke: #334155; transform: scale(1); }
+        25% { stroke: #38bdf8; transform: scale(1.06); }
+        50% { stroke: #34d399; transform: scale(1); }
+        75% { stroke: #334155; transform: scale(0.98); }
+      }
+      @keyframes bracketTypingRight {
+        0%, 100% { stroke: #334155; transform: scale(1); }
+        25% { stroke: #334155; transform: scale(0.98); }
+        50% { stroke: #38bdf8; transform: scale(1.06); }
+        75% { stroke: #34d399; transform: scale(1); }
+      }
+      @keyframes breathingCore {
+        0%, 100% { opacity: 0.85; transform: scale(0.97); }
+        50% { opacity: 1; transform: scale(1.03); filter: drop-shadow(0 0 20px rgba(16,185,129,0.7)); }
+      }
+      .anim-progress-spinner {
+        transform-origin: 256px 256px;
+        animation: linearRingSpin 1.4s cubic-bezier(0.5, 0.1, 0.5, 0.9) infinite;
+      }
+      .anim-bracket-seq-l {
+        transform-origin: 140px 256px;
+        animation: bracketTypingLeft 2s ease-in-out infinite;
+      }
+      .anim-bracket-seq-r {
+        transform-origin: 370px 256px;
+        animation: bracketTypingRight 2s ease-in-out infinite;
+      }
+      .anim-breath-core {
+        transform-origin: 256px 256px;
+        animation: breathingCore 2s ease-in-out infinite;
+      }
+    </style>
+</defs>
+<!-- Monolithic Squircle Base -->
+<g filter="url(#markGlow3)">
+<rect fill="#15171e" height="420" rx="96" stroke="#242834" stroke-width="4" width="420" x="46" y="46"></rect>
+</g>
+<g clip-path="url(#squircleClip3)">
+<!-- High-Speed Circular Process Arc Indicator (Linear/Apple Activity Style) -->
+<g class="anim-progress-spinner">
+<circle cx="256" cy="256" fill="none" filter="url(#neonPipGlow)" r="168" stroke="url(#spinnerGrad)" stroke-dasharray="280 800" stroke-linecap="round" stroke-width="7"></circle>
+<!-- Leading Head Pip -->
+<circle cx="424" cy="256" fill="#6ee7b7" filter="url(#neonPipGlow)" r="6"></circle>
+</g>
+<!-- Center Precision Crosshairs -->
+<line stroke="#ffffff" stroke-opacity="0.04" stroke-width="2" x1="46" x2="466" y1="256" y2="256"></line>
+<line stroke="#ffffff" stroke-opacity="0.04" stroke-width="2" x1="256" x2="256" y1="46" y2="466"></line>
+<!-- Alternating / Sequential Code Chevron Brackets -->
+<path class="anim-bracket-seq-l" d="M172 192 L114 256 L172 320" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="20"></path>
+<path class="anim-bracket-seq-r" d="M340 192 L398 256 L340 320" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="20"></path>
+<!-- Breathing Central Energy Lightning Bolt -->
+<g class="anim-breath-core">
+<path d="M282 108 L190 256 L256 256 L224 404 L330 250 L264 250 Z" fill="url(#markGrad3)"></path>
+<path d="M272 130 L204 248 L250 248 L232 362 L308 254 L262 254 Z" fill="#d1fae5" opacity="0.65"></path>
+</g>
+</g>
+</svg></div><!-- STITCH_SVG_END:ANIMATION_37 -->
+</body></html>

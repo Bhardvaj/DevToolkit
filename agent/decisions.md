@@ -136,4 +136,84 @@ This file tracks major architectural choices, technical decisions, and trade-off
   - Consistent developer experience across the entire workstation suite.
   - Complete error resilience across all inspectors confirmed by automated testing suite.
 
+---
+
+## ADR-0011: Standalone Everything-Class Fast Search Engine with NTFS USN Journal & Win32 Directory Watcher
+- **Date**: 2026-09-22
+- **Status**: Accepted
+- **Context**: File and SDK discovery historically relied on slow, recursive filesystem walks. Adding search capabilities using external tools would require heavy dependencies or external binaries.
+- **Decision**: Build a zero-dependency, standalone Everything-class search engine (`FastSearchEngine`):
+  1. `NTFSUSNReader`: Direct Win32 `DeviceIoControl` volume streaming via `FSCTL_ENUM_USN_DATA` when running elevated.
+  2. `ParallelPrunedCrawler`: Multi-threaded (16 workers) directory walk skipping developer churn (`node_modules`, `.git`, `.venv`).
+  3. `LiveDirectoryWatcher`: Direct Win32 `ReadDirectoryChangesW` kernel monitoring on daemon threads for instant real-time synchronization.
+  4. `SearchIndex`: Compact in-memory array and hash map with O(1) mutations and swap-with-last deletion.
+- **Consequences**:
+  - Sub-millisecond queries (<1ms) across 100,000+ files.
+  - Real-time disk updates without polling or re-walking directories.
+  - Zero third-party dependencies (`ctypes` only).
+
+---
+
+## ADR-0012: Background Daemon Architecture, System Tray Service & Single-Instance Window Management
+- **Date**: 2026-09-24
+- **Status**: Accepted
+- **Context**: Running as a foreground console or standard single desktop app meant closing the window terminated all background services (search indexing, port monitoring). Running multiple instances caused port conflicts.
+- **Decision**:
+  1. Re-architect DevToolkit with a persistent headless Background Daemon (`devtoolkit.daemon.server`) that serves as the central data provider.
+  2. Implement a pure Win32 `ctypes` system notification tray (`devtoolkit.daemon.tray`) with right-click menu, live task indicators, and balloon notifications.
+  3. Implement Win32 `FindWindowW` single-instance detection: launching the executable while an instance is already running brings the existing window to the foreground via `ShowWindow` / `SetForegroundWindow` rather than spawning a duplicate process.
+  4. Intercept window close events in PyWebView, respecting user preference: `ask`, `minimize` to tray, or `exit`.
+- **Consequences**:
+  - Background daemon stays alive continuously to monitor files and ports.
+  - Zero duplicate instances or port binding crashes.
+  - Smooth desktop user experience adhering to native Windows software paradigms.
+
+---
+
+## ADR-0013: Client SDK Abstraction & Windowless Desktop Subsystem
+- **Date**: 2026-09-25
+- **Status**: Accepted
+- **Context**: Double-clicking `DevToolkit.exe` opened an unnecessary console/terminal window behind the desktop UI. Additionally, we wanted to support multiple diverse client applications (compact status bars, CLI, web, future native views) querying the daemon.
+- **Decision**:
+  1. Compile standalone binary with PyInstaller `--windowed` targeting PE subsystem `Windows GUI` so Explorer double-clicks never spawn a console window.
+  2. Route all CLI terminal commands through `devtoolkit.entry:main` using Win32 `kernel32.AttachConsole(-1)` to attach to parent terminal output when invoked from cmd or PowerShell.
+  3. Establish a formal Client SDK (`devtoolkit.client.api:DevToolkitClient` and `devtoolkit.client.state:ClientStateStore`) so future client interfaces have a clean HTTP/SSE API abstraction.
+- **Consequences**:
+  - Zero terminal window flashing or background console clutter for desktop users.
+  - Fully backward-compatible terminal CLI operation for developers and scripts.
+  - Clean foundation for modular client interfaces.
+
+---
+
+## ADR-0014: Zero-Host-Pollution Portable Co-Located Storage & Centralized Logging
+- **Date**: 2026-09-25
+- **Status**: Accepted
+- **Context**: The daemon state file (`daemon.json`) was initially written to `Path.home() / ".devtoolkit"`, leaving folders in the user profile and breaking strict portability guarantees.
+- **Decision**:
+  1. Eliminate all file writes to `Path.home() / ".devtoolkit"`.
+  2. Colocate all runtime artifacts strictly beside `devtoolkit.config.yaml` / `DevToolkit.exe`:
+     - `devtoolkit.config.yaml` (user settings and search paths)
+     - `daemon.json` (active daemon PID and port lockfile)
+     - `daemon.log` (rotating daemon log, 5 MB max, 3 backups)
+     - `client.log` (rotating desktop UI log, 5 MB max, 3 backups)
+  3. Add `daemon.json` to `.gitignore`.
+- **Consequences**:
+  - 100% portable: DevToolkit can run from a USB drive or isolated folder without touching the host profile.
+  - Logs and configuration are co-located for instant troubleshooting.
+
+---
+
+## ADR-0015: Codebase Debloating & Test Suite Config Isolation (<60s Execution)
+- **Date**: 2026-09-25
+- **Status**: Accepted
+- **Context**: The codebase accumulated redundant legacy console wrappers (`devtoolkit.core.console`), while test suite execution took over 330 seconds due to un-isolated tests triggering full-drive disk crawls during server lifespan startup.
+- **Decision**:
+  1. Delete legacy `devtoolkit.core.console` and migrate CLI directly to Rich.
+  2. Implement session-scoped test configuration fixture in `tests/conftest.py` setting `DEVTOOLKIT_TESTING=1` and `search_paths: []`.
+  3. Provide intelligent fallback to local drives (`D:\`, `C:\`) in production while strictly suppressing drive crawls during automated test runs.
+- **Consequences**:
+  - Test suite runtime reduced by **82%** (from 334s down to ~60s) across 234 automated tests.
+  - Production search works out-of-the-box with auto-discovered drives.
+  - Zero bloat in the core engine.
+
 

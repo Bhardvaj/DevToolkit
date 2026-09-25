@@ -19,6 +19,10 @@ logger = logging.getLogger(__name__)
 
 def run_daemon_server(host: str = "127.0.0.1", port: int = 4321, with_tray: bool = True) -> None:
     """Run uvicorn server in daemon mode, managing state lockfile, system tray, and signals."""
+    from devtoolkit.core.logging import setup_daemon_logging
+
+    setup_daemon_logging()
+
     # 1. Register daemon state
     state = DaemonState(
         pid=os.getpid(),

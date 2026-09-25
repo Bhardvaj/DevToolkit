@@ -156,3 +156,18 @@ def test_daemon_spawn_and_terminate(temp_daemon_state):
         assert not is_pid_alive(state.pid)
         assert not is_daemon_alive(port=test_port)
         assert read_daemon_state() is None
+
+
+def test_daemon_state_portable_colocation(tmp_path, monkeypatch):
+    """Verify daemon.json is stored beside config without touching user home directory."""
+    fake_cfg = tmp_path / "custom_app" / "devtoolkit.config.yaml"
+    fake_cfg.parent.mkdir(parents=True)
+    fake_cfg.write_text("{}", encoding="utf-8")
+
+    monkeypatch.delenv("DEVTOOLKIT_DAEMON_STATE", raising=False)
+    monkeypatch.setenv("DEVTOOLKIT_CONFIG", str(fake_cfg))
+
+    state_path = get_daemon_state_path()
+    assert state_path.parent == fake_cfg.parent
+    assert state_path.name == "daemon.json"
+    assert "devtoolkit" not in str(Path.home() / ".devtoolkit") or not (Path.home() / ".devtoolkit").exists()

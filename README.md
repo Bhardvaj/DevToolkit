@@ -13,6 +13,28 @@
 
 ## 🚀 Key Features
 
+- ⚡ **Decoupled Background Daemon & System Tray**:
+  - Headless background service (`devtoolkit.daemon.server`) that runs independently of client windows, managing server lifecycles, file watchers, and socket monitoring.
+  - Native Win32 system tray (`devtoolkit.daemon.tray`) with right-click menu, live scan/index progress spinners, and Windows balloon notifications.
+  - Configurable window close action: `ask` (modal confirmation), `minimize` (hides to tray), or `exit` (stops daemon and exits).
+  - Single-instance HWND detection: double-clicking `DevToolkit.exe` when already running restores and brings the existing window to the foreground instead of spawning duplicate processes.
+
+- 🔎 **Standalone Everything-Class Fast Search Engine**:
+  - Sub-millisecond queries (<1ms) across 100,000+ files and folders with zero third-party dependencies.
+  - **NTFS USN Journal Reader**: Direct Win32 `DeviceIoControl` volume streaming (`FSCTL_ENUM_USN_DATA`) when elevated, indexing whole drives in <500ms.
+  - **Parallel Pruned Crawler**: Multi-threaded directory crawler with 16 workers, intelligently skipping developer churn folders (`node_modules`, `.git`, `.venv`, `__pycache__`).
+  - **Real-Time Live Updating**: Native Win32 `ReadDirectoryChangesW` filesystem watcher syncing additions, deletions, and renames in O(1) time without rescanning disk.
+  - Syntax filters (`ext:`, `size:`, `date:`, `category:`), regex matching, and instant 1-click "Open in Explorer" or "Reveal File".
+
+- 🧳 **Zero Host Pollution & Portable Co-Located Storage**:
+  - 100% portable: DevToolkit never touches the user's home profile (`~/.devtoolkit` is never created).
+  - Configuration (`devtoolkit.config.yaml`), daemon PID lockfile (`daemon.json`), and rotating logs (`daemon.log`, `client.log`) are stored strictly beside `DevToolkit.exe` or repository root.
+  - Rotating log handlers with 5 MB maximum size and 3 automated backups for daemon and UI client logs.
+
+- 🪟 **Windowless PE GUI Subsystem & Dual-Mode Dispatch**:
+  - Compiled with `--windowed` PE GUI subsystem: Explorer double-clicks launch the desktop UI with **zero terminal window flashes**.
+  - Seamless CLI compatibility: terminal invocations attach to parent console output via `kernel32.AttachConsole(-1)` when run from cmd or PowerShell.
+
 - 🖥️ **Google Stitch Precision Desktop UI**:
   - Native PC software ergonomics (`h-screen overflow-hidden` container, smooth independent scrolling, native window wrapper).
   - Dark Obsidian elevation hierarchy (`#08090C`, `#0E1015`, `#141721`) with sharp `#1F2430` micro-borders.
@@ -35,10 +57,10 @@
   - Modern Port Manager with Web/Database/Debug categorization, browser opening, process grouping, and protected OS safeguards.
   - Visual Project Auditor with readiness gauge, recent project history chips, and native Windows folder browser picker.
 
-- 🏗️ **Modular Clean Architecture (Phase 6.1)**:
+- 🏗️ **Modular Clean Architecture**:
   - Decoupled server design: slim FastAPI application orchestrator (~70 lines).
-  - Domain-specific APIRouters: `routes/system.py`, `routes/audit.py`, `routes/ports.py`, `routes/project.py`, `routes/actions.py`.
-  - Clean frontend static assets (`devtoolkit/server/static/`) separating `index.html`, `styles.css`, and `app.js` with full syntax highlighting and live development reload.
+  - Domain-specific APIRouters: `routes/system.py`, `routes/audit.py`, `routes/ports.py`, `routes/project.py`, `routes/actions.py`, `routes/search.py`.
+  - Clean frontend static assets (`devtoolkit/server/static/`) separating `index.html`, `styles.css`, and `app.js` with full syntax highlighting.
   - Robust 3-layer template loader (`devtoolkit/server/ui.py`) delivering single-payload offline-capable HTML with zero runtime delay.
 
 - 🔍 **4-Layer Generalized Discovery Pipeline (Zero Hardcoded Paths)**:
@@ -57,10 +79,6 @@
   - Automatically parses project manifests: Node (`package.json`), Python (`pyproject.toml`, `requirements.txt`), Flutter (`pubspec.yaml`), Android (`build.gradle`), Docker (`Dockerfile`), Rust (`Cargo.toml`), and Go (`go.mod`).
   - Cross-references project dependencies against workstation SDKs and compilers in real-time.
   - Generates actionable prerequisite checklists with 1-click remediation commands.
-
-- ⚡ **Dual-Mode Executable (`DevToolkit.exe`)**:
-  - **Double-Click in Explorer**: Automatically launches the modern Desktop GUI window (or opens your default web browser).
-  - **Terminal Invocations**: Seamlessly runs CLI subcommands (`inspect`, `doctor`, `ports`, `project`, `config`, `ui`, `--help`).
 
 ---
 
@@ -242,11 +260,13 @@ tools = client.get_tools()
 | Key Shortcut | Action |
 | :--- | :--- |
 | <kbd>Ctrl</kbd> + <kbd>K</kbd> | Focus global tool and path search bar |
+| <kbd>/</kbd> | Jump directly to **Fast Search** input |
 | <kbd>R</kbd> or <kbd>Ctrl</kbd> + <kbd>R</kbd> | Rescan environment, sockets, and metrics |
 | <kbd>1</kbd> | Switch to **Environment & Diagnostics** tab |
-| <kbd>2</kbd> | Switch to **Port Manager** tab |
-| <kbd>3</kbd> | Switch to **Project Workstation Auditor** tab |
-| <kbd>4</kbd> | Switch to **Settings & Preferences** tab |
+| <kbd>2</kbd> | Switch to **Fast Search** tab |
+| <kbd>3</kbd> | Switch to **Port Manager** tab |
+| <kbd>4</kbd> | Switch to **Project Workstation Auditor** tab |
+| <kbd>5</kbd> | Switch to **Settings & Preferences** tab |
 | <kbd>F</kbd> | Apply all safe environment variable fixes |
 | <kbd>?</kbd> | Toggle Keyboard Shortcuts cheat modal |
 | <kbd>Esc</kbd> | Close modals or blur active search input |
@@ -306,10 +326,11 @@ The plugin will be auto-discovered by `PluginRegistry` dynamically on the next a
 
 ## 🧪 Testing
 
-Run the comprehensive unit test suite:
+Run the comprehensive unit test suite (234 tests across discovery, deep inspection, daemon, and search):
 ```powershell
 pytest -v
 ```
+All tests run with session-isolated test configuration in ~60 seconds.
 
 ---
 
@@ -319,7 +340,7 @@ Compile `DevToolkit.exe` locally using PyInstaller:
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts/build_standalone.ps1
 ```
-The output binary will be generated at `dist/DevToolkit.exe` (~20 MB), containing the embedded UI, FastAPI server, PyWebView runtime, and all inspectors in a single zero-dependency file.
+The output binary will be generated at `dist/DevToolkit.exe` (~28.5 MB, Windowless GUI subsystem), containing the embedded UI, FastAPI server, PyWebView runtime, Fast Search Engine, and all 22 tool inspectors in a single zero-dependency file with zero host pollution.
 
 ---
 

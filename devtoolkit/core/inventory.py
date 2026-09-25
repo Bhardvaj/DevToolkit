@@ -18,10 +18,20 @@ class InstalledApp(BaseModel):
 class OSInventory:
     """Discovers installed software via official OS inventory mechanisms (Registry on Windows)."""
 
+    _cached_apps: Optional[List[InstalledApp]] = None
+
     @classmethod
-    def get_installed_apps(cls) -> List[InstalledApp]:
+    def clear_cache(cls) -> None:
+        """Clear cached inventory."""
+        cls._cached_apps = None
+
+    @classmethod
+    def get_installed_apps(cls, use_cache: bool = True) -> List[InstalledApp]:
         if sys.platform != "win32":
             return []
+
+        if cls._cached_apps is not None and use_cache:
+            return cls._cached_apps
 
         apps: List[InstalledApp] = []
         try:
@@ -73,6 +83,7 @@ class OSInventory:
         except Exception:
             pass
 
+        cls._cached_apps = apps
         return apps
 
     @classmethod

@@ -83,3 +83,12 @@ def post_daemon_notify(req: DaemonNotifyRequest, request: Request):
     return {"status": "ok", "delivered": False, "note": "Tray icon not active"}
 
 
+@router.get("/daemon/activity")
+def get_daemon_activity():
+    """Return real-time activity and background task status of the daemon."""
+    from devtoolkit.daemon.activity import get_activity_tracker
+
+    return get_activity_tracker().get_status()
+
+
+

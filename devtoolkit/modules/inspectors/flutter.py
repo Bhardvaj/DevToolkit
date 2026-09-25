@@ -211,7 +211,7 @@ class FlutterInspector(BaseInspector):
                 raw_dumps["Bundled Dart SDK"] = f"{d_res.stdout}\n{d_res.stderr}".strip()
 
         # Run fast doctor check
-        res_doc = runner.run_command([f_exec, "doctor", "-v"], timeout=4.0)
+        res_doc = runner.run_command([f_exec, "doctor", "-v"], timeout=1.5)
         if res_doc.ok and res_doc.stdout:
             raw_dumps["flutter doctor -v"] = res_doc.stdout.strip()
 

@@ -55,6 +55,7 @@ from devtoolkit.server.routes.search import (
 from devtoolkit.server.routes.system import (
     delete_search_path,
     get_config,
+    get_daemon_activity,
     get_health,
     get_system,
     post_close_action,
@@ -110,6 +111,7 @@ def register_routes(application: FastAPI) -> None:
     application.add_api_route("/api/system", get_system, methods=["GET"], tags=["system"])
     application.add_api_route("/api/health", get_health, methods=["GET"], tags=["system"])
     application.add_api_route("/api/daemon/notify", post_daemon_notify, methods=["POST"], tags=["system"])
+    application.add_api_route("/api/daemon/activity", get_daemon_activity, methods=["GET"], tags=["system"])
 
 
     # Environment Audit & Tools
@@ -165,151 +167,10 @@ def run_server(port: int):
 
 def launch_ui(port: int = 4321, web_only: bool = False, dev: bool = False):
     """Launch or attach to background daemon and open native desktop window or browser."""
-    from devtoolkit.daemon.manager import is_daemon_alive, start_daemon
+    from devtoolkit.client.desktop import launch_desktop_window
 
-    # Suppress console window if launched directly via Explorer or desktop shortcut
-    if not web_only and not dev:
-        try:
-            from devtoolkit.core.console import hide_console_window
+    launch_desktop_window(port=port, web_only=web_only, dev=dev)
 
-            hide_console_window()
-        except Exception:
-            pass
-
-    # Check if a native window is already active on Windows
-    if not web_only and not dev and sys.platform == "win32":
-        try:
-            from devtoolkit.daemon.tray import find_existing_window, restore_window_by_hwnd
-
-            hwnd = find_existing_window("DevToolkit ⚡ Workstation Environment Inspector")
-            if hwnd:
-                restore_window_by_hwnd(hwnd)
-                return
-        except Exception:
-            pass
-
-    if not is_daemon_alive(port=port):
-        try:
-            start_daemon(port=port)
-        except Exception as e:
-            # Fallback: run server in-process background thread
-            server_thread = threading.Thread(target=run_server, args=(port,), daemon=True)
-            server_thread.start()
-            time.sleep(0.8)
-
-    url = f"http://127.0.0.1:{port}"
-
-    if web_only or dev:
-        print(f"⚡ DevToolkit Web Dashboard running at: {url}")
-        webbrowser.open(url)
-        try:
-            while True:
-                time.sleep(1)
-        except KeyboardInterrupt:
-            print("\nExiting DevToolkit client.")
-    else:
-        try:
-            import webview
-
-            window = webview.create_window(
-                title="DevToolkit ⚡ Workstation Environment Inspector",
-                url=url,
-                width=1140,
-                height=780,
-                min_size=(880, 600),
-                text_select=True,
-            )
-
-            def _notify_tray():
-                try:
-                    import json
-                    import urllib.request
-                    data = json.dumps({
-                        "title": "DevToolkit",
-                        "message": "DevToolkit minimized to system tray. Click the tray icon anytime to restore.",
-                    }).encode("utf-8")
-                    req = urllib.request.Request(
-                        f"http://127.0.0.1:{port}/api/daemon/notify",
-                        data=data,
-                        headers={"Content-Type": "application/json", "User-Agent": "DevToolkit-UI"},
-                        method="POST",
-                    )
-                    urllib.request.urlopen(req, timeout=1.0)
-                except Exception:
-                    pass
-
-            def on_closing() -> bool:
-                from devtoolkit.core.config import load_config
-                from devtoolkit.daemon.manager import is_daemon_alive, stop_daemon
-
-                if not is_daemon_alive(port=port):
-                    return True
-
-                cfg = load_config()
-                action = getattr(cfg, "close_action", "ask")
-
-                if action == "minimize":
-                    try:
-                        window.hide()
-                        _notify_tray()
-                    except Exception:
-                        pass
-                    return False
-
-                if action == "exit":
-                    stop_daemon()
-                    return True
-
-                if sys.platform == "win32":
-                    import ctypes
-
-                    MB_YESNOCANCEL = 0x00000003
-                    MB_ICONQUESTION = 0x00000020
-                    MB_TOPMOST = 0x00040000
-                    MB_SETFOREGROUND = 0x00010000
-                    IDYES = 6
-                    IDNO = 7
-
-                    text = (
-                        "DevToolkit background daemon is currently active.\n\n"
-                        "Would you like to minimize to the System Tray to keep services running in background, "
-                        "or exit completely?\n\n"
-                        "• [Yes] Minimize to System Tray\n"
-                        "• [No] Exit Completely (Stop all background services)\n"
-                        "• [Cancel] Stay in DevToolkit"
-                    )
-                    title = "DevToolkit"
-
-                    res = ctypes.windll.user32.MessageBoxW(
-                        None, text, title, MB_YESNOCANCEL | MB_ICONQUESTION | MB_TOPMOST | MB_SETFOREGROUND
-                    )
-
-                    if res == IDYES:
-                        try:
-                            window.hide()
-                            _notify_tray()
-                        except Exception:
-                            pass
-                        return False
-                    elif res == IDNO:
-                        stop_daemon()
-                        return True
-                    else:
-                        return False
-
-                stop_daemon()
-                return True
-
-            window.events.closing += on_closing
-            webview.start()
-        except Exception as e:
-            print(f"Note: Could not open native window ({e}). Falling back to default browser.")
-            webbrowser.open(url)
-            try:
-                while True:
-                    time.sleep(1)
-            except KeyboardInterrupt:
-                pass
 
 
 

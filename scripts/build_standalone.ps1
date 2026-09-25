@@ -64,12 +64,16 @@ if (Test-Path $DistPath) {
 # 4. Run PyInstaller
 Write-Host "[4/4] Compiling $BinaryName.exe (Single-file portable binary)..." -ForegroundColor Cyan
 
-$EntryScript = Join-Path $WorkspaceRoot "devtoolkit\cli\main.py"
+$EntryScript = Join-Path $WorkspaceRoot "devtoolkit\entry.py"
+$IconPath = Join-Path $WorkspaceRoot "assets\icon.ico"
 
 & $PythonExe -m PyInstaller `
     --noconfirm `
     --clean `
     --onefile `
+    --windowed `
+    --icon $IconPath `
+    --add-data "$($WorkspaceRoot)\assets;assets" `
     --name $BinaryName `
     --distpath $DistPath `
     --workpath (Join-Path $WorkspaceRoot "build") `
@@ -112,6 +116,18 @@ if ($LASTEXITCODE -eq 0) {
         if (Test-Path $SourceConfig) {
             Copy-Item -Path $SourceConfig -Destination (Join-Path $DistPath "devtoolkit.config.yaml") -Force
         }
+        if (Test-Path $IconPath) {
+            $DistAssets = Join-Path $DistPath "assets"
+            New-Item -ItemType Directory -Path $DistAssets -Force | Out-Null
+            Copy-Item -Path $IconPath -Destination (Join-Path $DistAssets "icon.ico") -Force
+            Copy-Item -Path (Join-Path $WorkspaceRoot "assets\icon.png") -Destination (Join-Path $DistAssets "icon.png") -Force
+        }
+
+        # Invalidate Windows Shell icon cache so Explorer updates icon immediately
+        try {
+            & $PythonExe -c "import ctypes; ctypes.windll.shell32.SHChangeNotify(0x08000000, 0, None, None)"
+        } catch { }
+
         $Item = Get-Item $TargetExe
         $Size = [math]::Round($Item.Length / 1MB, 2)
         Write-Host "`n[+] SUCCESS: Standalone binary compiled successfully!" -ForegroundColor Green
