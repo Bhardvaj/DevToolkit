@@ -304,12 +304,38 @@ This document is continuously updated to reflect current project status, complet
 
 ---
 
-## Future Horizons & Candidate Roadmap
+## Milestone Checklist: Phase 11 (Completed - Security & Process Hardening)
+- [x] Port killer safeguards protecting Windows critical services (`System`, `svchost.exe`, `csrss.exe`, `smss.exe`, `services.exe`, `lsass.exe`).
+- [x] Confirmation guards and `--force` requirements for terminating system-bound ports.
+- [x] Cross-platform process identification and graceful kill signal dispatch.
 
-1. **Build Cache & Disk Cleaner (`devtoolkit clean`)**:
-   - Audit and prune build caches across Node (`npm`, `pnpm`, `yarn`), Python (`pip`), Gradle (`.gradle/caches`), Docker (`docker system prune`), Flutter (`.pub-cache`).
-2. **Multi-Platform CI Matrix**:
-   - Expand `.github/workflows/build.yml` to compile standalone binaries for macOS (`DevToolkit-macOS-arm64`) and Linux (`DevToolkit-linux-x86_64`).
+---
+
+## Milestone Checklist: Phase 12 (Completed - CI/CD Automation & Dynamic Versioning)
+- [x] Automated GitHub Actions CI workflow on pull requests (`.github/workflows/pr.yml`).
+- [x] Post-merge pipeline (`.github/workflows/post-merge.yml`) and daily release packaging (`.github/workflows/build.yml`).
+- [x] Dynamic semantic version resolution across CLI, API, UI, and compiled executable via `git describe` / dynamic stamping.
+- [x] Strict branch protection and PR governance guidelines in `CONTRIBUTING.md`.
+
+---
+
+## Milestone Checklist: Phase 13 (Completed - Decoupled Daemon, System Tray & Python Native UI)
+- [x] **Task 13 - 01**: Headless background daemon runner (`devtoolkit/daemon/server.py`), PID lockfile registry (`devtoolkit/daemon/manager.py`), CLI subcommands (`devtoolkit daemon start|stop|status`, `devtoolkit web`).
+- [x] **Task 13 - 02**: Pure Win32 `ctypes` notification tray (`devtoolkit/daemon/tray.py`), balloon notifications, PyWebView window close interception (`devtoolkit/server/app.py`), configurable close actions (`ask` / `minimize` / `exit`).
+- [x] **Task 13 - 03**: Python Native UI core architecture: decoupled HTTP/SSE client (`devtoolkit/client/api.py`), observable state store (`devtoolkit/client/state.py`), dark obsidian theme tokens (`devtoolkit/client/theme.py`), window shell (`devtoolkit/client/app.py`), CLI launcher (`devtoolkit native`).
+- [x] **Task 13 - 04**: Python Native UI views & modals: Deep Tool Inspector modal (`ToolInspectorModal`), Port Manager view with process termination, Project Auditor with native folder picker, Fast Search with Explorer context menu, and Preferences / Settings view.
+- [x] **Task 13 - 05**: Production packaging & cross-client integration: dual-window tray menu, PyInstaller standalone executable compilation (`dist/DevToolkit.exe` - **24.13 MB**), extended CI smoke tests, and documentation.
+- [x] All 237 tests passing (100%).
+
+## Milestone Checklist: Phase 14 (Active)
+- [x] **Task 14 - 01**: Remove Tkinter Native UI and establish Clients architecture hub:
+  - Removed Tkinter UI implementation (`devtoolkit/client/app.py`, `theme.py`, `dialogs/`, `views/`).
+  - Retained and elevated decoupled Client SDK: `DevToolkitClient` (`devtoolkit/client/api.py`) and `ClientState` (`devtoolkit/client/state.py`).
+  - Created dedicated `clients/README.md` integration specification and API catalogue for future UI applications (React, Vue, TUI, etc.).
+  - Cleaned CLI (`devtoolkit/cli/main.py`), System Tray (`devtoolkit/daemon/tray.py`), PyInstaller build (`scripts/build_standalone.ps1`), and CI smoke tests (`pr.yml`, `post-merge.yml`).
+  - Compiled slim standalone binary: `dist/DevToolkit.exe` (**21.11 MB**, down from 24.13 MB).
+  - All 224 automated unit and integration tests passing (100%).
+
 
 
 

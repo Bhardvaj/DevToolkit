@@ -59,7 +59,6 @@ def default_callback(
     ctx: typer.Context,
     port: int = typer.Option(4321, "--port", "-p", help="Local server port when launching UI."),
     web: bool = typer.Option(False, "--web", help="Open in default browser instead of native desktop window."),
-    native: bool = typer.Option(False, "--native", help="Launch the Python Native desktop UI."),
     version: Optional[bool] = typer.Option(
         None,
         "--version",
@@ -71,12 +70,9 @@ def default_callback(
 ) -> None:
     """DevToolkit: Extensible developer environment auditor and workstation utility."""
     if ctx.invoked_subcommand is None:
-        if native:
-            from devtoolkit.client.app import launch_native_ui
-            launch_native_ui(port=port)
-        else:
-            from devtoolkit.server.app import launch_ui
-            launch_ui(port=port, web_only=web)
+        from devtoolkit.server.app import launch_ui
+        launch_ui(port=port, web_only=web)
+
 
 
 
@@ -304,15 +300,6 @@ def web_cmd(
     from devtoolkit.server.app import launch_ui
     launch_ui(port=port, web_only=True)
 
-
-@app.command(name="native", help="Launch the Python Native desktop workstation inspector UI.")
-def native_cmd(
-    port: int = typer.Option(4321, "--port", "-p", help="Server port to connect to."),
-    host: str = typer.Option("127.0.0.1", "--host", "-h", help="Network host interface to connect to."),
-) -> None:
-    """Launch the Python Native desktop workstation inspector UI."""
-    from devtoolkit.client.app import launch_native_ui
-    launch_native_ui(port=port, host=host)
 
 
 
