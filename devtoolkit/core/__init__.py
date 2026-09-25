@@ -16,6 +16,8 @@ from devtoolkit.core.models import (
 from devtoolkit.core.registry import PluginRegistry
 from devtoolkit.core.runner import CommandResult, SafeRunner
 
+from devtoolkit.core.console import hide_console_window, is_standalone_console, show_console_window
+
 __all__ = [
     "BaseInspector",
     "BaseUtility",
@@ -35,4 +37,8 @@ __all__ = [
     "load_config",
     "save_config",
     "add_search_path",
+    "hide_console_window",
+    "is_standalone_console",
+    "show_console_window",
 ]
+

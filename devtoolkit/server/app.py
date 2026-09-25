@@ -167,6 +167,15 @@ def launch_ui(port: int = 4321, web_only: bool = False, dev: bool = False):
     """Launch or attach to background daemon and open native desktop window or browser."""
     from devtoolkit.daemon.manager import is_daemon_alive, start_daemon
 
+    # Suppress console window if launched directly via Explorer or desktop shortcut
+    if not web_only and not dev:
+        try:
+            from devtoolkit.core.console import hide_console_window
+
+            hide_console_window()
+        except Exception:
+            pass
+
     # Check if a native window is already active on Windows
     if not web_only and not dev and sys.platform == "win32":
         try:
