@@ -1,4 +1,4 @@
-"""Project Workstation Auditor: Verifies if a machine meets repository prerequisites."""
+from __future__ import annotations
 
 import json
 import re
@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import List, Optional
 from pydantic import BaseModel, Field
 
+from devtoolkit.core.models import AuditSummary
 from devtoolkit.core.registry import PluginRegistry
 from devtoolkit.core.runner import SafeRunner
 
