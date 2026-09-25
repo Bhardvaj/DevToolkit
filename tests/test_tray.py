@@ -10,7 +10,6 @@ from devtoolkit.core.config import DevToolkitConfig, load_config, set_close_acti
 from devtoolkit.daemon.tray import (
     ID_EXIT,
     ID_OPEN_BROWSER,
-    ID_OPEN_NATIVE,
     ID_OPEN_WINDOW,
     ID_REINDEX,
     ID_RESCAN,
@@ -25,7 +24,6 @@ from devtoolkit.daemon.tray import (
     NIM_MODIFY,
     WM_TRAYICON,
     DevToolkitTray,
-    activate_or_launch_native_ui,
     activate_or_launch_ui,
     find_existing_window,
     restore_window_by_hwnd,
@@ -122,7 +120,6 @@ def test_tray_constants_and_ids():
     assert ID_REINDEX == 1004
     assert ID_STATUS == 1005
     assert ID_EXIT == 1006
-    assert ID_OPEN_NATIVE == 1007
 
     assert NIM_ADD == 0
     assert NIM_MODIFY == 1
@@ -152,7 +149,6 @@ def test_tray_ctypes_structure_sizes():
 def test_devtoolkit_tray_callbacks():
     """Verify DevToolkitTray callback dispatch mechanism."""
     mock_open_win = MagicMock()
-    mock_open_native = MagicMock()
     mock_open_browser = MagicMock()
     mock_rescan = MagicMock()
     mock_reindex = MagicMock()
@@ -162,7 +158,6 @@ def test_devtoolkit_tray_callbacks():
         port=4321,
         host="127.0.0.1",
         on_open_window=mock_open_win,
-        on_open_native=mock_open_native,
         on_open_browser=mock_open_browser,
         on_rescan=mock_rescan,
         on_reindex=mock_reindex,
@@ -172,10 +167,6 @@ def test_devtoolkit_tray_callbacks():
     # Primary click callback
     tray._handle_primary_click()
     mock_open_win.assert_called_once()
-
-    # Native UI click callback
-    tray._handle_open_native()
-    mock_open_native.assert_called_once()
 
     # Browser callback
     tray._handle_open_browser()
@@ -212,22 +203,6 @@ def test_window_helpers_mocked():
     with patch("devtoolkit.daemon.tray.find_existing_window", return_value=None):
         with patch("subprocess.Popen") as mock_popen:
             result = activate_or_launch_ui(port=4321)
-            assert result is True
-            mock_popen.assert_called_once()
-
-    # Test activate_or_launch_native_ui when window already exists
-    with patch("devtoolkit.daemon.tray.find_existing_window", return_value=54321):
-        with patch("devtoolkit.daemon.tray.restore_window_by_hwnd", return_value=True) as mock_restore:
-            with patch("subprocess.Popen") as mock_popen:
-                result = activate_or_launch_native_ui(port=4321)
-                assert result is True
-                mock_restore.assert_called_once_with(54321)
-                mock_popen.assert_not_called()
-
-    # Test activate_or_launch_native_ui when window does NOT exist -> launches subprocess
-    with patch("devtoolkit.daemon.tray.find_existing_window", return_value=None):
-        with patch("subprocess.Popen") as mock_popen:
-            result = activate_or_launch_native_ui(port=4321)
             assert result is True
             mock_popen.assert_called_once()
 

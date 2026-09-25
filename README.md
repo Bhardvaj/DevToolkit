@@ -196,22 +196,7 @@ devtoolkit daemon stop
 
 ---
 
-### 7. Python Native Desktop UI (`devtoolkit native`)
-Launch the lightweight, decoupled Python Native desktop interface (Tkinter/ttk):
-```powershell
-# Launch Python Native UI (auto-spawns daemon if not running)
-devtoolkit native
-
-# Connect to specific daemon port
-devtoolkit native --port 5000
-
-# Quick flag alternative
-devtoolkit --native
-```
-
----
-
-### 8. Web Browser Dashboard (`devtoolkit web`)
+### 7. Web Browser Dashboard (`devtoolkit web`)
 Open the DevToolkit workstation dashboard directly in your default web browser:
 ```powershell
 # Open browser dashboard (auto-attaches to background daemon)
@@ -223,7 +208,7 @@ devtoolkit web --port 5000
 
 ---
 
-### 9. Embedded Desktop UI Launcher (`devtoolkit ui`)
+### 8. Embedded Desktop UI Launcher (`devtoolkit ui`)
 Launch the modern embedded PyWebView desktop interface:
 ```powershell
 # Launch embedded desktop window
@@ -234,6 +219,17 @@ devtoolkit ui --web
 
 # Specify custom port
 devtoolkit ui --port 8080
+```
+
+---
+
+### 9. Decoupled Clients Architecture & SDK
+DevToolkit exposes its data engine over local REST and SSE endpoints. You can build custom frontends or terminal UIs in the [`clients/`](clients/README.md) hub or use the Python Client SDK:
+```python
+from devtoolkit.client import DevToolkitClient
+
+client = DevToolkitClient(port=4321)
+tools = client.get_tools()
 ```
 
 > [!TIP]

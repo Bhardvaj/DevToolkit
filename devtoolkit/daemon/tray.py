@@ -15,7 +15,6 @@ from typing import Callable, Optional
 logger = logging.getLogger(__name__)
 
 WINDOW_TITLE = "DevToolkit ⚡ Workstation Environment Inspector"
-NATIVE_WINDOW_TITLE = "DevToolkit ⚡ Native Workstation Inspector"
 
 # Win32 Menu Item Command IDs
 ID_OPEN_WINDOW = 1001
@@ -24,7 +23,6 @@ ID_RESCAN = 1003
 ID_REINDEX = 1004
 ID_STATUS = 1005
 ID_EXIT = 1006
-ID_OPEN_NATIVE = 1007
 
 # Win32 Constants
 NIM_ADD = 0x00000000
@@ -107,7 +105,7 @@ def restore_window_by_hwnd(hwnd: int) -> bool:
 
 def activate_or_launch_ui(port: int = 4321, title: str = WINDOW_TITLE) -> bool:
     """Restore an existing UI window if present, otherwise spawn the UI client."""
-    hwnd = find_existing_window(title) or find_existing_window(NATIVE_WINDOW_TITLE)
+    hwnd = find_existing_window(title)
     if hwnd:
         return restore_window_by_hwnd(hwnd)
 
@@ -141,42 +139,6 @@ def activate_or_launch_ui(port: int = 4321, title: str = WINDOW_TITLE) -> bool:
         logger.error(f"Failed to spawn UI process: {e}")
         return False
 
-
-def activate_or_launch_native_ui(port: int = 4321, title: str = NATIVE_WINDOW_TITLE) -> bool:
-    """Restore an existing Native UI window if present, otherwise spawn the Native UI client."""
-    hwnd = find_existing_window(title)
-    if hwnd:
-        return restore_window_by_hwnd(hwnd)
-
-    if getattr(sys, "frozen", False):
-        cmd = [sys.executable, "native", "--port", str(port)]
-    else:
-        cmd = [sys.executable, "-m", "devtoolkit.cli.main", "native", "--port", str(port)]
-
-    try:
-        if sys.platform == "win32":
-            creationflags = subprocess.DETACHED_PROCESS | subprocess.CREATE_NEW_PROCESS_GROUP
-            subprocess.Popen(
-                cmd,
-                creationflags=creationflags,
-                close_fds=True,
-                stdin=subprocess.DEVNULL,
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL,
-            )
-        else:
-            subprocess.Popen(
-                cmd,
-                start_new_session=True,
-                close_fds=True,
-                stdin=subprocess.DEVNULL,
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL,
-            )
-        return True
-    except Exception as e:
-        logger.error(f"Failed to spawn Native UI process: {e}")
-        return False
 
 
 if sys.platform == "win32":
@@ -315,7 +277,6 @@ class DevToolkitTray:
         port: int = 4321,
         host: str = "127.0.0.1",
         on_open_window: Optional[Callable[[], None]] = None,
-        on_open_native: Optional[Callable[[], None]] = None,
         on_open_browser: Optional[Callable[[], None]] = None,
         on_rescan: Optional[Callable[[], None]] = None,
         on_reindex: Optional[Callable[[], None]] = None,
@@ -324,7 +285,6 @@ class DevToolkitTray:
         self.port = port
         self.host = host
         self.on_open_window = on_open_window
-        self.on_open_native = on_open_native
         self.on_open_browser = on_open_browser
         self.on_rescan = on_rescan
         self.on_reindex = on_reindex
@@ -504,7 +464,6 @@ class DevToolkitTray:
         hmenu = user32.CreatePopupMenu()
         try:
             user32.AppendMenuW(hmenu, MF_STRING, ID_OPEN_WINDOW, "Open DevToolkit Window (Embedded)")
-            user32.AppendMenuW(hmenu, MF_STRING, ID_OPEN_NATIVE, "Open Native Inspector (Desktop)")
             user32.AppendMenuW(hmenu, MF_STRING, ID_OPEN_BROWSER, "Open in Web Browser")
             user32.AppendMenuW(hmenu, MF_SEPARATOR, 0, None)
             user32.AppendMenuW(hmenu, MF_STRING, ID_RESCAN, "Re-scan Workstation Environment")
@@ -529,8 +488,6 @@ class DevToolkitTray:
 
             if cmd == ID_OPEN_WINDOW:
                 self._handle_primary_click()
-            elif cmd == ID_OPEN_NATIVE:
-                self._handle_open_native()
             elif cmd == ID_OPEN_BROWSER:
                 self._handle_open_browser()
             elif cmd == ID_RESCAN:
@@ -553,16 +510,6 @@ class DevToolkitTray:
 
         activate_or_launch_ui(port=self.port)
 
-    def _handle_open_native(self):
-        """Open Native UI desktop window."""
-        if self.on_open_native:
-            try:
-                self.on_open_native()
-                return
-            except Exception as e:
-                logger.debug(f"on_open_native callback error: {e}")
-
-        activate_or_launch_native_ui(port=self.port)
 
     def _handle_open_browser(self):
         """Open web dashboard in default browser."""
@@ -635,13 +582,12 @@ class DevToolkitTray:
     def _handle_exit(self):
         """Terminate the daemon and close any open client windows."""
         if sys.platform == "win32":
-            for t in [WINDOW_TITLE, NATIVE_WINDOW_TITLE]:
-                hwnd = find_existing_window(t)
-                if hwnd:
-                    try:
-                        user32.PostMessageW(hwnd, WM_CLOSE, 0, 0)
-                    except Exception:
-                        pass
+            hwnd = find_existing_window(WINDOW_TITLE)
+            if hwnd:
+                try:
+                    user32.PostMessageW(hwnd, WM_CLOSE, 0, 0)
+                except Exception:
+                    pass
 
         if self.on_exit:
             try:
