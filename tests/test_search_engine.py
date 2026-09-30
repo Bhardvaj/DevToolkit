@@ -212,3 +212,47 @@ def test_search_engine_telemetry_and_singleton():
     assert "process_ram_bytes" in telemetry
     assert "process_ram_formatted" in telemetry
 
+
+
+def test_index_path_lookups_are_separator_agnostic():
+    """add / update / rename / remove must resolve the same entry regardless of separator."""
+    from devtoolkit.core.search.index import normalize_path_key
+
+    win_path = "D:" + chr(92) + "Proj" + chr(92) + "src" + chr(92) + "main.py"
+    posix_path = "D:/Proj/src/main.py"
+    assert normalize_path_key(win_path) == normalize_path_key(posix_path) == posix_path
+
+    idx = SearchIndex()
+    idx.add_entry(win_path, "main.py", False, 10, 1.0)
+    assert idx.total_entries == 1
+
+    # Re-adding via the other separator style updates in place instead of duplicating.
+    idx.add_entry(posix_path, "main.py", False, 20, 2.0)
+    assert idx.total_entries == 1
+
+    assert idx.update_entry(win_path, size=30, mtime=3.0) is True
+    assert idx.find_exact("main.py")[0].size == 30
+
+    assert idx.rename_entry(posix_path, "D:/Proj/src/app.py") is True
+    assert idx.find_exact("app.py")
+    assert idx.remove_entry(win_path) is False
+    assert idx.remove_entry("D:" + chr(92) + "Proj" + chr(92) + "src" + chr(92) + "app.py") is True
+    assert idx.total_entries == 0
+
+
+def test_index_miss_does_not_scan_every_key():
+    """A live-watcher event for an unindexed path must stay O(1), not scan the path map."""
+    idx = SearchIndex()
+    idx.add_entries_batch([
+        SearchResult(path=f"D:/Proj/f{i}.txt", name=f"f{i}.txt", is_dir=False, size=1, mtime=1.0)
+        for i in range(20000)
+    ])
+
+    import time
+    t0 = time.perf_counter()
+    for i in range(200):
+        assert idx.remove_entry(f"D:/Proj/missing/deep/gone{i}.tmp") is False
+    elapsed_ms = (time.perf_counter() - t0) * 1000.0
+
+    # 200 misses against a 20k index: a linear fallback scan took ~1ms each.
+    assert elapsed_ms < 50, f"misses are not O(1): {elapsed_ms:.1f} ms for 200 lookups"

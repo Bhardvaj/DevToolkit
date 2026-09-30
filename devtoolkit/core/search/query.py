@@ -159,6 +159,14 @@ class QueryToken:
             escaped = re.escape(raw)
             self._compiled_regex = re.compile(rf"\b{escaped}\b", flags)
 
+        # Precomputed matching state: _eval_positive runs once per indexed entry,
+        # so the needle casing and the wildcard probe must not be redone per entry.
+        self._needle = raw if case_sensitive else raw.lower()
+        self._is_wildcard = bool(raw) and any(c in raw for c in ("*", "?", "[", "]"))
+        self._path_needle = (
+            None if path_only is None else (path_only if case_sensitive else path_only.lower())
+        )
+
     def matches(self, entry: SearchResult) -> bool:
         """Evaluate whether a SearchResult entry matches this token clause."""
         res = self._eval_positive(entry)
@@ -204,10 +212,9 @@ class QueryToken:
             return False
 
         # Path-only check
-        if self.path_only is not None:
+        if self._path_needle is not None:
             check_p = entry.path if self.case_sensitive else entry.path.lower()
-            target_p = self.path_only if self.case_sensitive else self.path_only.lower()
-            if target_p not in check_p:
+            if self._path_needle not in check_p:
                 return False
 
         # If no text pattern, passing metadata criteria is sufficient
@@ -221,26 +228,25 @@ class QueryToken:
         if self._compiled_regex is not None:
             return bool(self._compiled_regex.search(target_str))
 
+        subject = target_str if self.case_sensitive else target_str.lower()
+
         # Wildcard matching
-        if any(c in self.raw for c in ("*", "?", "[", "]")):
-            pattern = self.raw if self.case_sensitive else self.raw.lower()
-            subject = target_str if self.case_sensitive else target_str.lower()
-            return fnmatchcase(subject, pattern)
+        if self._is_wildcard:
+            return fnmatchcase(subject, self._needle)
 
-        # Standard substring matching
-        sub = self.raw if self.case_sensitive else self.raw.lower()
-        sub_target = target_str if self.case_sensitive else target_str.lower()
-
-        # Check acronym & fuzzy match if entry is an app
+        # Check acronym & fuzzy match if entry is an app. Stays below the
+        # wildcard branch above, so a wildcard query is matched by fnmatch only
+        # and never falls through to acronym or fuzzy scoring.
         if entry.entry_type == "app":
             if entry.acronym:
                 acr_low = entry.acronym.lower()
-                if sub == acr_low or acr_low.startswith(sub):
+                if self._needle == acr_low or acr_low.startswith(self._needle):
                     return True
-            if score_match(sub, entry.name, entry.acronym) > 0:
+            if score_match(self._needle, entry.name, entry.acronym) > 0:
                 return True
 
-        return sub in sub_target
+        # Standard substring matching
+        return self._needle in subject
 
 
 class EverythingQueryParser:
@@ -540,7 +546,9 @@ def execute_search(index: SearchIndex, params: SearchQueryParams) -> SearchQuery
         if positive_terms:
             def _calc_relevance(entry: SearchResult) -> Tuple[int, float]:
                 name_low = entry.name.lower()
-                stem_low = Path(entry.name).stem.lower()
+                # Cheap stem: Path(name).stem costs a full pathlib parse per entry.
+                dot = name_low.rfind(".")
+                stem_low = name_low[:dot] if dot > 0 else name_low
                 path_low = entry.path.lower()
                 score = 0
                 for t in positive_terms:
