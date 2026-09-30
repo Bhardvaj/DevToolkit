@@ -268,3 +268,62 @@ def test_open_and_reveal_file_handlers(tmp_path, monkeypatch):
 
 
 
+def test_cors_restricted_to_loopback_origins():
+    """Remote origins must not be able to drive the local API."""
+    import re
+    from devtoolkit.server.app import LOOPBACK_ORIGIN_REGEX
+
+    pattern = re.compile(LOOPBACK_ORIGIN_REGEX)
+    for allowed in ("http://127.0.0.1:4321", "http://localhost:5173", "http://[::1]:4321"):
+        assert pattern.match(allowed), allowed
+    for blocked in ("http://evil.test", "https://devtoolkit.example.com", "http://10.0.0.5:4321"):
+        assert not pattern.match(blocked), blocked
+
+    cors = next(
+        (mw for mw in app.user_middleware if "CORSMiddleware" in str(mw.cls)),
+        None,
+    )
+    assert cors is not None
+    assert "*" not in cors.kwargs.get("allow_origins", [])
+
+
+def test_host_header_guard_blocks_dns_names():
+    """DNS rebinding: a hostname resolving to 127.0.0.1 is same-origin, so CORS never applies."""
+    from devtoolkit.server.app import host_without_port, is_local_host_header
+
+    assert host_without_port("127.0.0.1:4321") == "127.0.0.1"
+    assert host_without_port("[::1]:4321") == "::1"
+    assert host_without_port("localhost") == "localhost"
+
+    for allowed in ("127.0.0.1:4321", "localhost:4321", "[::1]:4321", "192.168.1.20:4321", ""):
+        assert is_local_host_header(allowed), allowed
+    for blocked in ("evil.test:4321", "devtoolkit.example.com", "rebind.attacker.test"):
+        assert not is_local_host_header(blocked), blocked
+
+
+def test_apply_fix_accepts_only_plain_user_scope_setx():
+    from devtoolkit.server.routes.actions import parse_setx_command
+
+    assert parse_setx_command(r'setx JAVA_HOME "C:\Program Files\Java\jdk-21"') == [
+        "setx",
+        "JAVA_HOME",
+        r"C:\Program Files\Java\jdk-21",
+    ]
+    # /m writes the machine-wide environment; extra tokens are refused outright.
+    assert parse_setx_command(r"setx PATH C:\bin /m") is None
+    assert parse_setx_command("setx PATH") is None
+    assert parse_setx_command('setx "BAD NAME" value') is None
+    assert parse_setx_command("notsetx FOO bar") is None
+
+
+def test_apply_fix_does_not_execute_unsupported_commands(monkeypatch):
+    import devtoolkit.server.routes.actions as actions
+    from devtoolkit.server.app import ApplyFixRequest, post_apply_fix
+
+    def _fail(*args, **kwargs):
+        raise AssertionError("apply-fix must not execute this command")
+
+    monkeypatch.setattr(actions.SafeRunner, "run_command", _fail)
+
+    res = post_apply_fix(ApplyFixRequest(command=r"setx PATH C:\evil /m"))
+    assert res["status"] == "info"
