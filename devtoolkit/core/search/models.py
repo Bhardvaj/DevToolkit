@@ -7,13 +7,15 @@ from typing import List, Optional
 
 @dataclass(slots=True)
 class SearchResult:
-    """Represents an indexed or discovered filesystem entry."""
+    """Represents an indexed or discovered filesystem entry or application."""
 
     path: str
     name: str
     is_dir: bool = False
     size: int = 0
     mtime: float = 0.0
+    entry_type: str = "file"  # "file", "folder", "app"
+    acronym: str = ""
 
     @property
     def path_obj(self) -> Path:
@@ -56,6 +58,7 @@ class SearchItemDTO:
     mtime: float
     mtime_formatted: str
     ext: str
+    entry_type: str = "file"  # "file", "folder", "app"
 
 
 @dataclass
@@ -67,8 +70,8 @@ class SearchQueryParams:
     whole_word: bool = False
     match_path: bool = False
     is_regex: bool = False
-    category: str = "all"  # all, code, exe, doc, archive, media, folder
-    scope: str = "all"      # all, files, folders
+    category: str = "all"  # all, code, exe, doc, archive, media, folder, app
+    scope: str = "all"      # all, files, folders, apps
     size_filter: str = "any"  # any, empty, tiny, small, medium, large, huge, gigantic
     date_filter: str = "any"  # any, today, yesterday, past7, past30, thisyear, pastyear
     ext_filter: str = ""    # e.g. "py", "exe;dll"

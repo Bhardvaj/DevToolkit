@@ -91,7 +91,7 @@ let activeTab = 'env';
     // Tab Switching
     function switchTab(tab) {
       activeTab = tab;
-      const tabs = ['env', 'search', 'ports', 'project', 'settings'];
+      const tabs = ['env', 'search', 'ports', 'project', 'spotlight', 'settings'];
       tabs.forEach(t => {
         const btn = document.getElementById(`nav-btn-${t}`);
         const view = document.getElementById(`view-${t}`);
@@ -133,6 +133,10 @@ let activeTab = 'env';
       } else if (tab === 'project') {
         bc.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-[#8B5CF6] shadow-[0_0_6px_#8B5CF6] flex-shrink-0"></span> Project Workstation Auditor';
         renderRecentProjects();
+      } else if (tab === 'spotlight') {
+        bc.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-[#38BDF8] shadow-[0_0_6px_#38BDF8] flex-shrink-0"></span> DevSpotlight';
+        fetchSpotlightStatus();
+        fetchSpotlightSettings();
       } else if (tab === 'settings') {
         bc.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-[#94A3B8] flex-shrink-0"></span> Preferences & Search Roots';
         loadConfig();
@@ -148,6 +152,7 @@ let activeTab = 'env';
       else if (activeTab === 'search') triggerSearch(false);
       else if (activeTab === 'ports') fetchPorts();
       else if (activeTab === 'project') runProjectAudit();
+      else if (activeTab === 'spotlight') { fetchSpotlightStatus(); fetchSpotlightSettings(); }
       else if (activeTab === 'settings') { loadConfig(); loadSystemInfo(); fetchSearchTelemetry(); }
     }
 
@@ -1347,6 +1352,10 @@ let activeTab = 'env';
                     renderTools();
                   }
                   fetchSearchTelemetry();
+                  const icon = document.getElementById('rescan-icon');
+                  if (icon) icon.classList.remove('fa-spin');
+                  const rescanTimer = document.getElementById('rescan-timer');
+                  if (rescanTimer) rescanTimer.innerText = '';
                   es.close();
                   activeAuditSource = null;
                   resolve();
@@ -1372,6 +1381,12 @@ let activeTab = 'env';
                 fetchSearchTelemetry();
               } catch (fallbackErr) {
                 showToast('Error auditing environment', true);
+              } finally {
+                allReports.forEach(r => { delete r.scanning; });
+                const icon = document.getElementById('rescan-icon');
+                if (icon) icon.classList.remove('fa-spin');
+                const rescanTimer = document.getElementById('rescan-timer');
+                if (rescanTimer) rescanTimer.innerText = '';
               }
               resolve();
             };
@@ -1888,8 +1903,23 @@ let activeTab = 'env';
         const res = await fetch('/api/config');
         currentConfig = await res.json();
         renderSettingsList();
+        const cfgPathEl = document.getElementById('settings-config-path');
+        if (cfgPathEl && currentConfig.config_path) {
+          cfgPathEl.innerText = currentConfig.config_path;
+          cfgPathEl.title = currentConfig.config_path;
+        }
       } catch (e) {
         console.error('Error loading config:', e);
+      }
+    }
+
+    async function openDevToolkitConfig() {
+      try {
+        const res = await fetch('/api/config/open', { method: 'POST' });
+        const data = await res.json();
+        showToast(data.opened ? 'Opened devtoolkit.json' : 'Failed to open config file', !data.opened);
+      } catch (e) {
+        showToast('Failed to open config: ' + e, true);
       }
     }
 
@@ -2930,15 +2960,28 @@ let activeTab = 'env';
           sidePyVer.innerText = sys.python_version || 'Active';
         }
 
-        // Workstation Telemetry in Help modal
+        // Workstation Telemetry in Settings tab & Help modal
+        const osText = `${sys.os_name} ${sys.os_release}`;
         const sysOs = document.getElementById('sys-os');
-        if (sysOs) sysOs.innerText = `${sys.os_name} ${sys.os_release}`;
+        if (sysOs) sysOs.innerText = osText;
+        const helpSysOs = document.getElementById('help-sys-os');
+        if (helpSysOs) helpSysOs.innerText = osText;
+
         const sysArch = document.getElementById('sys-arch');
         if (sysArch) sysArch.innerText = sys.arch;
+        const helpSysArch = document.getElementById('help-sys-arch');
+        if (helpSysArch) helpSysArch.innerText = sys.arch;
+
         const sysHost = document.getElementById('sys-host');
         if (sysHost) sysHost.innerText = sys.hostname;
+        const helpSysHost = document.getElementById('help-sys-host');
+        if (helpSysHost) helpSysHost.innerText = sys.hostname;
+
+        const pyText = sys.python_version || 'Active';
         const sysPython = document.getElementById('sys-python');
-        if (sysPython) sysPython.innerText = sys.python_version || 'Active';
+        if (sysPython) sysPython.innerText = pyText;
+        const helpSysPython = document.getElementById('help-sys-python');
+        if (helpSysPython) helpSysPython.innerText = pyText;
 
         // Update search engine telemetry
         fetchSearchTelemetry();
@@ -3056,6 +3099,8 @@ let activeTab = 'env';
         } else if (e.key === '4') {
           switchTab('project');
         } else if (e.key === '5') {
+          switchTab('spotlight');
+        } else if (e.key === '6') {
           switchTab('settings');
         }
       }
@@ -3067,12 +3112,14 @@ let activeTab = 'env';
     fetchSearchTelemetry();
     fetchPorts(false);
     fetchAudit();
+    fetchSpotlightStatus();
     const projInput = document.getElementById('project-path-input');
     if (projInput) projInput.value = '';
     renderRecentProjects();
 
     // Background Telemetry Polling (4s interval)
     setInterval(fetchSearchTelemetry, 4000);
+    setInterval(fetchSpotlightStatus, 4000);
 
     // Real-Time Daemon Activity Polling (2s interval for tray/background task sync)
     let lastSeenScanCount = -1;
@@ -3132,7 +3179,7 @@ let activeTab = 'env';
     try {
       const urlParams = new URLSearchParams(window.location.search);
       const initialTab = urlParams.get('tab');
-      if (initialTab && ['env', 'search', 'ports', 'project', 'settings'].includes(initialTab)) {
+      if (initialTab && ['env', 'search', 'ports', 'project', 'spotlight', 'settings'].includes(initialTab)) {
         switchTab(initialTab);
       }
       const initialAudit = urlParams.get('audit');
@@ -3149,4 +3196,1360 @@ let activeTab = 'env';
       }
     } catch (e) {
       console.error('Deep link parsing error:', e);
+    }
+
+    // ==========================================
+    // DevSpotlight Desktop Client Coordinator
+    // ==========================================
+    let currentSpotlightSettings = null;
+    let baselineSpotlightSettings = null;
+    let isSpotlightDirty = false;
+    let currentSelectedPreset = 'emerald';
+    let recordedHotkey = 'alt+space';
+    let recordedFallbackHotkey = 'alt+shift+space';
+    let modalTarget = 'primary'; // 'primary' | 'fallback'
+    let pendingRecordedShortcut = '';
+    let modalModifiers = new Set();
+    let modalKey = '';
+    let customThemes = [];
+    let windowsSystemTheme = { dark_mode: true, accent_color: '#0078D4' };
+
+    const BUILTIN_THEMES = {
+      system: {
+        id: 'system',
+        name: 'Same as system',
+        accent_color: '#0078D4',
+        opacity: 0.65,
+        blur_radius: 36,
+        corner_radius: 8,
+        animation_speed: 'normal',
+        is_builtin: true,
+        is_system: true
+      },
+      obsidian: {
+        id: 'obsidian',
+        name: 'Obsidian Dark',
+        accent_color: '#38BDF8',
+        opacity: 0.92,
+        blur_radius: 20,
+        corner_radius: 8,
+        animation_speed: 'normal',
+        is_builtin: true
+      },
+      emerald: {
+        id: 'emerald',
+        name: 'Cyber Emerald',
+        accent_color: '#10B981',
+        opacity: 0.84,
+        blur_radius: 28,
+        corner_radius: 8,
+        animation_speed: 'normal',
+        is_builtin: true
+      },
+      indigo: {
+        id: 'indigo',
+        name: 'Titanium Slate',
+        accent_color: '#8B5CF6',
+        opacity: 0.88,
+        blur_radius: 24,
+        corner_radius: 8,
+        animation_speed: 'fast',
+        is_builtin: true
+      },
+      amber: {
+        id: 'amber',
+        name: 'macOS Vibrant',
+        accent_color: '#F59E0B',
+        opacity: 0.95,
+        blur_radius: 32,
+        corner_radius: 8,
+        animation_speed: 'fast',
+        is_builtin: true
+      }
+    };
+
+    function formatHotkeyDisplay(hk) {
+      if (!hk) return 'Alt + Space';
+      const normalized = hk.toLowerCase().trim();
+      if (normalized === 'alt+space') return 'Alt + Space';
+      if (normalized === 'ctrl+space') return 'Ctrl + Space';
+      if (normalized === 'alt+shift+space') return 'Alt + Shift + Space';
+      if (normalized === 'ctrl+shift+space') return 'Ctrl + Shift + Space';
+      if (normalized === 'win+alt+space') return 'Win + Alt + Space';
+      
+      const parts = normalized.split('+').map(p => p.trim()).filter(Boolean);
+      return parts.map(p => {
+        if (p === 'alt') return 'Alt';
+        if (p === 'ctrl') return 'Ctrl';
+        if (p === 'shift') return 'Shift';
+        if (p === 'win') return 'Win';
+        if (p === 'space') return 'Space';
+        if (p === 'enter') return 'Enter';
+        if (p === 'tab') return 'Tab';
+        if (p === 'backspace') return 'Backspace';
+        if (p === 'delete') return 'Del';
+        if (p === 'escape') return 'Esc';
+        return p.toUpperCase();
+      }).join(' + ');
+    }
+
+    function updateMonitorDropdownOptions(monitors) {
+      const sel = document.getElementById('sp-select-monitor');
+      if (!sel || !Array.isArray(monitors)) return;
+      const currentVal = sel.value;
+
+      // Preserve top standard targeting choices
+      sel.innerHTML = `
+        <option value="cursor">Mouse cursor screen</option>
+        <option value="focused">Active window screen</option>
+      `;
+
+      monitors.forEach(m => {
+        const opt = document.createElement('option');
+        opt.value = `monitor_${m.index}`;
+        opt.textContent = `${m.name} (${m.resolution})`;
+        sel.appendChild(opt);
+      });
+
+      if (Array.from(sel.options).some(o => o.value === currentVal)) {
+        sel.value = currentVal;
+      }
+    }
+
+    async function fetchSpotlightStatus() {
+      try {
+        const res = await fetch('/api/spotlight/status');
+        if (!res.ok) return;
+        const data = await res.json();
+
+        // Update sidebar indicator dot
+        const dot = document.getElementById('side-spotlight-status-dot');
+        if (dot) {
+          if (data.running) {
+            dot.className = 'w-2 h-2 rounded-full bg-[#10B981] shadow-[0_0_6px_#10B981] flex-shrink-0';
+            dot.title = `DevSpotlight Active (PID: ${data.primary_pid})`;
+          } else {
+            dot.className = 'w-2 h-2 rounded-full bg-[#475569] flex-shrink-0';
+            dot.title = 'DevSpotlight Stopped';
+          }
+        }
+
+        // Update spotlight page controls if visible
+        const statusBadge = document.getElementById('spotlight-status-badge');
+        const launchBtn = document.getElementById('spotlight-launch-btn');
+        const pidDisplay = document.getElementById('spotlight-pid-display');
+        const verBadge = document.getElementById('spotlight-version-badge');
+
+        if (verBadge && data.version) {
+          verBadge.textContent = data.version;
+        }
+
+        if (statusBadge) {
+          if (data.running) {
+            statusBadge.className = 'px-2 py-0.5 rounded text-[11px] font-mono font-semibold bg-[#10B9811A] text-[#10B981] border border-[#10B98140] flex items-center gap-1.5';
+            statusBadge.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-[#10B981] shadow-[0_0_6px_#10B981]"></span> RUNNING';
+          } else {
+            statusBadge.className = 'px-2 py-0.5 rounded text-[11px] font-mono font-semibold bg-[#4755691A] text-[#94A3B8] border border-[#47556940] flex items-center gap-1.5';
+            statusBadge.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-[#475569]"></span> STOPPED';
+          }
+        }
+
+        if (launchBtn) {
+          if (data.running) {
+            launchBtn.className = 'btn-destructive px-3.5 py-1.5 text-xs font-medium flex items-center gap-1.5';
+            launchBtn.innerHTML = '<i class="fa-solid fa-stop text-[11px]"></i><span>Stop Process</span>';
+            launchBtn.onclick = stopSpotlight;
+          } else {
+            launchBtn.className = 'btn-primary-pro px-3.5 py-1.5 text-xs font-medium flex items-center gap-1.5';
+            launchBtn.innerHTML = '<i class="fa-solid fa-play text-[11px]"></i><span>Launch</span>';
+            launchBtn.onclick = launchSpotlight;
+          }
+        }
+
+        if (pidDisplay) {
+          pidDisplay.textContent = data.primary_pid ? `(PID: ${data.primary_pid})` : '';
+        }
+
+        if (data.system_theme) {
+          windowsSystemTheme = data.system_theme;
+          if (currentSelectedPreset === 'system') {
+            syncAccentColorControl(windowsSystemTheme.accent_color || '#0078D4', true);
+            updateMockupSurface();
+          }
+        }
+
+        if (data.available_monitors && Array.isArray(data.available_monitors)) {
+          updateMonitorDropdownOptions(data.available_monitors);
+        }
+
+        if (data.settings && !baselineSpotlightSettings) {
+          currentSpotlightSettings = data.settings;
+          baselineSpotlightSettings = JSON.parse(JSON.stringify(data.settings));
+          populateSpotlightSettingsForm(data.settings);
+        }
+      } catch (err) {
+        // Silently ignore status polling failures
+      }
+    }
+
+    async function launchSpotlight() {
+      const btn = document.getElementById('spotlight-launch-btn');
+      if (btn) btn.disabled = true;
+      try {
+        const res = await fetch('/api/spotlight/launch', { method: 'POST' });
+        const data = await res.json();
+        showToast(data.message || 'Launched DevSpotlight', !res.ok);
+        await fetchSpotlightStatus();
+      } catch (e) {
+        showToast('Failed to launch DevSpotlight: ' + e, true);
+      } finally {
+        if (btn) btn.disabled = false;
+      }
+    }
+
+    async function stopSpotlight() {
+      const btn = document.getElementById('spotlight-launch-btn');
+      if (btn) btn.disabled = true;
+      try {
+        const res = await fetch('/api/spotlight/stop', { method: 'POST' });
+        const data = await res.json();
+        showToast(data.message || 'Stopped DevSpotlight', !res.ok);
+        await fetchSpotlightStatus();
+      } catch (e) {
+        showToast('Failed to stop DevSpotlight: ' + e, true);
+      } finally {
+        if (btn) btn.disabled = false;
+      }
+    }
+
+    async function openSpotlightConfig() {
+      try {
+        const res = await fetch('/api/spotlight/open-config', { method: 'POST' });
+        const data = await res.json();
+        showToast(data.message || 'Opened configuration file', !res.ok);
+      } catch (e) {
+        showToast('Failed to open config: ' + e, true);
+      }
+    }
+
+    async function openSpotlightLogs() {
+      try {
+        const res = await fetch('/api/spotlight/open-logs', { method: 'POST' });
+        const data = await res.json();
+        showToast(data.message || 'Opened spotlight logs', !res.ok);
+      } catch (e) {
+        showToast('Failed to open logs: ' + e, true);
+      }
+    }
+
+    async function fetchSpotlightSettings() {
+      try {
+        const res = await fetch('/api/spotlight/settings');
+        if (!res.ok) return;
+        currentSpotlightSettings = await res.json();
+        baselineSpotlightSettings = JSON.parse(JSON.stringify(currentSpotlightSettings));
+        populateSpotlightSettingsForm(currentSpotlightSettings);
+      } catch (e) {
+        console.debug('Failed to fetch spotlight settings:', e);
+      }
+    }
+
+    function populateSpotlightSettingsForm(s) {
+      if (!s) return;
+      recordedHotkey = s.hotkey || 'alt+space';
+      recordedFallbackHotkey = s.fallback_hotkey || 'alt+shift+space';
+
+      const hotkeyText = document.getElementById('sp-hotkey-text');
+      if (hotkeyText) hotkeyText.textContent = formatHotkeyDisplay(recordedHotkey);
+      const hotkeyInput = document.getElementById('sp-input-hotkey');
+      if (hotkeyInput) hotkeyInput.value = recordedHotkey;
+
+      const fallbackText = document.getElementById('sp-fallback-text');
+      if (fallbackText) fallbackText.textContent = formatHotkeyDisplay(recordedFallbackHotkey);
+      const fallbackInput = document.getElementById('sp-input-fallback');
+      if (fallbackInput) fallbackInput.value = recordedFallbackHotkey;
+
+      const monitorSelect = document.getElementById('sp-select-monitor');
+      if (monitorSelect) {
+        const targetMode = s.monitor_mode === 'fixed' ? ('monitor_' + (s.fixed_monitor_index || 0)) : (s.monitor_mode || 'cursor');
+        monitorSelect.value = targetMode;
+        onMonitorChange(false);
+      }
+
+      const posSelect = document.getElementById('sp-select-position');
+      if (posSelect) {
+        posSelect.value = s.position_preset || 'center';
+        updatePositionTelemetry();
+      }
+
+      // Three Behavior Toggles
+      const dismissToggle = document.getElementById('sp-toggle-dismiss');
+      if (dismissToggle) dismissToggle.checked = s.dismiss_on_blur !== false;
+
+      const detailsToggle = document.getElementById('sp-toggle-details');
+      if (detailsToggle) detailsToggle.checked = s.show_details_panel !== false;
+
+      const restoreToggle = document.getElementById('sp-toggle-restore');
+      if (restoreToggle) restoreToggle.checked = s.restore_window_on_esc !== false;
+
+      // Windows System Theme & Custom Themes initialization
+      if (s && Array.isArray(s.custom_themes)) {
+        customThemes = s.custom_themes;
+      }
+
+      // Render Presets Grid and select active preset
+      renderThemePresetsGrid();
+      selectThemePreset(s.theme_preset || 'obsidian', false, s.accent_color);
+
+      // Sliders & Telemetry
+      const opVal = Math.round((s.opacity !== undefined ? s.opacity : 0.84) * 100);
+      const opSlider = document.getElementById('sp-slider-opacity');
+      if (opSlider) {
+        opSlider.value = opVal;
+        onOpacitySlider(opVal, false);
+      }
+
+      const blurVal = s.blur_radius !== undefined ? s.blur_radius : 28;
+      const blurSlider = document.getElementById('sp-slider-blur');
+      if (blurSlider) {
+        blurSlider.value = blurVal;
+        onBlurSlider(blurVal, false);
+      }
+
+
+      const animSelect = document.getElementById('sp-select-anim');
+      if (animSelect) animSelect.value = s.animation_speed || 'normal';
+
+      // Scopes
+      const allSpotlightScopes = ['app', 'file', 'port', 'calc', 'tool', 'window', 'project', 'action'];
+      const scopes = s.enabled_scopes || allSpotlightScopes;
+      allSpotlightScopes.forEach(sc => {
+        const cb = document.getElementById(`sp-scope-${sc}`);
+        if (cb) cb.checked = scopes.includes(sc);
+      });
+
+      // Dynamic counts from live data if present
+      if (typeof allPorts !== 'undefined' && Array.isArray(allPorts) && allPorts.length > 0) {
+        const portsCountEl = document.getElementById('sp-count-ports');
+        if (portsCountEl) portsCountEl.textContent = `${allPorts.length} Listening`;
+      }
+      if (typeof allReports !== 'undefined' && Array.isArray(allReports) && allReports.length > 0) {
+        const toolsCountEl = document.getElementById('sp-count-tools');
+        if (toolsCountEl) toolsCountEl.textContent = `${allReports.length} Utilities`;
+      }
+
+      updateMockupSurface();
+      markSpotlightDirty(false);
+    }
+
+    function renderThemePresetsGrid() {
+      const grid = document.getElementById('theme-presets-grid');
+      if (!grid) return;
+
+      const builtins = [
+        { id: 'emerald', name: 'Cyber Emerald', accent: '#10B981', bg: '#0E1015' },
+        { id: 'obsidian', name: 'Obsidian Dark', accent: '#38BDF8', bg: '#0E1015' },
+        { id: 'indigo', name: 'Titanium Slate', accent: '#8B5CF6', bg: '#1E2230' },
+        { id: 'amber', name: 'macOS Vibrant', accent: '#F59E0B', bg: '#1E2230' }
+      ];
+
+      let html = '';
+
+      // Built-in presets
+      builtins.forEach(b => {
+        const isSelected = (currentSelectedPreset === b.id);
+        const borderStyle = isSelected ? `border-color: ${b.accent}; box-shadow: 0 0 10px ${b.accent}30;` : '';
+        const borderClass = isSelected ? '' : 'border-[#1F2430] hover:border-[#2E3446]';
+        const dotOpacity = isSelected ? '' : 'opacity-0';
+        html += `
+          <div onclick="selectThemePreset('${b.id}')" id="preset-${b.id}" style="${borderStyle}" class="theme-preset-card p-2.5 rounded bg-[#141721] border ${borderClass} cursor-pointer transition flex items-center justify-between group">
+            <div class="space-y-1.5 min-w-0">
+              <span class="text-[11px] font-medium text-[#F3F4F6] block truncate">${b.name}</span>
+              <div class="flex items-center gap-1.5">
+                <span class="w-3.5 h-3.5 rounded-sm" style="background-color: ${b.accent}"></span>
+                <span class="w-3.5 h-3.5 rounded-sm border border-[#1F2430]" style="background-color: ${b.bg}"></span>
+              </div>
+            </div>
+            <span id="dot-${b.id}" class="w-2 h-2 rounded-full ${dotOpacity}" style="background-color: ${b.accent}"></span>
+          </div>
+        `;
+      });
+
+      // Custom presets
+      customThemes.forEach(ct => {
+        const isSelected = (currentSelectedPreset === ct.id);
+        const borderStyle = isSelected ? `border-color: ${ct.accent_color}; box-shadow: 0 0 10px ${ct.accent_color}30;` : '';
+        const borderClass = isSelected ? '' : 'border-[#1F2430] hover:border-[#2E3446]';
+        const dotOpacity = isSelected ? '' : 'opacity-0';
+        html += `
+          <div onclick="selectThemePreset('${ct.id}')" id="preset-${ct.id}" style="${borderStyle}" class="theme-preset-card p-2.5 rounded bg-[#141721] border ${borderClass} cursor-pointer transition flex items-center justify-between group relative">
+            <div class="space-y-1.5 min-w-0 pr-2">
+              <span class="text-[11px] font-medium text-[#F3F4F6] block truncate">${ct.name}</span>
+              <div class="flex items-center gap-1.5">
+                <span class="w-3.5 h-3.5 rounded-sm" style="background-color: ${ct.accent_color}"></span>
+                <span class="w-3.5 h-3.5 rounded-sm bg-[#0E1015] border border-[#1F2430]"></span>
+                <span class="text-[9px] text-[#475569] font-mono">${Math.round((ct.opacity !== undefined ? ct.opacity : 0.9) * 100)}%</span>
+              </div>
+            </div>
+            <div class="flex items-center gap-1.5">
+              <button type="button" onclick="event.stopPropagation(); deleteCustomThemePreset('${ct.id}')" title="Delete custom preset" class="opacity-0 group-hover:opacity-100 text-[#94A3B8] hover:text-[#EF4444] transition p-1 text-[10px]">
+                <i class="fa-solid fa-trash"></i>
+              </button>
+              <span id="dot-${ct.id}" class="w-2 h-2 rounded-full ${dotOpacity}" style="background-color: ${ct.accent_color}"></span>
+            </div>
+          </div>
+        `;
+      });
+
+      grid.innerHTML = html;
+
+      // Update System Theme card
+      const sysCard = document.getElementById('preset-system');
+      const sysDot = document.getElementById('dot-system');
+      if (sysCard) {
+        if (currentSelectedPreset === 'system') {
+          sysCard.className = 'theme-preset-card p-2.5 rounded bg-[#0078D415] border border-[#0078D4] shadow-[0_0_12px_#0078D430] cursor-pointer transition flex items-center justify-between';
+          if (sysDot) sysDot.classList.remove('opacity-0');
+        } else {
+          sysCard.className = 'theme-preset-card p-2.5 rounded bg-[#141721] border border-[#1F2430] hover:border-[#2E3446] cursor-pointer transition flex items-center justify-between';
+          if (sysDot) sysDot.classList.add('opacity-0');
+        }
+      }
+    }
+
+    function syncAccentColorControl(accent, isSystem = false) {
+      const picker = document.getElementById('sp-color-picker');
+      const hexInput = document.getElementById('sp-input-accent-hex');
+      const valDisp = document.getElementById('sp-accent-val');
+      const tagDisp = document.getElementById('sp-accent-tag');
+
+      const color = (accent || '#38BDF8').trim();
+      const validHex = /^#[0-9A-Fa-f]{6}$/.test(color) ? color : '#38BDF8';
+
+      if (picker) picker.value = validHex;
+      if (hexInput) hexInput.value = validHex.toUpperCase();
+      if (valDisp) {
+        valDisp.textContent = validHex.toUpperCase();
+        valDisp.style.color = validHex;
+      }
+      if (tagDisp) {
+        if (isSystem) {
+          tagDisp.classList.remove('hidden');
+        } else {
+          tagDisp.classList.add('hidden');
+        }
+      }
+    }
+
+    function onCustomAccentPicker(val) {
+      if (!val) return;
+      const hexInput = document.getElementById('sp-input-accent-hex');
+      const valDisp = document.getElementById('sp-accent-val');
+      if (hexInput) hexInput.value = val.toUpperCase();
+      if (valDisp) {
+        valDisp.textContent = val.toUpperCase();
+        valDisp.style.color = val;
+      }
+      updateMockupSurface();
+      markSpotlightDirty();
+    }
+
+    function onCustomAccentHex(val) {
+      if (!val) return;
+      let cleaned = val.trim();
+      if (!cleaned.startsWith('#')) cleaned = '#' + cleaned;
+      const picker = document.getElementById('sp-color-picker');
+      const valDisp = document.getElementById('sp-accent-val');
+      if (/^#[0-9A-Fa-f]{6}$/.test(cleaned)) {
+        if (picker) picker.value = cleaned;
+        if (valDisp) {
+          valDisp.textContent = cleaned.toUpperCase();
+          valDisp.style.color = cleaned;
+        }
+        updateMockupSurface();
+        markSpotlightDirty();
+      }
+    }
+
+    function applyAccentSwatch(color) {
+      syncAccentColorControl(color, false);
+      updateMockupSurface();
+      markSpotlightDirty();
+    }
+
+    function selectThemePreset(presetId, triggerDirty = true, overrideAccent = null) {
+      currentSelectedPreset = presetId || 'obsidian';
+
+      const allThemes = { ...BUILTIN_THEMES };
+      customThemes.forEach(t => { allThemes[t.id] = t; });
+
+      const theme = allThemes[currentSelectedPreset] || allThemes.obsidian;
+      const isSystem = (currentSelectedPreset === 'system');
+
+      // 1. System Theme banner & controls toggle
+      const banner = document.getElementById('sp-system-theme-banner');
+      const controls = document.getElementById('sp-theming-controls');
+      if (banner) banner.classList.toggle('hidden', !isSystem);
+      if (controls) {
+        if (isSystem) {
+          controls.classList.add('opacity-40', 'pointer-events-none');
+        } else {
+          controls.classList.remove('opacity-40', 'pointer-events-none');
+        }
+      }
+
+      // 2. Synchronize Accent Color Control
+      if (isSystem) {
+        const sysAccent = windowsSystemTheme.accent_color || '#0078D4';
+        syncAccentColorControl(sysAccent, true);
+      } else {
+        const acc = overrideAccent || theme.accent_color || '#38BDF8';
+        syncAccentColorControl(acc, false);
+      }
+
+      // 3. Synchronize sliders and telemetry
+      if (isSystem) {
+        const opSlider = document.getElementById('sp-slider-opacity');
+        if (opSlider) { opSlider.value = 65; onOpacitySlider(65, false); }
+        const blurSlider = document.getElementById('sp-slider-blur');
+        if (blurSlider) { blurSlider.value = 36; onBlurSlider(36, false); }
+        const animSelect = document.getElementById('sp-select-anim');
+        if (animSelect) animSelect.value = 'normal';
+      } else if (theme) {
+        if (theme.opacity !== undefined) {
+          const opPct = Math.round(theme.opacity * 100);
+          const opSlider = document.getElementById('sp-slider-opacity');
+          if (opSlider) opSlider.value = opPct;
+          onOpacitySlider(opPct, false);
+        }
+        if (theme.blur_radius !== undefined) {
+          const blurSlider = document.getElementById('sp-slider-blur');
+          if (blurSlider) blurSlider.value = theme.blur_radius;
+          onBlurSlider(theme.blur_radius, false);
+        }
+        if (theme.animation_speed) {
+          const animSelect = document.getElementById('sp-select-anim');
+          if (animSelect) animSelect.value = theme.animation_speed;
+        }
+      }
+
+      renderThemePresetsGrid();
+      updateMockupSurface();
+
+      if (triggerDirty) markSpotlightDirty();
+    }
+
+    function updateMockupSurface() {
+      const mockup = document.getElementById('spotlight-hero-mockup');
+      if (!mockup) return;
+
+      const opSlider = document.getElementById('sp-slider-opacity');
+      const blurSlider = document.getElementById('sp-slider-blur');
+
+      const allThemes = { ...BUILTIN_THEMES };
+      customThemes.forEach(t => { allThemes[t.id] = t; });
+
+      const preset = currentSelectedPreset || 'obsidian';
+
+      const searchIcon = document.getElementById('mockup-search-icon');
+      const searchPlaceholder = document.getElementById('mockup-search-placeholder');
+      const prefixBadge = document.getElementById('mockup-prefix-badge');
+      const appTitle = document.getElementById('mockup-app-title');
+      const appIconBg = document.getElementById('mockup-app-icon-bg');
+      const appBadge = document.getElementById('mockup-app-badge');
+      const hintsRow = document.getElementById('mockup-hints-row');
+      const telemTheme = document.getElementById('telemetry-theme');
+      const telemOp = document.getElementById('telemetry-opacity');
+      const telemBlur = document.getElementById('telemetry-blur');
+
+      if (preset === 'system') {
+        const isDark = windowsSystemTheme.dark_mode !== false;
+        const sysAccent = windowsSystemTheme.accent_color || '#0078D4';
+
+        // Windows 11 Fluent Acrylic Material
+        if (isDark) {
+          mockup.style.background = 'rgba(14, 18, 28, 0.65)';
+          mockup.style.borderColor = sysAccent + '60';
+          mockup.style.boxShadow = `0 20px 50px -10px rgba(0, 0, 0, 0.85), 0 0 30px ${sysAccent}35`;
+          if (searchPlaceholder) searchPlaceholder.style.color = '#F3F4F6';
+          if (appTitle) appTitle.style.color = '#F3F4F6';
+          if (hintsRow) {
+            hintsRow.style.backgroundColor = 'rgba(8, 10, 16, 0.45)';
+            hintsRow.style.color = '#64748B';
+          }
+        } else {
+          mockup.style.background = 'rgba(240, 244, 250, 0.70)';
+          mockup.style.borderColor = sysAccent + '60';
+          mockup.style.boxShadow = `0 20px 50px -10px rgba(0, 0, 0, 0.25), 0 0 30px ${sysAccent}30`;
+          if (searchPlaceholder) searchPlaceholder.style.color = '#1E293B';
+          if (appTitle) appTitle.style.color = '#0F172A';
+          if (hintsRow) {
+            hintsRow.style.backgroundColor = 'rgba(255, 255, 255, 0.50)';
+            hintsRow.style.color = '#64748B';
+          }
+        }
+
+        mockup.style.backdropFilter = 'blur(36px) saturate(190%)';
+        mockup.style.webkitBackdropFilter = 'blur(36px) saturate(190%)';
+        mockup.style.borderRadius = '8px';
+
+        if (searchIcon) {
+          searchIcon.className = 'fa-solid fa-magnifying-glass text-xs';
+          searchIcon.style.color = sysAccent;
+        }
+
+        if (prefixBadge) {
+          prefixBadge.textContent = 'ALL';
+          prefixBadge.style.color = sysAccent;
+          prefixBadge.style.backgroundColor = sysAccent + '20';
+          prefixBadge.style.borderColor = sysAccent + '40';
+        }
+
+        if (appIconBg) {
+          appIconBg.style.backgroundColor = sysAccent + '20';
+          appIconBg.style.color = sysAccent;
+        }
+        if (appBadge) {
+          appBadge.style.color = sysAccent;
+          appBadge.style.borderColor = sysAccent + '40';
+        }
+
+        if (telemTheme) {
+          telemTheme.innerHTML = `<i class="fa-brands fa-windows text-[10px]"></i> Acrylic (${isDark ? 'Dark' : 'Light'})`;
+          telemTheme.style.color = sysAccent;
+          telemTheme.style.backgroundColor = sysAccent + '20';
+          telemTheme.style.borderColor = sysAccent + '50';
+        }
+
+        if (telemOp) telemOp.textContent = '65%';
+        if (telemBlur) telemBlur.textContent = '36px';
+        return;
+      }
+
+      // Built-in or custom theme
+      const opPercent = parseInt(opSlider?.value || '84', 10);
+      const opVal = opPercent / 100;
+      const blurVal = parseInt(blurSlider?.value || '28', 10);
+
+      const theme = allThemes[preset] || allThemes.obsidian;
+      const hexInput = document.getElementById('sp-input-accent-hex');
+      const customHex = hexInput?.value?.trim();
+      const accent = (customHex && /^#[0-9A-Fa-f]{6}$/.test(customHex)) ? customHex : (theme.accent_color || '#38BDF8');
+      const bg = `rgba(10, 14, 23, ${opVal})`;
+
+      mockup.style.background = bg;
+      mockup.style.borderColor = accent + '60';
+      mockup.style.boxShadow = `0 20px 50px -10px rgba(0,0,0,0.85), 0 0 30px ${accent}30`;
+      mockup.style.backdropFilter = `blur(${blurVal}px)`;
+      mockup.style.webkitBackdropFilter = `blur(${blurVal}px)`;
+      mockup.style.borderRadius = '8px';
+
+      if (searchPlaceholder) searchPlaceholder.style.color = '#F3F4F6';
+      if (appTitle) appTitle.style.color = '#F3F4F6';
+      if (hintsRow) {
+        hintsRow.style.backgroundColor = 'rgba(8, 9, 12, 0.60)';
+        hintsRow.style.color = '#475569';
+      }
+
+      if (searchIcon) {
+        searchIcon.className = 'fa-solid fa-magnifying-glass text-xs';
+        searchIcon.style.color = accent;
+      }
+
+      if (prefixBadge) {
+        prefixBadge.textContent = 'ALL';
+        prefixBadge.style.color = accent;
+        prefixBadge.style.backgroundColor = accent + '18';
+        prefixBadge.style.borderColor = accent + '40';
+      }
+
+      if (appIconBg) {
+        appIconBg.style.backgroundColor = accent + '1A';
+        appIconBg.style.color = accent;
+      }
+      if (appBadge) {
+        appBadge.style.color = accent;
+        appBadge.style.borderColor = '#1F2430';
+      }
+
+      if (telemTheme) {
+        const rawName = (theme.name || preset).trim();
+        const cleanName = rawName.charAt(0).toUpperCase() + rawName.slice(1);
+        const surfaceLabel = cleanName.toLowerCase().includes('glass') ? cleanName : `${cleanName} · Glass`;
+        telemTheme.innerHTML = `<i class="fa-solid fa-wand-magic-sparkles text-[9px]"></i> ${surfaceLabel}`;
+        telemTheme.style.color = accent;
+        telemTheme.style.backgroundColor = accent + '20';
+        telemTheme.style.borderColor = accent + '40';
+      }
+
+      if (telemOp) telemOp.textContent = `${opPercent}%`;
+      if (telemBlur) telemBlur.textContent = `${blurVal}px`;
+    }
+
+    function openThemePresetModal() {
+      const modal = document.getElementById('theme-preset-modal');
+      if (!modal) return;
+
+      const opSlider = document.getElementById('sp-slider-opacity');
+      const blurSlider = document.getElementById('sp-slider-blur');
+      const animSelect = document.getElementById('sp-select-anim');
+
+      const opVal = opSlider?.value || '84';
+      const blurVal = blurSlider?.value || '28';
+      const animVal = animSelect?.value || 'normal';
+
+      const snapOp = document.getElementById('snapshot-opacity');
+      const snapBlur = document.getElementById('snapshot-blur');
+      const snapAnim = document.getElementById('snapshot-anim');
+
+      if (snapOp) snapOp.textContent = `${opVal}%`;
+      if (snapBlur) snapBlur.textContent = `${blurVal}px`;
+      if (snapAnim) snapAnim.textContent = animVal;
+
+      const allThemes = { ...BUILTIN_THEMES };
+      customThemes.forEach(t => { allThemes[t.id] = t; });
+      const customHexVal = document.getElementById('sp-input-accent-hex')?.value?.trim();
+      const initialColor = (currentSelectedPreset === 'system'
+        ? (windowsSystemTheme.accent_color || '#0078D4')
+        : (customHexVal || currentTheme.accent_color)) || '#38BDF8';
+
+      const colorPicker = document.getElementById('custom-theme-color-picker');
+      const hexInput = document.getElementById('custom-theme-hex');
+      const nameInput = document.getElementById('custom-theme-name');
+
+      if (colorPicker) colorPicker.value = initialColor;
+      if (hexInput) hexInput.value = initialColor.toUpperCase();
+      if (nameInput) {
+        nameInput.value = '';
+        setTimeout(() => nameInput.focus(), 50);
+      }
+
+      modal.classList.remove('hidden');
+    }
+
+    function closeThemePresetModal() {
+      const modal = document.getElementById('theme-preset-modal');
+      if (modal) modal.classList.add('hidden');
+    }
+
+    async function saveNewThemePreset() {
+      const nameInput = document.getElementById('custom-theme-name');
+      const hexInput = document.getElementById('custom-theme-hex');
+      const name = nameInput?.value?.trim();
+
+      if (!name) {
+        showToast('Please enter a preset name');
+        if (nameInput) nameInput.focus();
+        return;
+      }
+
+      const opSlider = document.getElementById('sp-slider-opacity');
+      const blurSlider = document.getElementById('sp-slider-blur');
+      const animSelect = document.getElementById('sp-select-anim');
+
+      const opVal = parseInt(opSlider?.value || '84', 10) / 100.0;
+      const blurVal = parseInt(blurSlider?.value || '28', 10);
+      const animVal = animSelect?.value || 'normal';
+      const accent = hexInput?.value?.trim() || '#38BDF8';
+
+      const payload = {
+        name: name,
+        accent_color: accent,
+        opacity: opVal,
+        blur_radius: blurVal,
+        corner_radius: 8,
+        animation_speed: animVal
+      };
+
+      try {
+        const res = await fetch('/api/spotlight/themes', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.settings) {
+            currentSpotlightSettings = data.settings;
+            baselineSpotlightSettings = JSON.parse(JSON.stringify(data.settings));
+            customThemes = data.settings.custom_themes || [];
+          }
+          closeThemePresetModal();
+          selectThemePreset(data.theme ? data.theme.id : 'obsidian', false);
+          markSpotlightDirty(false);
+          showToast(`Saved theme preset: ${name}`);
+          return;
+        }
+      } catch (err) {
+        console.debug('Failed to save preset on backend:', err);
+      }
+
+      // Local fallback
+      const newId = `custom_${Date.now()}`;
+      const newPreset = {
+        id: newId,
+        name: name,
+        accent_color: accent,
+        opacity: opVal,
+        blur_radius: blurVal,
+        corner_radius: 8,
+        animation_speed: animVal,
+        is_builtin: false
+      };
+
+      customThemes.push(newPreset);
+      closeThemePresetModal();
+      selectThemePreset(newId, true);
+      showToast(`Created theme preset: ${name}`);
+    }
+
+    async function deleteCustomThemePreset(themeId) {
+      const deletedTheme = customThemes.find(t => t.id === themeId);
+      try {
+        const res = await fetch(`/api/spotlight/themes/${encodeURIComponent(themeId)}`, {
+          method: 'DELETE'
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.settings) {
+            currentSpotlightSettings = data.settings;
+            baselineSpotlightSettings = JSON.parse(JSON.stringify(data.settings));
+            customThemes = data.settings.custom_themes || [];
+          } else {
+            customThemes = customThemes.filter(t => t.id !== themeId);
+          }
+          if (currentSelectedPreset === themeId) {
+            currentSelectedPreset = 'obsidian';
+          }
+          selectThemePreset(currentSelectedPreset, false);
+          markSpotlightDirty(false);
+          showToast(`Deleted theme preset: ${deletedTheme?.name || 'Preset'}`);
+          return;
+        }
+      } catch (e) {
+        console.debug('Failed to delete theme preset on backend:', e);
+      }
+
+      // Local fallback
+      customThemes = customThemes.filter(t => t.id !== themeId);
+      if (currentSelectedPreset === themeId) {
+        currentSelectedPreset = 'obsidian';
+      }
+      selectThemePreset(currentSelectedPreset, true);
+      showToast(`Deleted theme preset: ${deletedTheme?.name || 'Preset'}`);
+    }
+
+    function onAnimationChange() {
+      updateMockupSurface();
+      markSpotlightDirty();
+    }
+
+    function onOpacitySlider(val, triggerDirty = true) {
+      const displayVal = val + '%';
+      const opDisplay = document.getElementById('sp-opacity-val');
+      const telemDisplay = document.getElementById('telemetry-opacity');
+
+      if (opDisplay) opDisplay.textContent = displayVal;
+      if (telemDisplay) telemDisplay.textContent = displayVal;
+
+      updateMockupSurface();
+
+      if (triggerDirty) markSpotlightDirty();
+    }
+
+    function onBlurSlider(val, triggerDirty = true) {
+      const displayVal = val + 'px';
+      const blurDisplay = document.getElementById('sp-blur-val');
+      const telemDisplay = document.getElementById('telemetry-blur');
+
+      if (blurDisplay) blurDisplay.textContent = displayVal;
+      if (telemDisplay) telemDisplay.textContent = displayVal;
+
+      updateMockupSurface();
+
+      if (triggerDirty) markSpotlightDirty();
+    }
+
+    function onRadiusSlider(val, triggerDirty = true) {
+      const radDisplay = document.getElementById('sp-radius-val');
+
+      if (radDisplay) radDisplay.textContent = `${val}px (macOS Pro)`;
+
+      updateMockupSurface();
+
+      if (triggerDirty) markSpotlightDirty();
+    }
+
+    const POSITION_LABELS = {
+      center: 'Center',
+      left_center: 'Left Center',
+      right_center: 'Right Center',
+      center_top: 'Center Top',
+      left_top: 'Left Top',
+      right_top: 'Right Top',
+    };
+
+    function updatePositionTelemetry() {
+      const posSelect = document.getElementById('sp-select-position');
+      const posPill = document.getElementById('sp-position-pill');
+      const telemAnchor = document.getElementById('telemetry-anchor');
+      const preset = posSelect?.value || 'center';
+      const label = POSITION_LABELS[preset] || 'Center';
+      if (posPill) posPill.textContent = label;
+      if (telemAnchor) telemAnchor.textContent = label;
+    }
+
+    function onPositionPresetChange(triggerDirty = true) {
+      updatePositionTelemetry();
+      if (triggerDirty) markSpotlightDirty();
+    }
+
+    function onMonitorChange(triggerDirty = true) {
+      updatePositionTelemetry();
+      if (triggerDirty) markSpotlightDirty();
+    }
+
+    // ==========================================
+    // Interactive Hotkey Recorder Modal
+    // ==========================================
+    function isFunctionKey(key) {
+      return /^f([1-9]|1[0-9]|2[0-4])$/i.test(key);
+    }
+
+    function normalizeKeyCode(e) {
+      const code = e.code || '';
+      if (code === 'Space' || e.key === ' ') return 'space';
+      if (code.startsWith('Key')) return code.replace('Key', '').toLowerCase();
+      if (code.startsWith('Digit')) return code.replace('Digit', '').toLowerCase();
+      if (code.startsWith('Numpad') && !isNaN(code.replace('Numpad', ''))) return code.replace('Numpad', '').toLowerCase();
+      if (/^F\d+$/i.test(code)) return code.toLowerCase();
+      if (code === 'Backquote' || e.key === '`') return '`';
+      if (code === 'Minus' || e.key === '-') return '-';
+      if (code === 'Equal' || e.key === '=') return '=';
+      if (code === 'BracketLeft' || e.key === '[') return '[';
+      if (code === 'BracketRight' || e.key === ']') return ']';
+      if (code === 'Backslash' || e.key === '\\') return '\\';
+      if (code === 'Semicolon' || e.key === ';') return ';';
+      if (code === 'Quote' || e.key === "'") return "'";
+      if (code === 'Comma' || e.key === ',') return ',';
+      if (code === 'Period' || e.key === '.') return '.';
+      if (code === 'Slash' || e.key === '/') return '/';
+      if (code === 'Tab') return 'tab';
+      if (code === 'Enter') return 'enter';
+      if (code === 'Backspace') return 'backspace';
+      if (code === 'Delete') return 'delete';
+      if (code === 'Insert') return 'insert';
+      if (code === 'Home') return 'home';
+      if (code === 'End') return 'end';
+      if (code === 'PageUp') return 'pageup';
+      if (code === 'PageDown') return 'pagedown';
+      if (code === 'ArrowUp') return 'up';
+      if (code === 'ArrowDown') return 'down';
+      if (code === 'ArrowLeft') return 'left';
+      if (code === 'ArrowRight') return 'right';
+
+      if (e.key && e.key.length === 1) return e.key.toLowerCase();
+      return (e.key || '').toLowerCase();
+    }
+
+    function updateModalDisplay() {
+      const order = ['win', 'ctrl', 'alt', 'shift'];
+      const activeMods = order.filter(m => modalModifiers.has(m));
+
+      // Build pending shortcut
+      if (modalKey) {
+        if (activeMods.length > 0) {
+          pendingRecordedShortcut = [...activeMods, modalKey].join('+');
+        } else if (isFunctionKey(modalKey)) {
+          pendingRecordedShortcut = modalKey;
+        } else {
+          // If regular key pressed without any modifier, auto-default to Alt+key
+          modalModifiers.add('alt');
+          pendingRecordedShortcut = ['alt', modalKey].join('+');
+        }
+      } else {
+        pendingRecordedShortcut = '';
+      }
+
+      // Render key badges
+      if (pendingRecordedShortcut) {
+        renderModalKeys(pendingRecordedShortcut);
+      } else if (activeMods.length > 0) {
+        renderModalKeys(activeMods.join('+') + '+...');
+      } else {
+        renderModalKeys('');
+      }
+
+      // Update modifier toggle button styles
+      ['win', 'alt', 'ctrl', 'shift'].forEach(mod => {
+        const btn = document.getElementById(`mod-toggle-${mod}`);
+        if (!btn) return;
+        if (modalModifiers.has(mod)) {
+          btn.className = 'py-1.5 px-2 text-xs rounded border border-[#10B98160] bg-[#10B98126] text-[#10B981] font-bold shadow-[0_0_8px_#10B98130] transition font-mono flex items-center justify-center gap-1';
+        } else {
+          btn.className = 'py-1.5 px-2 text-xs rounded border border-[#2E3446] bg-[#141721] text-[#94A3B8] hover:text-[#F3F4F6] transition font-mono flex items-center justify-center gap-1';
+        }
+      });
+
+      // Update Save button
+      const saveBtn = document.getElementById('hotkey-modal-save-btn');
+      if (saveBtn) {
+        if (pendingRecordedShortcut) {
+          saveBtn.disabled = false;
+          saveBtn.className = 'btn-primary-pro px-4 py-1.5 text-xs font-semibold cursor-pointer shadow-[0_0_10px_#10B98140]';
+        } else {
+          saveBtn.disabled = true;
+          saveBtn.className = 'btn-primary-pro px-4 py-1.5 text-xs font-semibold opacity-40 cursor-not-allowed';
+        }
+      }
+    }
+
+    function toggleModalModifier(mod) {
+      if (modalModifiers.has(mod)) {
+        modalModifiers.delete(mod);
+      } else {
+        modalModifiers.add(mod);
+      }
+      updateModalDisplay();
+    }
+
+    function applyPresetShortcut(preset) {
+      modalModifiers.clear();
+      modalKey = '';
+      const parts = preset.toLowerCase().split('+').map(p => p.trim()).filter(Boolean);
+      parts.forEach(p => {
+        if (['win', 'ctrl', 'alt', 'shift'].includes(p)) {
+          modalModifiers.add(p);
+        } else {
+          modalKey = p;
+        }
+      });
+      updateModalDisplay();
+    }
+
+    function openHotkeyModal(target = 'primary') {
+      modalTarget = target;
+      modalModifiers.clear();
+      modalKey = '';
+      pendingRecordedShortcut = '';
+
+      const modal = document.getElementById('hotkey-modal');
+      const title = document.getElementById('hotkey-modal-title');
+      const subtitle = document.getElementById('hotkey-modal-subtitle');
+
+      if (!modal) return;
+
+      const currentVal = target === 'primary' ? (recordedHotkey || 'alt+space') : (recordedFallbackHotkey || 'alt+shift+space');
+
+      if (title) {
+        title.textContent = target === 'primary' ? 'Record Primary Hotkey' : 'Record Fallback Shortcut';
+      }
+      if (subtitle) {
+        subtitle.textContent = target === 'primary'
+          ? 'Set the primary system-wide shortcut to summon DevSpotlight'
+          : 'Set secondary shortcut used if primary is claimed by OS';
+      }
+
+      // Populate from currentVal
+      if (currentVal) {
+        const parts = currentVal.toLowerCase().split('+').map(p => p.trim()).filter(Boolean);
+        parts.forEach(p => {
+          if (['win', 'ctrl', 'alt', 'shift'].includes(p)) {
+            modalModifiers.add(p);
+          } else {
+            modalKey = p;
+          }
+        });
+      }
+
+      updateModalDisplay();
+      modal.classList.remove('hidden');
+      window.addEventListener('keydown', onModalKeyDown, true);
+    }
+
+    function closeHotkeyModal() {
+      const modal = document.getElementById('hotkey-modal');
+      if (modal) modal.classList.add('hidden');
+      window.removeEventListener('keydown', onModalKeyDown, true);
+      modalModifiers.clear();
+      modalKey = '';
+      pendingRecordedShortcut = '';
+    }
+
+    function clearHotkeyModalRecording() {
+      modalModifiers.clear();
+      modalKey = '';
+      pendingRecordedShortcut = '';
+      updateModalDisplay();
+    }
+
+    function renderModalKeys(combinationStr) {
+      const container = document.getElementById('hotkey-keys-container');
+      if (!container) return;
+
+      if (!combinationStr) {
+        container.innerHTML = '<span class="text-xs text-[#475569] font-mono animate-pulse">Press combination on your keyboard...</span>';
+        return;
+      }
+
+      const parts = combinationStr.split('+').map(p => p.trim()).filter(Boolean);
+      container.innerHTML = parts.map((part, idx) => {
+        let label = part.toUpperCase();
+        if (part.toLowerCase() === 'alt') label = 'Alt (⌥)';
+        else if (part.toLowerCase() === 'ctrl') label = 'Ctrl (⌃)';
+        else if (part.toLowerCase() === 'shift') label = 'Shift (⇧)';
+        else if (part.toLowerCase() === 'win') label = 'Win (⊞)';
+        else if (part.toLowerCase() === 'space') label = 'Space';
+        else if (part.toLowerCase() === 'enter') label = 'Enter (↵)';
+        else if (part.toLowerCase() === 'tab') label = 'Tab (⇥)';
+        else if (part.toLowerCase() === 'backspace') label = 'Backspace (⌫)';
+        else if (part.toLowerCase() === 'delete') label = 'Del';
+        else if (part.toLowerCase() === 'escape') label = 'Esc';
+        else if (part.toLowerCase() === 'up') label = '↑';
+        else if (part.toLowerCase() === 'down') label = '↓';
+        else if (part.toLowerCase() === 'left') label = '←';
+        else if (part.toLowerCase() === 'right') label = '→';
+        else if (part === '...') {
+          return '<span class="px-2 py-1 rounded bg-[#0A0D14] text-[#475569] border border-dashed border-[#2E3446] font-mono text-xs animate-pulse">+ Press key</span>';
+        }
+
+        const plus = idx < parts.length - 1 && parts[idx+1] !== '...' ? '<span class="text-[#475569] font-mono text-sm mx-1">+</span>' : '';
+        return `<kbd class="px-2.5 py-1.5 rounded bg-[#141721] text-[#10B981] border border-[#10B98140] font-mono text-xs font-bold shadow-sm">${label}</kbd>${plus}`;
+      }).join('');
+    }
+
+    function onModalKeyDown(e) {
+      const modal = document.getElementById('hotkey-modal');
+      if (!modal || modal.classList.contains('hidden')) return;
+
+      e.preventDefault();
+      e.stopPropagation();
+
+      if (e.key === 'Escape') {
+        closeHotkeyModal();
+        return;
+      }
+
+      if (e.key === 'Enter') {
+        if (pendingRecordedShortcut) {
+          saveHotkeyModalShortcut();
+        }
+        return;
+      }
+
+      if (e.key === 'Backspace' && !e.ctrlKey && !e.altKey && !modalKey) {
+        clearHotkeyModalRecording();
+        return;
+      }
+
+      // Check modifier keys from event flags
+      if (e.altKey) modalModifiers.add('alt');
+      if (e.ctrlKey) modalModifiers.add('ctrl');
+      if (e.shiftKey) modalModifiers.add('shift');
+      if (e.metaKey) modalModifiers.add('win');
+
+      // If key is a modifier key itself
+      if (['Control', 'Alt', 'Shift', 'Meta'].includes(e.key)) {
+        if (e.key === 'Control') modalModifiers.add('ctrl');
+        else if (e.key === 'Alt') modalModifiers.add('alt');
+        else if (e.key === 'Shift') modalModifiers.add('shift');
+        else if (e.key === 'Meta') modalModifiers.add('win');
+        updateModalDisplay();
+        return;
+      }
+
+      // Non-modifier key pressed!
+      // If user holds specific modifiers while pressing the key, sync to held modifiers
+      if (e.altKey || e.ctrlKey || e.shiftKey || e.metaKey) {
+        modalModifiers.clear();
+        if (e.altKey) modalModifiers.add('alt');
+        if (e.ctrlKey) modalModifiers.add('ctrl');
+        if (e.shiftKey) modalModifiers.add('shift');
+        if (e.metaKey) modalModifiers.add('win');
+      }
+
+      const key = normalizeKeyCode(e);
+      if (key) {
+        modalKey = key;
+        updateModalDisplay();
+      }
+    }
+
+    function saveHotkeyModalShortcut() {
+      if (!pendingRecordedShortcut) return;
+
+      if (modalTarget === 'primary') {
+        recordedHotkey = pendingRecordedShortcut;
+        const disp = document.getElementById('sp-hotkey-text');
+        if (disp) disp.textContent = formatHotkeyDisplay(recordedHotkey);
+        const hiddenInp = document.getElementById('sp-input-hotkey');
+        if (hiddenInp) hiddenInp.value = recordedHotkey;
+      } else {
+        recordedFallbackHotkey = pendingRecordedShortcut;
+        const disp = document.getElementById('sp-fallback-text');
+        if (disp) disp.textContent = formatHotkeyDisplay(recordedFallbackHotkey);
+        const hiddenInp = document.getElementById('sp-input-fallback');
+        if (hiddenInp) hiddenInp.value = recordedFallbackHotkey;
+      }
+
+      updateMockupSurface();
+      markSpotlightDirty();
+      closeHotkeyModal();
+      showToast(`Updated shortcut to: ${formatHotkeyDisplay(pendingRecordedShortcut)}`);
+    }
+
+    function resetFallbackHotkey() {
+      recordedFallbackHotkey = 'alt+shift+space';
+      const disp = document.getElementById('sp-fallback-text');
+      if (disp) disp.textContent = formatHotkeyDisplay(recordedFallbackHotkey);
+      const hiddenInp = document.getElementById('sp-input-fallback');
+      if (hiddenInp) hiddenInp.value = recordedFallbackHotkey;
+      updateMockupSurface();
+      markSpotlightDirty();
+      showToast('Reset fallback shortcut to Alt+Shift+Space');
+    }
+
+    function getCurrentSpotlightFormValues() {
+      const monitor_mode = document.getElementById('sp-select-monitor')?.value || 'cursor';
+      let fixed_monitor_index = 0;
+      if (monitor_mode.startsWith('monitor_')) {
+        fixed_monitor_index = parseInt(monitor_mode.split('_')[1], 10) || 0;
+      }
+      const theme_preset = currentSelectedPreset || 'obsidian';
+      let accent_color = '#38BDF8';
+      if (theme_preset === 'system') {
+        accent_color = windowsSystemTheme.accent_color || '#0078D4';
+      } else {
+        const hexVal = document.getElementById('sp-input-accent-hex')?.value?.trim();
+        if (hexVal && /^#[0-9A-Fa-f]{6}$/.test(hexVal)) {
+          accent_color = hexVal;
+        } else if (BUILTIN_THEMES[theme_preset]) {
+          accent_color = BUILTIN_THEMES[theme_preset].accent_color;
+        } else {
+          const found = customThemes.find(t => t.id === theme_preset);
+          if (found) accent_color = found.accent_color;
+        }
+      }
+      const opacity = (parseInt(document.getElementById('sp-slider-opacity')?.value || '84', 10)) / 100;
+      const blur_radius = parseInt(document.getElementById('sp-slider-blur')?.value || '28', 10);
+      const fallback_hotkey = recordedFallbackHotkey || 'alt+shift+space';
+      const dismiss_on_blur = document.getElementById('sp-toggle-dismiss')?.checked ?? true;
+      const show_details_panel = document.getElementById('sp-toggle-details')?.checked ?? true;
+      const restore_window_on_esc = document.getElementById('sp-toggle-restore')?.checked ?? true;
+      const animation_speed = document.getElementById('sp-select-anim')?.value || 'normal';
+      const position_preset = document.getElementById('sp-select-position')?.value || 'center';
+
+      const enabled_scopes = [];
+      const allSpotlightScopes = ['app', 'file', 'port', 'calc', 'tool', 'window', 'project', 'action'];
+      allSpotlightScopes.forEach(sc => {
+        if (document.getElementById(`sp-scope-${sc}`)?.checked) enabled_scopes.push(sc);
+      });
+
+      return {
+        hotkey: recordedHotkey,
+        fallback_hotkey,
+        monitor_mode,
+        fixed_monitor_index,
+        position_preset,
+        accent_color,
+        theme_preset,
+        custom_themes: customThemes,
+        opacity,
+        blur_radius,
+        corner_radius: 8,
+        dismiss_on_blur,
+        show_details_panel,
+        restore_window_on_esc,
+        animation_speed,
+        enabled_scopes
+      };
+    }
+
+    function markSpotlightDirty(forceState) {
+      let dirty = false;
+      if (forceState !== undefined) {
+        dirty = forceState;
+      } else if (baselineSpotlightSettings) {
+        const curr = getCurrentSpotlightFormValues();
+        const base = baselineSpotlightSettings;
+        const baseOpacity = base.opacity !== undefined ? base.opacity : 0.84;
+        const baseBlur = base.blur_radius !== undefined ? base.blur_radius : 28;
+        const baseMonitor = base.monitor_mode === 'fixed' ? ('monitor_' + (base.fixed_monitor_index || 0)) : (base.monitor_mode || 'cursor');
+        const baseAccent = (base.accent_color || '#38bdf8').toLowerCase();
+        const currAccent = (curr.accent_color || '#38bdf8').toLowerCase();
+
+        dirty = (
+          curr.hotkey !== (base.hotkey || 'alt+space') ||
+          curr.fallback_hotkey !== (base.fallback_hotkey || 'alt+shift+space') ||
+          curr.monitor_mode !== baseMonitor ||
+          curr.position_preset !== (base.position_preset || 'center') ||
+          curr.theme_preset !== (base.theme_preset || 'obsidian') ||
+          (curr.theme_preset !== 'system' && currAccent !== baseAccent) ||
+          Math.abs(curr.opacity - baseOpacity) > 0.005 ||
+          curr.blur_radius !== baseBlur ||
+          curr.dismiss_on_blur !== (base.dismiss_on_blur !== false) ||
+          curr.show_details_panel !== (base.show_details_panel !== false) ||
+          curr.restore_window_on_esc !== (base.restore_window_on_esc !== false) ||
+          curr.animation_speed !== (base.animation_speed || 'normal') ||
+          JSON.stringify(curr.custom_themes || []) !== JSON.stringify(base.custom_themes || []) ||
+          JSON.stringify(curr.enabled_scopes.slice().sort()) !== JSON.stringify((base.enabled_scopes || ['app', 'file', 'port', 'calc', 'tool', 'window', 'project', 'action']).slice().sort())
+        );
+      }
+
+      isSpotlightDirty = dirty;
+      const saveBtn = document.getElementById('spotlight-save-btn');
+      if (saveBtn) {
+        if (dirty) {
+          saveBtn.disabled = false;
+          saveBtn.className = 'px-3.5 py-1.5 text-xs font-semibold rounded flex items-center gap-1.5 transition cursor-pointer bg-[#10B981] hover:bg-[#059669] text-[#08090C] shadow-[0_0_12px_#10B98160]';
+        } else {
+          saveBtn.disabled = true;
+          saveBtn.className = 'px-3.5 py-1.5 text-xs font-semibold rounded flex items-center gap-1.5 transition opacity-40 cursor-not-allowed bg-[#141721] text-[#475569] border border-[#1F2430]';
+        }
+      }
+    }
+
+    async function saveSpotlightSettingsForm() {
+      if (!isSpotlightDirty) return;
+      const saveBtn = document.getElementById('spotlight-save-btn');
+      if (saveBtn) {
+        saveBtn.disabled = true;
+        saveBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin text-xs"></i><span>Saving...</span>';
+      }
+
+      const payload = getCurrentSpotlightFormValues();
+
+      try {
+        const res = await fetch('/api/spotlight/settings', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        if (res.ok) {
+          currentSpotlightSettings = await res.json();
+          baselineSpotlightSettings = JSON.parse(JSON.stringify(currentSpotlightSettings));
+          markSpotlightDirty(false);
+          showToast('Spotlight settings saved successfully!');
+          fetchSpotlightStatus();
+        } else {
+          showToast('Failed to save settings', true);
+        }
+      } catch (e) {
+        showToast('Error saving settings: ' + e, true);
+      } finally {
+        if (saveBtn) {
+          saveBtn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i><span>Save</span>';
+        }
+      }
+    }
+
+    function previewSpotlightLiveMockup() {
+      const mockup = document.getElementById('spotlight-hero-mockup');
+      if (mockup) {
+        mockup.classList.add('scale-[1.02]', 'border-[#10B981]');
+        setTimeout(() => {
+          mockup.classList.remove('scale-[1.02]', 'border-[#10B981]');
+        }, 350);
+      }
+      showToast('Live preview updated with current canvas parameters');
     }

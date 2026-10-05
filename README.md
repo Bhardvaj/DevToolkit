@@ -17,7 +17,23 @@
   - Headless background service (`devtoolkit.daemon.server`) that runs independently of client windows, managing server lifecycles, file watchers, and socket monitoring.
   - Native Win32 system tray (`devtoolkit.daemon.tray`) with right-click menu, live scan/index progress spinners, and Windows balloon notifications.
   - Configurable window close action: `ask` (modal confirmation), `minimize` (hides to tray), or `exit` (stops daemon and exits).
-  - Single-instance HWND detection: double-clicking `DevToolkit.exe` when already running restores and brings the existing window to the foreground instead of spawning duplicate processes.
+- ⚡ **DevToolkit Spotlight (Workstation Developer Command Palette)**:
+  - Standalone, lightweight workstation command palette executable (`DevToolkitSpotlight.exe` - **14.35 MB**) combining macOS Spotlight ergonomics, Flow Launcher speed and acronym matching, and PowerToys Run developer features.
+  - **Instant Summoning (<10ms)**: Global keyboard shortcut (`Alt + Space`) triggers immediate resident window restoration without spawning new processes or conhost flashes.
+  - **Golden Ratio Placement**: Positioned at 25% from top (`WorkingArea.Height / 4`) matching natural human gaze, with multi-monitor targeting (cursor, focused window, fixed monitor).
+  - **Zero Daemon Code Bundling**: Operates strictly as a lightweight client using `devtoolkit.client.api:DevToolkitClient`. If the daemon is offline, local Start Menu app search, math, base conversions, and utilities continue working seamlessly.
+  - **Flow Launcher-Grade Acronym Matching**: Type 2–3 letters (`vsc` for Visual Studio Code, `wt` for Windows Terminal, `gc` for Google Chrome, `ps7` for PowerShell 7) to launch applications instantly.
+  - **Dedicated Query Modes**:
+    - **Default Search**: Unified fast file, folder, and application search. Press `Enter` to open, `Ctrl+Shift+Enter` to Run as Administrator, `Shift+Enter` to reveal in Explorer.
+    - `port:` / `ports:` / `port:dev` / `port:<number>` / `port:<number> kill`: Inspect active listening sockets, drill down into details, open dev ports in browser, or terminate with `Ctrl+K`.
+    - `tool:` / `tools:` / `t:`: Developer environment tool health check. Drill down into 22 compilers and runtimes, and expand the deep diagnostic drawer.
+    - `proj:<path>`: Project workstation auditor. Displays detected frameworks, active virtualenvs, git uncommitted files count, and cleanable caches. `Enter` opens terminal, `Shift+Enter` opens Explorer.
+    - `w:` / `window:`: Window Walker — enumerate open desktop windows, search, and switch or close with `Ctrl+K`.
+    - `=`: Inline developer utilities — math calculations, storage unit conversions (GB in MB), base conversions (Hex, Dec, Bin), random UUIDv4 generation, and Unix epoch timestamps.
+    - `>` or `/`: Command palette actions (`> settings`, `> config`, `> dashboard`, `> reindex`, `> rescan`, `> logs`, `> quit`).
+    - `?`: Interactive command cheatsheet and guide.
+  - **Customizable Appearance**: Configurable in `spotlight.json` or live Settings modal (Obsidian theme presets, accent color, opacity 50%–100%, blur radius 0–40px).
+  - **Dedicated System Tray**: Separate Win32 notification system tray with instant access to Spotlight, Settings, and Daemon Dashboard.
 
 - 🔎 **Standalone Everything-Class Fast Search Engine**:
   - Sub-millisecond queries (<1ms) across 100,000+ files and folders with zero third-party dependencies.

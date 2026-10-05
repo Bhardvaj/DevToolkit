@@ -10,8 +10,32 @@ from pydantic import BaseModel
 from devtoolkit.core.runner import SafeRunner
 
 COMMON_DEV_PORTS: Set[int] = {
-    3000, 3001, 3002, 4000, 4200, 5000, 5001, 5173, 5174,
-    8000, 8080, 8081, 8888, 9000, 9001, 27017, 5432, 3306, 6379, 4321
+    # Node / React / Next.js / Nuxt / Express / Rails / Vite / Astro
+    *range(3000, 3016),
+    *range(4000, 4016),
+    *range(4200, 4216),
+    *range(4321, 4326),
+    *range(5000, 5016),
+    *range(5173, 5186),
+    *range(7000, 7016),
+    *range(8000, 8016),
+    *range(8080, 8096),
+    8097,
+    *range(8888, 8896),
+    *range(9000, 9016),
+    9229, 9230,
+    # Databases
+    1433, 3306, 5432, 6379, 27017, 9200,
+    # Developer tools & bridges
+    5037,
+}
+
+DEV_PROCESS_PATTERNS: Set[str] = {
+    "node", "python", "pythonw", "uvicorn", "uv", "deno", "bun",
+    "cargo", "rustc", "go", "java", "javaw", "dotnet", "ruby", "php",
+    "code", "devenv", "adb", "emulator", "nginx", "httpd",
+    "postgres", "mysqld", "redis-server", "mongod", "docker",
+    "ollama", "antigravity", "agy", "language_server", "dart", "flutter"
 }
 
 CRITICAL_PROCESS_NAMES: Set[str] = {
@@ -28,6 +52,26 @@ CRITICAL_PROCESS_NAMES: Set[str] = {
 }
 
 
+def is_dev_process(process_name: str) -> bool:
+    """Return True if process is a known development language, runtime, or server."""
+    clean = process_name.lower().replace(".exe", "").strip()
+    return clean in DEV_PROCESS_PATTERNS or any(p in clean for p in ("node", "python", "vite", "uvicorn", "cargo", "deno", "bun"))
+
+
+def categorize_port(port: int, process_name: str, is_dev: bool, is_crit: bool) -> str:
+    """Categorize port into Dev, Database, Debug, System, or Service."""
+    clean_proc = process_name.lower().replace(".exe", "").strip()
+    if port in (1433, 3306, 5432, 6379, 27017, 9200) or clean_proc in ("postgres", "mysqld", "redis-server", "mongod"):
+        return "Database"
+    if port in (9229, 9230, 5037) or "debug" in clean_proc or clean_proc in ("adb", "emulator"):
+        return "Debug"
+    if is_dev:
+        return "Dev"
+    if is_crit:
+        return "System"
+    return "Service"
+
+
 class PortInfo(BaseModel):
     port: int
     protocol: str = "TCP"
@@ -35,7 +79,9 @@ class PortInfo(BaseModel):
     process_name: str
     address: str = "127.0.0.1"
     is_dev_port: bool = False
+    is_dev: bool = False
     is_system_critical: bool = False
+    category: str = "Service"
 
 
 class PortKillResult(BaseModel):
@@ -116,8 +162,9 @@ class PortManager:
                         seen_keys.add(key)
 
                         p_name = process_map.get(pid, f"PID {pid}")
-                        is_dev = port in COMMON_DEV_PORTS
                         is_crit = pid in (0, 4) or p_name.lower() in CRITICAL_PROCESS_NAMES
+                        is_dev = not is_crit and ((port in COMMON_DEV_PORTS) or is_dev_process(p_name))
+                        cat = categorize_port(port, p_name, is_dev, is_crit)
 
                         if dev_only and not is_dev:
                             continue
@@ -130,7 +177,9 @@ class PortManager:
                                 process_name=p_name,
                                 address=addr,
                                 is_dev_port=is_dev,
+                                is_dev=is_dev,
                                 is_system_critical=is_crit,
+                                category=cat,
                             )
                         )
         else:
@@ -159,8 +208,9 @@ class PortManager:
                                 continue
                             seen_ports.add(port)
 
-                            is_dev = port in COMMON_DEV_PORTS
                             is_crit = pid in (0, 1) or p_name.lower() in CRITICAL_PROCESS_NAMES
+                            is_dev = not is_crit and ((port in COMMON_DEV_PORTS) or is_dev_process(p_name))
+                            cat = categorize_port(port, p_name, is_dev, is_crit)
 
                             if dev_only and not is_dev:
                                 continue
@@ -173,7 +223,9 @@ class PortManager:
                                     process_name=p_name,
                                     address="127.0.0.1",
                                     is_dev_port=is_dev,
+                                    is_dev=is_dev,
                                     is_system_critical=is_crit,
+                                    category=cat,
                                 )
                             )
 

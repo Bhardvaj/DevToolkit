@@ -9,6 +9,7 @@ import time
 from typing import Callable, Dict, List, Optional, Set, Tuple
 
 from devtoolkit.core.search.index import SearchIndex, format_bytes
+from devtoolkit.core.search.matcher import score_match
 from devtoolkit.core.search.models import SearchItemDTO, SearchQueryParams, SearchQueryResult, SearchResult
 
 # Popular workstation category extensions
@@ -127,6 +128,7 @@ class QueryToken:
         min_mtime: Optional[float] = None,
         max_mtime: Optional[float] = None,
         is_dir: Optional[bool] = None,
+        is_app: Optional[bool] = None,
         or_alternatives: Optional[List["QueryToken"]] = None,
     ) -> None:
         self.raw = raw
@@ -142,6 +144,7 @@ class QueryToken:
         self.min_mtime = min_mtime
         self.max_mtime = max_mtime
         self.is_dir = is_dir
+        self.is_app = is_app
         self.or_alternatives = or_alternatives
 
         self._compiled_regex: Optional[re.Pattern] = None
@@ -172,6 +175,11 @@ class QueryToken:
         # Directory / file scope
         if self.is_dir is not None:
             if entry.is_dir != self.is_dir:
+                return False
+
+        # App scope
+        if self.is_app is not None:
+            if (entry.entry_type == "app") != self.is_app:
                 return False
 
         # Extension filter
@@ -222,6 +230,16 @@ class QueryToken:
         # Standard substring matching
         sub = self.raw if self.case_sensitive else self.raw.lower()
         sub_target = target_str if self.case_sensitive else target_str.lower()
+
+        # Check acronym & fuzzy match if entry is an app
+        if entry.entry_type == "app":
+            if entry.acronym:
+                acr_low = entry.acronym.lower()
+                if sub == acr_low or acr_low.startswith(sub):
+                    return True
+            if score_match(sub, entry.name, entry.acronym) > 0:
+                return True
+
         return sub in sub_target
 
 
@@ -291,6 +309,20 @@ class EverythingQueryParser:
             )
         if low in ("is:folder", "is:dir"):
             return QueryToken(raw="", is_dir=True)
+
+        # app:<term> / is:app:<term>
+        if low.startswith("app:") or low.startswith("is:app:"):
+            sub_term = token[4:].strip() if low.startswith("app:") else token[7:].strip()
+            return QueryToken(
+                raw=sub_term,
+                is_app=True,
+                is_regex=default_regex,
+                case_sensitive=default_case,
+                match_path=default_path,
+                whole_word=default_word,
+            )
+        if low in ("app:", "is:app"):
+            return QueryToken(raw="", is_app=True)
 
         # file:<term> / is:file:<term>
         if low.startswith("file:") or low.startswith("is:file:"):
@@ -401,10 +433,13 @@ def execute_search(index: SearchIndex, params: SearchQueryParams) -> SearchQuery
     # 2. Prepare visual filters
     category_exts: Optional[Set[str]] = None
     category_folder_only = False
+    category_app_only = False
     if params.category and params.category.lower() != "all":
         cat = params.category.lower()
-        if cat == "folder" or cat == "folders":
+        if cat in ("folder", "folders"):
             category_folder_only = True
+        elif cat in ("app", "apps"):
+            category_app_only = True
         elif cat in CATEGORY_EXTENSIONS:
             category_exts = CATEGORY_EXTENSIONS[cat]
 
@@ -415,6 +450,7 @@ def execute_search(index: SearchIndex, params: SearchQueryParams) -> SearchQuery
     # Visual scope
     scope_files_only = params.scope == "files"
     scope_folders_only = params.scope == "folders" or category_folder_only
+    scope_apps_only = params.scope in ("app", "apps") or category_app_only
 
     # Visual size filter
     vis_min_size: Optional[int] = None
@@ -436,14 +472,16 @@ def execute_search(index: SearchIndex, params: SearchQueryParams) -> SearchQuery
 
     for entry in all_entries:
         # Visual Scope Check
-        if scope_files_only and entry.is_dir:
+        if scope_apps_only and entry.entry_type != "app":
+            continue
+        if scope_files_only and (entry.is_dir or entry.entry_type == "app"):
             continue
         if scope_folders_only and not entry.is_dir:
             continue
 
         # Visual Category Check
         if category_exts is not None:
-            if entry.is_dir:
+            if entry.is_dir or entry.entry_type == "app":
                 continue
             name_parts = entry.name.rsplit(".", 1)
             ext = name_parts[1].lower() if len(name_parts) > 1 else ""
@@ -508,6 +546,10 @@ def execute_search(index: SearchIndex, params: SearchQueryParams) -> SearchQuery
                 for t in positive_terms:
                     if not t:
                         continue
+                    if entry.entry_type == "app":
+                        m_score = score_match(t, entry.name, entry.acronym)
+                        if m_score > 0:
+                            score += m_score + 250
                     if name_low == t:
                         score += 1000
                     elif stem_low == t:
@@ -534,8 +576,10 @@ def execute_search(index: SearchIndex, params: SearchQueryParams) -> SearchQuery
         matched.sort(key=lambda e: e.path.lower(), reverse=sort_desc)
     elif sort_by in ("ext", "type"):
         def _ext_key(e: SearchResult):
+            if e.entry_type == "app":
+                return "0_app"
             if e.is_dir:
-                return ""
+                return "1_dir"
             parts = e.name.rsplit(".", 1)
             return parts[1].lower() if len(parts) > 1 else ""
         matched.sort(key=_ext_key, reverse=sort_desc)
@@ -551,7 +595,7 @@ def execute_search(index: SearchIndex, params: SearchQueryParams) -> SearchQuery
     results: List[SearchItemDTO] = []
     for e in paged_entries:
         parts = e.name.rsplit(".", 1)
-        ext = ("DIR" if e.is_dir else ("." + parts[1].lower() if len(parts) > 1 else ""))
+        ext = "APP" if e.entry_type == "app" else ("DIR" if e.is_dir else ("." + parts[1].lower() if len(parts) > 1 else ""))
         parent_folder = str(Path(e.path).parent) if not e.is_dir else str(Path(e.path))
         results.append(
             SearchItemDTO(
@@ -560,10 +604,11 @@ def execute_search(index: SearchIndex, params: SearchQueryParams) -> SearchQuery
                 folder=parent_folder,
                 is_dir=e.is_dir,
                 size=e.size,
-                size_formatted="—" if e.is_dir else format_bytes(e.size),
+                size_formatted="—" if (e.is_dir or e.entry_type == "app") else format_bytes(e.size),
                 mtime=e.mtime,
                 mtime_formatted=format_mtime(e.mtime),
                 ext=ext,
+                entry_type=e.entry_type,
             )
         )
 

@@ -27,6 +27,26 @@ DevToolkit/
 │   ├── DESIGN.md                      # Obsidian design system guidelines
 │   ├── Icon_design/                   # HTML/CSS code & screen for static icon
 │   └── Icon_loading_design/           # HTML/CSS code & screen for loading icon
+├── clients/                           # Independent frontend clients
+│   └── spotlight/                     # Standalone command palette client (DevToolkitSpotlight.exe)
+│       ├── __init__.py                # Version declaration (v0.6.0)
+│       ├── entry.py                   # Standalone windowless entry point & single-instance mutex
+│       ├── settings.py                # SpotlightSettings & spotlight.json persistence
+│       ├── hotkey.py                  # GlobalHotkeyListener (Win32 RegisterHotKey Alt+Space)
+│       ├── tray.py                    # SpotlightTray (Dedicated Win32 notification system tray)
+│       ├── window.py                  # SpotlightWindowManager (PyWebView resident controller, 25% golden ratio)
+│       ├── dispatcher.py              # Prefix query router (?, =, >, port:, tool:, proj:, w:)
+│       ├── modes/                     # Dedicated query execution modes
+│       │   ├── actions.py             # Command palette action catalog & dispatcher (>, /)
+│       │   ├── calc.py                # Inline math, base conversions, UUIDv4, unix epoch (=)
+│       │   ├── default.py             # Fast Search + Desktop App Launcher with Acronym Matching
+│       │   ├── guide.py               # Interactive cheatsheet and command reference (?)
+│       │   ├── ports.py               # Port inspector & killer (port:, ports:, port:dev, port:<num>)
+│       │   ├── project.py             # Project workstation auditor (proj:<path>)
+│       │   ├── tools.py               # Tool diagnostics & deep drawer trigger (tool:, tools:, t:)
+│       │   └── window_walker.py       # Win32 EnumWindows window switcher and closer (w:)
+│       └── ui/
+│           └── spotlight.html         # Obsidian glassmorphic UI, golden ratio positioning, settings modal
 ├── devtoolkit/                        # Core Python package
 │   ├── __init__.py                    # Version declaration
 │   ├── __main__.py                    # CLI forwarding to devtoolkit.entry:main
@@ -56,10 +76,12 @@ DevToolkit/
 │   │   ├── runner.py                  # SafeRunner: Subprocess execution, timeouts & where.exe
 │   │   ├── search/                    # Standalone Everything-class search engine
 │   │   │   ├── __init__.py            # Exports FastSearchEngine, SearchIndex, SearchResult
+│   │   │   ├── apps.py                # Windows application discovery (Start Menu, Desktop, App Paths)
 │   │   │   ├── crawler.py             # Parallel multi-threaded Win32 pruned directory crawler
 │   │   │   ├── engine.py              # FastSearchEngine coordinator & fallback resolution
 │   │   │   ├── index.py               # Compact in-memory search index with O(1) hash maps
-│   │   │   ├── models.py              # SearchResult, SearchQuery, IndexStats
+│   │   │   ├── matcher.py             # Flow Launcher acronym extraction & fuzzy string matcher
+│   │   │   ├── models.py              # SearchResult, SearchQuery, IndexStats, entry_type, acronym
 │   │   │   ├── usn.py                 # NTFS USN Journal reader (FSCTL_ENUM_USN_DATA)
 │   │   │   └── watcher.py             # LiveDirectoryWatcher (Win32 ReadDirectoryChangesW)
 │   │   └── signatures.py              # Layer 4: Structural signature matchers across all 22 tools
@@ -115,9 +137,10 @@ DevToolkit/
 │           ├── index.html             # Clean semantic layout structure
 │           └── styles.css             # Modular stylesheet & 7-zone inspector drawer styling
 ├── scripts/
-│   ├── build_standalone.ps1           # Automated standalone PyInstaller .exe packaging
+│   ├── build_standalone.ps1           # Automated standalone PyInstaller .exe packaging (DevToolkit.exe)
+│   ├── build_spotlight.ps1            # Automated standalone PyInstaller .exe packaging (DevToolkitSpotlight.exe)
 │   └── generate_icons.py              # Multi-resolution ICO and PNG generation utility
-├── tests/                             # Comprehensive automated test suite (234 passing tests)
+├── tests/                             # Comprehensive automated test suite (262+ tests)
 │   ├── conftest.py                    # Session test isolation (DEVTOOLKIT_TESTING=1)
 │   ├── test_activity.py               # Tests for ActivityTracker state mutations
 │   ├── test_batch1_inspectors.py      # Tests for Batch 1 inspectors

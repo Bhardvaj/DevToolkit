@@ -32,12 +32,14 @@ def _resolve_version() -> str:
     # 4. If running inside a git checkout, query git describe
     try:
         pkg_dir = Path(__file__).resolve().parent.parent
+        creationflags = getattr(subprocess, "CREATE_NO_WINDOW", 0x08000000) if os.name == "nt" else 0
         res = subprocess.run(
             ["git", "describe", "--tags", "--abbrev=0"],
             cwd=pkg_dir,
             capture_output=True,
             text=True,
             timeout=1.5,
+            creationflags=creationflags,
         )
         if res.returncode == 0 and res.stdout.strip():
             return res.stdout.strip().lstrip("v")

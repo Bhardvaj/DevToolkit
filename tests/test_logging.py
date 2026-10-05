@@ -15,7 +15,7 @@ from devtoolkit.core.logging import (
 
 def test_log_paths_beside_config(tmp_path, monkeypatch):
     """Verify log paths are co-located with devtoolkit.config.yaml."""
-    cfg_file = tmp_path / "devtoolkit.config.yaml"
+    cfg_file = tmp_path / "devtoolkit.json"
     monkeypatch.setenv("DEVTOOLKIT_CONFIG", str(cfg_file))
 
     log_dir = get_log_dir()
@@ -30,7 +30,7 @@ def test_log_paths_beside_config(tmp_path, monkeypatch):
 
 def test_setup_daemon_logging(tmp_path, monkeypatch):
     """Verify daemon logging configures rotating handler and writes to daemon.log."""
-    cfg_file = tmp_path / "devtoolkit.config.yaml"
+    cfg_file = tmp_path / "devtoolkit.json"
     monkeypatch.setenv("DEVTOOLKIT_CONFIG", str(cfg_file))
 
     log_file = setup_daemon_logging()
@@ -45,7 +45,7 @@ def test_setup_daemon_logging(tmp_path, monkeypatch):
 
 def test_setup_client_logging(tmp_path, monkeypatch):
     """Verify client logging configures rotating handler and writes to client.log."""
-    cfg_file = tmp_path / "devtoolkit.config.yaml"
+    cfg_file = tmp_path / "devtoolkit.json"
     monkeypatch.setenv("DEVTOOLKIT_CONFIG", str(cfg_file))
 
     log_file = setup_client_logging()

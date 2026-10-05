@@ -58,3 +58,29 @@ def test_safe_runner_zero_path_discovery(tmp_path, monkeypatch):
     all_resolved = runner.resolve_all_binaries("sqlite3", tool_id="sqlite")
     assert any(p.resolve() == fake_sqlite.resolve() for p in all_resolved)
 
+
+def test_safe_runner_creationflags(monkeypatch):
+    """Verify SafeRunner passes CREATE_NO_WINDOW and SW_HIDE on Windows."""
+    captured_kwargs = {}
+
+    def mock_subprocess_run(cmd, **kwargs):
+        captured_kwargs.update(kwargs)
+        res_mock = type("MockCompletedProcess", (), {})()
+        res_mock.returncode = 0
+        res_mock.stdout = "ok"
+        res_mock.stderr = ""
+        return res_mock
+
+    monkeypatch.setattr("subprocess.run", mock_subprocess_run)
+
+    runner = SafeRunner()
+    runner.run_command(["dummy_command"])
+
+    if sys.platform == "win32":
+        import subprocess
+
+        assert captured_kwargs.get("creationflags") == getattr(subprocess, "CREATE_NO_WINDOW", 0x08000000)
+        startupinfo = captured_kwargs.get("startupinfo")
+        assert startupinfo is not None
+        assert startupinfo.wShowWindow == subprocess.SW_HIDE
+

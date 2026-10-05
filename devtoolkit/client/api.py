@@ -4,11 +4,15 @@ from __future__ import annotations
 
 import json
 import logging
+import os
+from pathlib import Path
+import sys
 import threading
+import time
 import urllib.error
 import urllib.parse
 import urllib.request
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
 logger = logging.getLogger(__name__)
 
@@ -25,14 +29,166 @@ class DevToolkitAPIError(Exception):
 class DevToolkitClient:
     """Client for consuming DevToolkit HTTP REST and streaming SSE endpoints."""
 
-    def __init__(self, host: str = "127.0.0.1", port: int = 4321, timeout: float = 10.0):
+    def __init__(
+        self,
+        host: str = "127.0.0.1",
+        port: int = 4321,
+        timeout: float = 10.0,
+        auto_discover: bool = True,
+    ):
         self.host = host
         self.port = port
         self.timeout = timeout
+        self.auto_discover = auto_discover
+        self._last_alive_check: float = 0.0
+        self._cached_alive: bool = False
+        self._last_discovery_time: float = 0.0
 
     @property
     def base_url(self) -> str:
         return f"http://{self.host}:{self.port}"
+
+    # -------------------------------------------------------------------------
+    # Daemon Target Auto-Discovery & Health Probing
+    # -------------------------------------------------------------------------
+
+    @staticmethod
+    def get_candidate_daemon_paths() -> List[Path]:
+        """Return prioritized list of candidate daemon.json state file locations."""
+        candidates: List[Path] = []
+
+        # 1. Explicit environment variable overrides
+        env_state = os.environ.get("DEVTOOLKIT_DAEMON_STATE")
+        if env_state:
+            try:
+                candidates.append(Path(env_state).resolve())
+            except Exception:
+                pass
+
+        env_cfg = os.environ.get("DEVTOOLKIT_CONFIG")
+        if env_cfg:
+            try:
+                candidates.append(Path(env_cfg).resolve().parent / "daemon.json")
+            except Exception:
+                pass
+
+        # 2. Executable directories (frozen or script)
+        try:
+            exe_p = Path(sys.executable).resolve()
+            candidates.append(exe_p.parent / "daemon.json")
+            if exe_p.parent.parent:
+                candidates.append(exe_p.parent.parent / "daemon.json")
+            if exe_p.parent.parent and exe_p.parent.parent.parent:
+                candidates.append(exe_p.parent.parent.parent / "daemon.json")
+        except Exception:
+            pass
+
+        # 3. Current working directory and parent
+        try:
+            cwd = Path.cwd().resolve()
+            candidates.append(cwd / "daemon.json")
+            candidates.append(cwd / "dist" / "daemon.json")
+            if cwd.parent:
+                candidates.append(cwd.parent / "daemon.json")
+        except Exception:
+            pass
+
+        # 4. User profile directories
+        try:
+            candidates.append(Path.home().resolve() / ".devtoolkit" / "daemon.json")
+            localappdata = os.environ.get("LOCALAPPDATA")
+            if localappdata:
+                candidates.append(Path(localappdata).resolve() / "DevToolkit" / "daemon.json")
+            appdata = os.environ.get("APPDATA")
+            if appdata:
+                candidates.append(Path(appdata).resolve() / "DevToolkit" / "daemon.json")
+        except Exception:
+            pass
+
+        # Deduplicate while preserving order
+        unique_paths: List[Path] = []
+        seen = set()
+        for p in candidates:
+            str_p = str(p).lower() if sys.platform == "win32" else str(p)
+            if str_p not in seen:
+                seen.add(str_p)
+                unique_paths.append(p)
+
+        return unique_paths
+
+    @staticmethod
+    def probe_endpoint(host: str, port: int, timeout: float = 0.3) -> bool:
+        """Fast low-overhead probe of daemon /api/health endpoint."""
+        url = f"http://{host}:{port}/api/health"
+        req = urllib.request.Request(
+            url,
+            headers={
+                "User-Agent": "DevToolkit-NativeClient-Probe",
+                "Accept": "application/json",
+            },
+        )
+        try:
+            with urllib.request.urlopen(req, timeout=timeout) as resp:
+                if resp.status == 200:
+                    raw = resp.read()
+                    data = json.loads(raw.decode("utf-8")) if raw else {}
+                    return data.get("status") == "ok"
+        except Exception:
+            return False
+        return False
+
+    def discover_active_target(self, force: bool = False) -> Optional[Tuple[str, int]]:
+        """Probe candidate daemon.json files and fallback ports to locate an active daemon."""
+        now = time.time()
+        if not force and (now - getattr(self, "_last_discovery_time", 0.0)) < 1.0:
+            return None
+        self._last_discovery_time = now
+
+        existing_files: List[Path] = []
+        for p in self.get_candidate_daemon_paths():
+            try:
+                if p.is_file():
+                    existing_files.append(p)
+            except Exception:
+                pass
+
+        # Sort existing files by newest mtime first
+        try:
+            existing_files.sort(key=lambda f: f.stat().st_mtime, reverse=True)
+        except Exception:
+            pass
+
+        # 1. Probe targets specified in candidate files
+        for f in existing_files:
+            try:
+                content = f.read_text(encoding="utf-8")
+                data = json.loads(content)
+                target_port = data.get("port")
+                target_host = data.get("host", "127.0.0.1")
+                if target_port:
+                    t_port = int(target_port)
+                    # Skip probing if it matches current (host, port) which just failed
+                    if target_host == self.host and t_port == self.port:
+                        continue
+                    if self.probe_endpoint(target_host, t_port, timeout=0.3):
+                        logger.info(f"Discovered active DevToolkit daemon at http://{target_host}:{t_port} via {f}")
+                        self.host = target_host
+                        self.port = t_port
+                        self._cached_alive = True
+                        self._last_alive_check = time.time()
+                        return target_host, t_port
+            except Exception:
+                continue
+
+        # 2. If no valid candidate file responded, probe default port 4321 if different from current
+        if (self.host != "127.0.0.1" or self.port != 4321) and self.probe_endpoint("127.0.0.1", 4321, timeout=0.3):
+            self.host = "127.0.0.1"
+            self.port = 4321
+            self._cached_alive = True
+            self._last_alive_check = time.time()
+            return "127.0.0.1", 4321
+
+        return None
 
     # -------------------------------------------------------------------------
     # Core HTTP Utilities
@@ -45,6 +201,7 @@ class DevToolkitClient:
         payload: Optional[Dict[str, Any]] = None,
         timeout: Optional[float] = None,
         headers: Optional[Dict[str, str]] = None,
+        _is_retry: bool = False,
     ) -> Any:
         url = f"{self.base_url}{endpoint}"
         req_headers = {
@@ -80,10 +237,25 @@ class DevToolkitClient:
                 response_body=err_body,
             ) from e
         except urllib.error.URLError as e:
+            self._cached_alive = False
+            if not _is_retry and getattr(self, "auto_discover", True) and method == "GET":
+                new_target = self.discover_active_target(force=True)
+                if new_target:
+                    self.host, self.port = new_target
+                    return self._request(
+                        method=method,
+                        endpoint=endpoint,
+                        payload=payload,
+                        timeout=timeout,
+                        headers=headers,
+                        _is_retry=True,
+                    )
             raise DevToolkitAPIError(
                 f"Failed to connect to DevToolkit daemon at {self.base_url}: {e.reason}"
             ) from e
         except Exception as e:
+            if isinstance(e, DevToolkitAPIError):
+                raise
             raise DevToolkitAPIError(f"Unexpected error communicating with daemon: {e}") from e
 
     def _get(self, endpoint: str, timeout: Optional[float] = None) -> Any:
@@ -94,6 +266,32 @@ class DevToolkitClient:
 
     def _delete(self, endpoint: str, payload: Optional[Dict[str, Any]] = None, timeout: Optional[float] = None) -> Any:
         return self._request("DELETE", endpoint, payload=payload or {}, timeout=timeout)
+
+    def get(self, endpoint: str, timeout: Optional[float] = None) -> Any:
+        """Perform generic HTTP GET request."""
+        return self._get(endpoint, timeout=timeout)
+
+    def post(
+        self,
+        endpoint: str,
+        data: Optional[Dict[str, Any]] = None,
+        payload: Optional[Dict[str, Any]] = None,
+        timeout: Optional[float] = None,
+    ) -> Any:
+        """Perform generic HTTP POST request."""
+        body = data if data is not None else payload
+        return self._post(endpoint, payload=body or {}, timeout=timeout)
+
+    def delete(
+        self,
+        endpoint: str,
+        data: Optional[Dict[str, Any]] = None,
+        payload: Optional[Dict[str, Any]] = None,
+        timeout: Optional[float] = None,
+    ) -> Any:
+        """Perform generic HTTP DELETE request."""
+        body = data if data is not None else payload
+        return self._delete(endpoint, payload=body or {}, timeout=timeout)
 
     # -------------------------------------------------------------------------
     # Asynchronous Dispatcher
@@ -127,13 +325,34 @@ class DevToolkitClient:
     # System, Health & Configuration
     # -------------------------------------------------------------------------
 
-    def is_alive(self, timeout: float = 1.0) -> bool:
-        """Probe daemon /api/health endpoint to verify connectivity."""
+    def is_alive(self, timeout: float = 0.3, force: bool = False) -> bool:
+        """Probe daemon /api/health endpoint to verify connectivity (cached with auto-discovery)."""
+        now = time.time()
+        if not force:
+            if getattr(self, "_cached_alive", False) and (now - getattr(self, "_last_alive_check", 0.0)) < 2.0:
+                return True
+            if not getattr(self, "_cached_alive", False) and (now - getattr(self, "_last_alive_check", 0.0)) < 0.8:
+                return False
+
+        self._last_alive_check = now
         try:
             health = self.get_health(timeout=timeout)
-            return bool(health and health.get("status") == "ok")
+            is_ok = bool(health and health.get("status") == "ok")
+            if is_ok:
+                self._cached_alive = True
+                return True
         except Exception:
-            return False
+            pass
+
+        self._cached_alive = False
+
+        # Attempt dynamic auto-discovery if enabled
+        if getattr(self, "auto_discover", True):
+            target = self.discover_active_target(force=force)
+            if target is not None:
+                return True
+
+        return False
 
     def get_health(self, timeout: Optional[float] = None) -> Dict[str, Any]:
         """Fetch daemon health status."""
@@ -172,9 +391,14 @@ class DevToolkitClient:
     # Tools & Diagnostics
     # -------------------------------------------------------------------------
 
-    def get_tools(self) -> List[Dict[str, Any]]:
-        """Fetch list of all inspected development tools."""
-        return self._get("/api/tools")
+    def get_tools(self, timeout: Optional[float] = None) -> List[Dict[str, Any]]:
+        """Fetch list of all inspected development tools with health status."""
+        return self._get("/api/tools", timeout=timeout)
+
+    def get_audit(self, cached: bool = True, timeout: Optional[float] = None) -> Dict[str, Any]:
+        """Fetch workstation environment audit summary."""
+        endpoint = "/api/audit?cached=true" if cached else "/api/audit"
+        return self._get(endpoint, timeout=timeout)
 
     def get_tool_deep(self, tool_id: str) -> Dict[str, Any]:
         """Fetch comprehensive deep inspection telemetry for a specific tool."""
@@ -232,9 +456,10 @@ class DevToolkitClient:
     # Ports & Sockets
     # -------------------------------------------------------------------------
 
-    def get_ports(self) -> List[Dict[str, Any]]:
+    def get_ports(self, dev_only: bool = False, timeout: Optional[float] = None) -> List[Dict[str, Any]]:
         """Fetch list of active listening network ports."""
-        return self._get("/api/ports")
+        endpoint = "/api/ports?dev_only=true" if dev_only else "/api/ports"
+        return self._get(endpoint, timeout=timeout)
 
     def kill_port(self, port: int, force: bool = False) -> Dict[str, Any]:
         """Terminate process listening on a given network port."""

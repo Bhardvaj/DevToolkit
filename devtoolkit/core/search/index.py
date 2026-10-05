@@ -98,7 +98,16 @@ class SearchIndex:
             self._total_files = 0
             self._total_dirs = 0
 
-    def add_entry(self, path: str, name: str, is_dir: bool, size: int = 0, mtime: float = 0.0) -> None:
+    def add_entry(
+        self,
+        path: str,
+        name: str,
+        is_dir: bool,
+        size: int = 0,
+        mtime: float = 0.0,
+        entry_type: str = "file",
+        acronym: str = "",
+    ) -> None:
         """Add a single entry to the index and update lookup tables."""
         with self._lock:
             norm_p = Path(path).as_posix()
@@ -112,7 +121,15 @@ class SearchIndex:
                     else:
                         self._total_files += 1
                         self._total_dirs = max(0, self._total_dirs - 1)
-                self._entries[existing_idx] = SearchResult(path=path, name=name, is_dir=is_dir, size=size, mtime=mtime)
+                self._entries[existing_idx] = SearchResult(
+                    path=path,
+                    name=name,
+                    is_dir=is_dir,
+                    size=size,
+                    mtime=mtime,
+                    entry_type=entry_type,
+                    acronym=acronym,
+                )
                 if old_res.name.lower() != name.lower():
                     old_indices = self._name_map.get(old_res.name.lower(), [])
                     if existing_idx in old_indices:
@@ -125,7 +142,15 @@ class SearchIndex:
                 return
 
             idx = len(self._entries)
-            res = SearchResult(path=path, name=name, is_dir=is_dir, size=size, mtime=mtime)
+            res = SearchResult(
+                path=path,
+                name=name,
+                is_dir=is_dir,
+                size=size,
+                mtime=mtime,
+                entry_type=entry_type,
+                acronym=acronym,
+            )
             self._entries.append(res)
             self._path_map[norm_p] = idx
             if is_dir:

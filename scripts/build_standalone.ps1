@@ -58,14 +58,20 @@ Set-Location $WorkspaceRoot
 
 $DistPath = Join-Path $WorkspaceRoot $OutputDir
 if (Test-Path $DistPath) {
-    Write-Host "[3/4] Cleaning previous dist directory: $DistPath" -ForegroundColor Yellow
+    Write-Host "[3/4] Preparing dist directory: $DistPath" -ForegroundColor Yellow
 }
+
+# Stop running instance if any to prevent file lock
+Stop-Process -Name $BinaryName -Force -ErrorAction SilentlyContinue
+Start-Sleep -Milliseconds 500
 
 # 4. Run PyInstaller
 Write-Host "[4/4] Compiling $BinaryName.exe (Single-file portable binary)..." -ForegroundColor Cyan
 
 $EntryScript = Join-Path $WorkspaceRoot "devtoolkit\entry.py"
-$IconPath = Join-Path $WorkspaceRoot "assets\icon.ico"
+$IconPath = Join-Path $WorkspaceRoot "assets\devtoolkit.ico"
+$StaticDir = Join-Path $WorkspaceRoot "devtoolkit\server\static"
+$DesignDir = Join-Path $WorkspaceRoot "design"
 
 & $PythonExe -m PyInstaller `
     --noconfirm `
@@ -74,6 +80,8 @@ $IconPath = Join-Path $WorkspaceRoot "assets\icon.ico"
     --windowed `
     --icon $IconPath `
     --add-data "$($WorkspaceRoot)\assets;assets" `
+    --add-data "$($DesignDir);design" `
+    --add-data "$($StaticDir);devtoolkit/server/static" `
     --name $BinaryName `
     --distpath $DistPath `
     --workpath (Join-Path $WorkspaceRoot "build") `
@@ -93,7 +101,7 @@ $IconPath = Join-Path $WorkspaceRoot "assets\icon.ico"
     --hidden-import "pydantic" `
     --hidden-import "rich" `
     --hidden-import "typer" `
-    --hidden-import "pyyaml" `
+    --hidden-import "yaml" `
     --hidden-import "devtoolkit" `
     --hidden-import "devtoolkit.core" `
     --hidden-import "devtoolkit.daemon" `
@@ -106,21 +114,22 @@ $IconPath = Join-Path $WorkspaceRoot "assets\icon.ico"
     --hidden-import "webview.platforms" `
     --hidden-import "webview.platforms.winforms" `
     --hidden-import "webview.platforms.edgechromium" `
+    --hidden-import "clients.spotlight.settings" `
     $EntryScript
 
 
 if ($LASTEXITCODE -eq 0) {
     $TargetExe = Join-Path $DistPath "$BinaryName.exe"
     if (Test-Path $TargetExe) {
-        $SourceConfig = Join-Path $WorkspaceRoot "devtoolkit.config.yaml"
+        $SourceConfig = Join-Path $WorkspaceRoot "devtoolkit.json"
         if (Test-Path $SourceConfig) {
-            Copy-Item -Path $SourceConfig -Destination (Join-Path $DistPath "devtoolkit.config.yaml") -Force
+            Copy-Item -Path $SourceConfig -Destination (Join-Path $DistPath "devtoolkit.json") -Force
         }
         if (Test-Path $IconPath) {
             $DistAssets = Join-Path $DistPath "assets"
             New-Item -ItemType Directory -Path $DistAssets -Force | Out-Null
-            Copy-Item -Path $IconPath -Destination (Join-Path $DistAssets "icon.ico") -Force
-            Copy-Item -Path (Join-Path $WorkspaceRoot "assets\icon.png") -Destination (Join-Path $DistAssets "icon.png") -Force
+            Copy-Item -Path $IconPath -Destination (Join-Path $DistAssets "devtoolkit.ico") -Force
+            Copy-Item -Path (Join-Path $WorkspaceRoot "assets\devtoolkit.png") -Destination (Join-Path $DistAssets "devtoolkit.png") -Force
         }
 
         # Invalidate Windows Shell icon cache so Explorer updates icon immediately

@@ -160,7 +160,7 @@ def test_daemon_spawn_and_terminate(temp_daemon_state):
 
 def test_daemon_state_portable_colocation(tmp_path, monkeypatch):
     """Verify daemon.json is stored beside config without touching user home directory."""
-    fake_cfg = tmp_path / "custom_app" / "devtoolkit.config.yaml"
+    fake_cfg = tmp_path / "custom_app" / "devtoolkit.json"
     fake_cfg.parent.mkdir(parents=True)
     fake_cfg.write_text("{}", encoding="utf-8")
 

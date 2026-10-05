@@ -34,7 +34,7 @@ from devtoolkit.server.models import CloseActionRequest, DaemonNotifyRequest
 
 def test_close_action_configuration(tmp_path, monkeypatch):
     """Verify close_action default and persistent modification."""
-    fake_config = tmp_path / "devtoolkit.config.yaml"
+    fake_config = tmp_path / "devtoolkit.json"
     monkeypatch.setenv("DEVTOOLKIT_CONFIG", str(fake_config))
 
     # 1. Default should be 'ask'
@@ -67,7 +67,7 @@ def test_api_routes_registered():
 
 def test_post_close_action_handler(tmp_path, monkeypatch):
     """Test post_close_action route handler."""
-    fake_config = tmp_path / "devtoolkit.config.yaml"
+    fake_config = tmp_path / "devtoolkit.json"
     monkeypatch.setenv("DEVTOOLKIT_CONFIG", str(fake_config))
 
     # Valid update

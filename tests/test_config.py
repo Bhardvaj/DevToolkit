@@ -1,22 +1,56 @@
-"""Tests for user configuration."""
+"""Tests for user configuration (devtoolkit.json)."""
 
+import json
 from pathlib import Path
-from devtoolkit.core.config import DevToolkitConfig, add_search_path, load_config, save_config
+from devtoolkit.core.config import (
+    CONFIG_FILENAME,
+    DevToolkitConfig,
+    add_search_path,
+    get_app_dir,
+    get_config_path,
+    load_config,
+    save_config,
+)
+
+
+def test_config_filename():
+    assert CONFIG_FILENAME == "devtoolkit.json"
 
 
 def test_config_serialization(tmp_path, monkeypatch):
-    test_cfg_path = tmp_path / "config.yaml"
+    test_cfg_path = tmp_path / "devtoolkit.json"
     monkeypatch.setattr("devtoolkit.core.config.get_config_path", lambda: test_cfg_path)
 
     cfg = DevToolkitConfig(search_paths=[str(tmp_path)])
     save_config(cfg)
 
+    # Verify JSON content on disk
+    assert test_cfg_path.is_file()
+    raw = json.loads(test_cfg_path.read_text(encoding="utf-8"))
+    assert str(tmp_path) in raw["search_paths"]
+    # Ensure transient config_path is not persisted to disk
+    assert "config_path" not in raw
+
     loaded = load_config()
     assert str(tmp_path) in loaded.search_paths
+    assert loaded.config_path == str(test_cfg_path)
+
+
+def test_load_config_creates_default_if_missing(tmp_path, monkeypatch):
+    test_cfg_path = tmp_path / "devtoolkit.json"
+    monkeypatch.setattr("devtoolkit.core.config.get_config_path", lambda: test_cfg_path)
+
+    assert not test_cfg_path.exists()
+    cfg = load_config()
+    # It must create default devtoolkit.json on disk
+    assert test_cfg_path.is_file()
+    assert cfg.search_paths == []
+    assert cfg.realtime_search is True
+    assert cfg.close_action == "ask"
 
 
 def test_add_search_path(tmp_path, monkeypatch):
-    test_cfg_path = tmp_path / "config.yaml"
+    test_cfg_path = tmp_path / "devtoolkit.json"
     monkeypatch.setattr("devtoolkit.core.config.get_config_path", lambda: test_cfg_path)
 
     new_dir = tmp_path / "my_tools"
@@ -30,7 +64,7 @@ def test_add_search_path(tmp_path, monkeypatch):
 
 
 def test_remove_search_path(tmp_path, monkeypatch):
-    test_cfg_path = tmp_path / "config.yaml"
+    test_cfg_path = tmp_path / "devtoolkit.json"
     monkeypatch.setattr("devtoolkit.core.config.get_config_path", lambda: test_cfg_path)
 
     from devtoolkit.core.config import remove_search_path, remove_search_path_by_index
@@ -59,7 +93,7 @@ def test_remove_search_path(tmp_path, monkeypatch):
 
 
 def test_remove_search_path_normalization(tmp_path, monkeypatch):
-    test_cfg_path = tmp_path / "config.yaml"
+    test_cfg_path = tmp_path / "devtoolkit.json"
     monkeypatch.setattr("devtoolkit.core.config.get_config_path", lambda: test_cfg_path)
 
     from devtoolkit.core.config import remove_search_path
@@ -77,7 +111,6 @@ def test_remove_search_path_normalization(tmp_path, monkeypatch):
 def test_get_config_path_portable_frozen(monkeypatch, tmp_path):
     """Verify that when running frozen as an executable, config is beside the executable."""
     import sys
-    from devtoolkit.core.config import CONFIG_FILENAME, get_app_dir, get_config_path
 
     exe_dir = tmp_path / "PortableTools"
     exe_dir.mkdir()
@@ -93,11 +126,8 @@ def test_get_config_path_portable_frozen(monkeypatch, tmp_path):
 
 def test_get_config_path_env_override(monkeypatch, tmp_path):
     """Verify DEVTOOLKIT_CONFIG environment override is respected."""
-    from devtoolkit.core.config import get_config_path
-
-    custom_cfg = tmp_path / "custom.yaml"
+    custom_cfg = tmp_path / "custom.json"
     monkeypatch.setenv("DEVTOOLKIT_CONFIG", str(custom_cfg))
 
     assert get_config_path() == custom_cfg.resolve()
-
 

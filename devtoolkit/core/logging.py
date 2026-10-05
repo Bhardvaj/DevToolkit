@@ -1,6 +1,6 @@
 """Centralized, co-located logging system for DevToolkit Daemon and Clients.
 
-Logs are written beside devtoolkit.config.yaml (or executable directory when frozen):
+Logs are written beside devtoolkit.json (or executable directory when frozen):
 - daemon.log: Captures background server, uvicorn, search engine, indexing, and tray events.
 - client.log: Captures embedded desktop UI, PyWebView lifecycle, and client actions.
 """
@@ -22,7 +22,7 @@ BACKUP_COUNT = 3
 
 
 def get_log_dir() -> Path:
-    """Return directory where log files should reside (beside devtoolkit.config.yaml)."""
+    """Return directory where log files should reside (beside devtoolkit.json)."""
     cfg_path = get_config_path()
     log_dir = cfg_path.parent
     log_dir.mkdir(parents=True, exist_ok=True)

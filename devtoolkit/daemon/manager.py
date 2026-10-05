@@ -208,7 +208,8 @@ def stop_daemon(timeout: float = 4.0) -> bool:
     # Force kill if still lingering
     try:
         if sys.platform == "win32":
-            subprocess.run(["taskkill", "/F", "/T", "/PID", str(pid)], capture_output=True)
+            CREATE_NO_WINDOW = 0x08000000
+            subprocess.run(["taskkill", "/F", "/T", "/PID", str(pid)], capture_output=True, creationflags=CREATE_NO_WINDOW)
         else:
             os.kill(pid, signal.SIGKILL)
     except Exception:
