@@ -1,4 +1,4 @@
-"""Command palette action catalog and execution dispatcher for DevToolkit Spotlight."""
+"""System action catalog and execution dispatcher for DevToolkit Spotlight."""
 
 from __future__ import annotations
 
@@ -12,8 +12,8 @@ from typing import Any, Callable, Dict, List, Optional
 logger = logging.getLogger(__name__)
 
 
-def list_palette_actions(query: str = "", client: Optional[Any] = None) -> List[Dict[str, Any]]:
-    """Return all built-in command palette actions, filterable by query."""
+def list_system_actions(query: str = "", client: Optional[Any] = None) -> List[Dict[str, Any]]:
+    """Return all built-in system actions, filterable by query."""
     q = query.strip()
     if q.startswith(">") or q.startswith("/"):
         q = q[1:].strip()
@@ -98,7 +98,7 @@ def list_palette_actions(query: str = "", client: Optional[Any] = None) -> List[
 
 
 def execute_action(action_name: str, client: Optional[Any] = None) -> Dict[str, Any]:
-    """Execute a built-in command palette action."""
+    """Execute a built-in system action."""
     act = action_name.lower().strip()
 
     if act in ("open_dashboard", "daemon"):
@@ -167,4 +167,8 @@ def execute_action(action_name: str, client: Optional[Any] = None) -> Dict[str, 
         return {"status": "warning", "message": "Config file not found."}
 
     return {"status": "ok"}
+
+
+# Backward compatibility alias
+list_palette_actions = list_system_actions
 
