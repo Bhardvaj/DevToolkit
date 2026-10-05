@@ -1,13 +1,21 @@
-"""Portable configuration management for DevToolkit."""
+"""Portable configuration management for DevToolkit.
 
+Uses devtoolkit.json co-located beside the executable or in dev root.
+"""
+
+from __future__ import annotations
+
+import json
+import logging
 import os
 from pathlib import Path
 import sys
 from typing import Dict, List, Optional
-import yaml
 from pydantic import BaseModel, Field
 
-CONFIG_FILENAME = "devtoolkit.config.yaml"
+logger = logging.getLogger(__name__)
+
+CONFIG_FILENAME = "devtoolkit.json"
 
 
 class DevToolkitConfig(BaseModel):
@@ -18,7 +26,7 @@ class DevToolkitConfig(BaseModel):
     custom_env: Dict[str, str] = Field(default_factory=dict)
     realtime_search: bool = True
     close_action: str = Field(default="ask")  # "ask" | "minimize" | "exit"
-
+    config_path: Optional[str] = None
 
 
 def get_app_dir() -> Path:
@@ -29,39 +37,85 @@ def get_app_dir() -> Path:
 
 
 def get_config_path() -> Path:
-    """Return path to portable config file located beside the executable (or cwd in dev)."""
+    """Return path to portable devtoolkit.json located beside the executable (or cwd in dev).
+
+    Rule:
+    - In compiled executable mode: ALWAYS use the exact same directory as the .exe. No other location ever.
+    - In development mode: root devtoolkit.json is used.
+    """
     env_override = os.environ.get("DEVTOOLKIT_CONFIG")
     if env_override:
-        return Path(env_override).resolve()
+        p = Path(env_override).resolve()
+        p.parent.mkdir(parents=True, exist_ok=True)
+        return p
 
-    app_dir = get_app_dir()
-    primary_cfg = app_dir / CONFIG_FILENAME
-    alt_cfg = app_dir / ".devtoolkit.yaml"
-    if not primary_cfg.exists() and alt_cfg.exists():
-        return alt_cfg
-    return primary_cfg
+    if getattr(sys, "frozen", False):
+        exe_dir = Path(sys.executable).resolve().parent
+        exe_dir.mkdir(parents=True, exist_ok=True)
+        return exe_dir / CONFIG_FILENAME
+
+    dev_dir = Path.cwd().resolve()
+    dev_dir.mkdir(parents=True, exist_ok=True)
+    return dev_dir / CONFIG_FILENAME
 
 
 def load_config() -> DevToolkitConfig:
-    """Load configuration from disk, or return defaults if not found."""
+    """Load configuration from disk, or create one with default values if it does not exist."""
     cfg_file = get_config_path()
-    if not cfg_file.exists():
-        return DevToolkitConfig()
+    if not cfg_file.is_file():
+        cfg = DevToolkitConfig()
+        try:
+            save_config(cfg)
+        except Exception as e:
+            logger.debug(f"Failed to create default {CONFIG_FILENAME}: {e}")
+        cfg.config_path = str(cfg_file)
+        return cfg
 
     try:
-        data = yaml.safe_load(cfg_file.read_text(encoding="utf-8")) or {}
-        return DevToolkitConfig(**data)
-    except Exception:
-        return DevToolkitConfig()
+        data = json.loads(cfg_file.read_text(encoding="utf-8")) or {}
+        cfg = DevToolkitConfig(**data)
+        cfg.config_path = str(cfg_file)
+        return cfg
+    except Exception as e:
+        logger.debug(f"Failed to parse {cfg_file}: {e}")
+        cfg = DevToolkitConfig()
+        cfg.config_path = str(cfg_file)
+        return cfg
 
 
 def save_config(config: DevToolkitConfig) -> Path:
-    """Save configuration to disk."""
+    """Save configuration to devtoolkit.json."""
     cfg_file = get_config_path()
     cfg_file.parent.mkdir(parents=True, exist_ok=True)
-    data = config.model_dump(mode="json")
-    cfg_file.write_text(yaml.dump(data, sort_keys=False, default_flow_style=False), encoding="utf-8")
+    data = config.model_dump(mode="json", exclude={"config_path"})
+    cfg_file.write_text(json.dumps(data, indent=2), encoding="utf-8")
     return cfg_file
+
+
+def open_config_file() -> bool:
+    """Open devtoolkit.json in the system default text editor or notepad."""
+    cfg = get_config_path()
+    if not cfg.exists():
+        load_config()
+
+    if sys.platform == "win32":
+        try:
+            import ctypes
+            shell32 = ctypes.windll.shell32
+            res = shell32.ShellExecuteW(None, "open", str(cfg), None, None, 1)
+            if int(res) <= 32:
+                import subprocess
+                subprocess.Popen(["notepad.exe", str(cfg)])
+            return True
+        except Exception:
+            return False
+    else:
+        try:
+            import subprocess
+            subprocess.Popen(["xdg-open", str(cfg)])
+            return True
+        except Exception:
+            return False
 
 
 def add_search_path(path_str: str) -> bool:

@@ -12,6 +12,7 @@ __pycache__/
 *$py.class
 *.so
 build/
+build_spotlight/
 develop-eggs/
 dist/
 downloads/
@@ -59,7 +60,8 @@ Thumbs.db
 desktop.ini
 
 # User Configuration & Logs
-devtoolkit.config.yaml
+devtoolkit.json
+spotlight.json
 daemon.json
 *.log
 scratch/

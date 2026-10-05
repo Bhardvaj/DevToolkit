@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" width="40" height="40">
+  <defs>
+    <!-- Background Card 3D Depth Gradient (Exact Match with Icon & Logo) -->
+    <linearGradient id="uiTkCardGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#11261c"/>
+      <stop offset="50%" stop-color="#0c1a14"/>
+      <stop offset="100%" stop-color="#060e0a"/>
+    </linearGradient>
+
+    <!-- Outer 3D Border Gradient (Exact Match with Icon & Logo) -->
+    <!-- <linearGradient id="uiTkBorderGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#34d399" stop-opacity="0.75"/>
+      <stop offset="50%" stop-color="#10b981" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="#059669" stop-opacity="0.55"/>
+    </linearGradient> -->
+
+    <!-- 3D Lightning Bolt Main Gradient -->
+    <linearGradient id="uiTkBoltGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#6ee7b7"/>
+      <stop offset="45%" stop-color="#10b981"/>
+      <stop offset="100%" stop-color="#047857"/>
+    </linearGradient>
+
+    <!-- 3D Inner Highlight Facet Gradient -->
+    <linearGradient id="uiTkInnerGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ecfdf5" stop-opacity="0.9"/>
+      <stop offset="50%" stop-color="#a7f3d0" stop-opacity="0.65"/>
+      <stop offset="100%" stop-color="#34d399" stop-opacity="0.3"/>
+    </linearGradient>
+
+    <!-- Code Chevrons Gradient -->
+    <linearGradient id="uiTkChevronGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#a7f3d0"/>
+      <stop offset="45%" stop-color="#34d399"/>
+      <stop offset="100%" stop-color="#059669"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Card Squircle with matching 3D border -->
+  <rect x="0.5" y="0.5" width="39" height="39" rx="8" fill="url(#uiTkCardGrad)" stroke="url(#uiTkBorderGrad)" stroke-width="1.2" filter="url(#uiTkShadow)"/>
+  <rect x="0.5" y="0.5" width="39" height="39" rx="8" fill="none" stroke="#34d399" stroke-width="0.8" stroke-opacity="0.22"/>
+
+  <!-- Left Code Chevron with breathing room -->
+  <g filter="url(#uiTkChevronGlow)">
+    <path d="M12.5 15 L7.5 20 L12.5 25" fill="none" stroke="url(#uiTkChevronGrad)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+
+  <!-- Right Code Chevron with breathing room -->
+  <g filter="url(#uiTkChevronGlow)">
+    <path d="M27.5 15 L32.5 20 L27.5 25" fill="none" stroke="url(#uiTkChevronGrad)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+
+  <!-- Central DevToolkit Lightning Bolt -->
+  <g filter="url(#uiTkBoltGlow)">
+    <path d="M22 8 L14.5 20 L20 20 L17.5 32 L26 19.5 L20.5 19.5 Z" fill="url(#uiTkBoltGrad)"/>
+    <path d="M21 10 L16 19 L19.5 19 L18 28 L24.5 20 L20.5 20 Z" fill="url(#uiTkInnerGrad)"/>
+  </g>
+</svg>

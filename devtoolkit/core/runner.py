@@ -73,11 +73,13 @@ class SafeRunner:
         try:
             # On Windows, prevent flashing a command prompt console window
             startupinfo = None
+            creationflags = 0
             use_shell = False
             if sys.platform == "win32":
                 startupinfo = subprocess.STARTUPINFO()
                 startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
                 startupinfo.wShowWindow = subprocess.SW_HIDE
+                creationflags = getattr(subprocess, "CREATE_NO_WINDOW", 0x08000000)
                 if cmd and any(str(cmd[0]).lower().endswith(ext) for ext in [".cmd", ".bat"]):
                     use_shell = True
 
@@ -89,6 +91,7 @@ class SafeRunner:
                 timeout=effective_timeout,
                 env=run_env,
                 startupinfo=startupinfo,
+                creationflags=creationflags,
                 shell=use_shell,
                 errors="replace",
             )

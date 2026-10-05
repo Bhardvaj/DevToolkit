@@ -154,6 +154,15 @@ class FastSearchEngine:
                 watcher = create_directory_watcher(str(root), self.index)
                 watcher.start()
                 self._watchers.append(watcher)
+        try:
+            from devtoolkit.core.search.apps import get_start_menu_directories
+            for sm_dir in get_start_menu_directories():
+                if sm_dir.exists() and sm_dir.is_dir():
+                    watcher = create_directory_watcher(str(sm_dir), self.index)
+                    watcher.start()
+                    self._watchers.append(watcher)
+        except Exception:
+            pass
 
     def _stop_watchers(self) -> None:
         for watcher in self._watchers:
@@ -258,6 +267,16 @@ class FastSearchEngine:
                     stats = usn_stats
                 else:
                     stats = IndexStats(total_files=0, total_dirs=0, duration_ms=0.0, roots_scanned=[])
+
+                # Index installed desktop applications (Start Menu, Desktop, Registry App Paths)
+                try:
+                    from devtoolkit.core.search.apps import index_all_applications
+
+                    apps = index_all_applications()
+                    if apps:
+                        self.index.add_entries_batch(apps)
+                except Exception as e:
+                    logger.debug(f"Failed indexing applications: {e}")
 
                 # Commit indexed roots now that the index has been fully populated
                 self._indexed_roots = list(valid_roots)

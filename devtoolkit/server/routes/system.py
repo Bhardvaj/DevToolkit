@@ -22,6 +22,14 @@ def get_config():
     return load_config()
 
 
+@router.post("/config/open")
+def post_open_config():
+    from devtoolkit.core.config import get_config_path, open_config_file
+    cfg = get_config_path()
+    opened = open_config_file()
+    return {"status": "ok" if opened else "error", "path": str(cfg), "opened": opened}
+
+
 @router.post("/config/search-paths")
 def post_search_path(req: SearchPathRequest):
     if not req.path:

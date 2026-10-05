@@ -15,6 +15,7 @@ DevToolkit follows a **Decoupled Client-Daemon Architecture**:
 ```mermaid
 graph TD
     subgraph UI_Layer [Presentation Layer / Clients]
+        SpotlightClient[DevToolkit Spotlight - DevToolkitSpotlight.exe Alt+Space]
         DesktopUI[Desktop Client - PyWebView Edge Chromium]
         LocalWeb[Browser Dashboard - http://127.0.0.1:4321]
         CLI[Terminal CLI - Typer / Rich via devtoolkit.cli]

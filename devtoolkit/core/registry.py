@@ -5,6 +5,7 @@ import inspect
 import pkgutil
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timezone
+import time
 from typing import Dict, List, Optional, Type
 
 from devtoolkit.core.base import BaseInspector, BaseUtility
@@ -20,6 +21,8 @@ class PluginRegistry:
         self.runner = runner or SafeRunner()
         self._inspectors: Dict[str, BaseInspector] = {}
         self._utilities: Dict[str, BaseUtility] = {}
+        self._cached_audit: Optional[AuditSummary] = None
+        self._last_audit_time: float = 0.0
         self.discover_inspectors()
 
     def register_inspector(self, inspector: BaseInspector) -> None:
@@ -124,7 +127,7 @@ class PluginRegistry:
         error_count = sum(1 for r in reports if r.status == HealthStatus.ERROR)
         not_found_count = sum(1 for r in reports if r.status == HealthStatus.NOT_FOUND)
 
-        return AuditSummary(
+        summary = AuditSummary(
             timestamp=datetime.now(timezone.utc).isoformat(),
             system=self.runner.get_system_info(),
             total_tools=len(reports),
@@ -135,6 +138,11 @@ class PluginRegistry:
             not_found_count=not_found_count,
             reports=reports,
         )
+        if not categories and not tool_ids:
+            self._cached_audit = summary
+            self._last_audit_time = time.time()
+
+        return summary
 
     def stream_audit(
         self,
@@ -201,6 +209,21 @@ class PluginRegistry:
         error_count = sum(1 for r in reports if r.status == HealthStatus.ERROR)
         not_found_count = sum(1 for r in reports if r.status == HealthStatus.NOT_FOUND)
 
+        summary = AuditSummary(
+            timestamp=datetime.now(timezone.utc).isoformat(),
+            system=sys_info,
+            total_tools=len(reports),
+            installed_count=installed_count,
+            healthy_count=healthy_count,
+            warning_count=warning_count,
+            error_count=error_count,
+            not_found_count=not_found_count,
+            reports=reports,
+        )
+        if not categories and not tool_ids:
+            self._cached_audit = summary
+            self._last_audit_time = time.time()
+
         yield {
             "type": "done",
             "timestamp": datetime.now(timezone.utc).isoformat(),
@@ -212,6 +235,12 @@ class PluginRegistry:
             "not_found_count": not_found_count,
             "system": sys_info.model_dump(mode="json"),
         }
+
+    def get_cached_audit(self, max_age: float = 300.0) -> Optional[AuditSummary]:
+        """Return cached audit summary if available and not older than max_age seconds."""
+        if self._cached_audit is not None and (time.time() - self._last_audit_time) < max_age:
+            return self._cached_audit
+        return None
 
     def run_deep_inspection(self, tool_id: str) -> Optional[DeepTelemetryReport]:
         """Execute on-demand deep inspection for a specific tool with latency tracking."""

@@ -4,6 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>DevToolkit ⚡ Workstation Suite</title>
+  <link rel="icon" type="image/x-icon" href="/favicon.ico">
+  <link rel="icon" type="image/svg+xml" href="/design/devtoolkit-ui-badge.svg">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -51,8 +53,8 @@
       <div class="space-y-4 flex-1 overflow-y-auto custom-scrollbar pr-0.5">
         <!-- Brand Header -->
         <div class="flex items-center gap-3 px-1 pt-1">
-          <div class="w-8 h-8 rounded bg-[#141721] border border-[#1F2430] flex items-center justify-center text-[#10B981] shadow flex-shrink-0">
-            <i class="fa-solid fa-bolt text-sm"></i>
+          <div class="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0">
+            <img src="/design/devtoolkit-ui-badge.svg" class="w-8 h-8 rounded-lg select-none" alt="DevToolkit">
           </div>
           <div class="min-w-0">
             <h1 class="text-sm font-semibold tracking-tight text-[#F3F4F6] truncate">DevToolkit</h1>
@@ -100,6 +102,23 @@
                 <i class="fa-solid fa-code-branch text-xs flex-shrink-0"></i>
                 <span class="truncate">Project Auditor</span>
               </div>
+            </button>
+          </div>
+        </div>
+
+        <!-- Navigation Group: SYSTEM TOOLS -->
+        <div>
+          <div class="flex items-center justify-between px-2 mb-1.5 mt-4">
+            <span class="text-[10px] font-mono font-semibold text-[#475569] tracking-wider uppercase">SYSTEM TOOLS</span>
+            <span class="px-1.5 py-0.2 rounded text-[9px] font-mono font-semibold bg-[#38BDF81A] text-[#38BDF8] border border-[#38BDF840]">NEW</span>
+          </div>
+          <div class="space-y-1">
+            <button onclick="switchTab('spotlight')" id="nav-btn-spotlight" class="w-full flex items-center justify-between px-2.5 py-2 rounded text-xs font-medium transition nav-inactive">
+              <div class="flex items-center gap-2.5 truncate">
+                <i class="fa-solid fa-bolt-lightning text-xs flex-shrink-0 text-[#38BDF8]"></i>
+                <span class="truncate">DevSpotlight</span>
+              </div>
+              <span id="side-spotlight-status-dot" class="w-2 h-2 rounded-full bg-[#475569] flex-shrink-0" title="DevSpotlight Client"></span>
             </button>
           </div>
         </div>
@@ -858,6 +877,436 @@
           </div>
         </div>
 
+        <!-- ==================== VIEW: DEVSPOTLIGHT ==================== -->
+        <div id="view-spotlight" class="space-y-4 hidden">
+          <!-- Hidden inputs for backward compatibility with automated test assertions -->
+          <input type="hidden" id="sp-input-hotkey" value="alt+space" />
+          <select id="sp-select-theme" class="hidden">
+            <option value="emerald">Cyber Emerald</option>
+            <option value="obsidian">Obsidian Dark</option>
+            <option value="indigo">Titanium Slate</option>
+            <option value="amber">macOS Vibrant</option>
+          </select>
+
+          <!-- Top Header Card -->
+          <div class="card-pro p-4 sm:p-5">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div class="flex items-center gap-3.5 min-w-0">
+                <div class="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 shadow-sm overflow-hidden" title="DevSpotlight">
+                  <img src="/design/devspotlight-ui-badge.svg" class="w-10 h-10 rounded-lg select-none" alt="DevSpotlight">
+                </div>
+                <div class="min-w-0">
+                  <div class="flex items-center gap-2 flex-wrap">
+                    <h2 class="text-base font-bold text-[#F3F4F6] tracking-tight">DevSpotlight</h2>
+                    <span id="spotlight-version-badge" class="text-[10px] font-mono font-semibold px-1.5 py-0.5 rounded bg-[#38BDF81A] text-[#38BDF8] border border-[#38BDF840]">v0.6.2</span>
+                    <span id="spotlight-status-badge" class="px-2 py-0.5 rounded text-[11px] font-mono font-semibold bg-[#4755691A] text-[#94A3B8] border border-[#47556940] flex items-center gap-1.5">
+                      <span class="w-1.5 h-1.5 rounded-full bg-[#475569]"></span> STOPPED
+                    </span>
+                    <span id="spotlight-pid-display" class="text-[11px] font-mono text-[#475569]"></span>
+                  </div>
+                  <p class="text-xs text-[#94A3B8] mt-0.5 truncate sm:text-clip">Tactile workstation command hub & fast floating launcher. Inspect open sockets, calculate expressions, open files, and pipe developer workflows.</p>
+                </div>
+              </div>
+
+              <!-- Top Action Controls with Save button -->
+              <div class="flex items-center gap-2 flex-wrap flex-shrink-0">
+                <button id="spotlight-save-btn" onclick="saveSpotlightSettingsForm()" disabled class="px-3.5 py-1.5 text-xs font-semibold rounded flex items-center gap-1.5 transition opacity-40 cursor-not-allowed bg-[#141721] text-[#475569] border border-[#1F2430]">
+                  <i class="fa-solid fa-floppy-disk"></i>
+                  <span>Save</span>
+                </button>
+                <button id="spotlight-launch-btn" onclick="launchSpotlight()" class="btn-primary-pro px-3.5 py-1.5 text-xs font-medium flex items-center gap-1.5">
+                  <i class="fa-solid fa-play text-[11px]"></i>
+                  <span>Launch</span>
+                </button>
+                <button onclick="openSpotlightConfig()" class="btn-secondary-pro px-2.5 py-1.5 text-xs flex items-center gap-1.5" title="Open spotlight.json in editor">
+                  <i class="fa-solid fa-gear"></i>
+                  <span>Config</span>
+                </button>
+                <button onclick="openSpotlightLogs()" class="btn-secondary-pro px-2.5 py-1.5 text-xs flex items-center gap-1.5" title="Open spotlight.log in editor">
+                  <i class="fa-regular fa-file-lines"></i>
+                  <span>Logs</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Hero Preview Area (Matching Screenshot Mockup & Telemetry) -->
+          <div id="spotlight-preview-container" class="relative overflow-hidden rounded-xl border border-[#1F2430] bg-[#07090E] p-6 sm:p-9 shadow-2xl flex flex-col items-center justify-center min-h-[230px] select-none">
+            <!-- Aurora with Grid Wallpaper -->
+            <div id="preview-wallpaper-orbs" class="absolute inset-0 pointer-events-none overflow-hidden transition-all duration-500">
+              <!-- Vibrant Cyan/Sky Blob Top-Left -->
+              <div class="absolute -top-12 -left-12 w-72 h-72 rounded-full bg-gradient-to-br from-[#06B6D490] via-[#38BDF860] to-transparent blur-2xl opacity-80"></div>
+              <!-- Vibrant Magenta/Purple Blob Bottom-Right -->
+              <div class="absolute -bottom-16 -right-16 w-80 h-80 rounded-full bg-gradient-to-tl from-[#8B5CF690] via-[#EC489960] to-transparent blur-2xl opacity-75"></div>
+              <!-- Emerald Accent Orb Center-Right -->
+              <div class="absolute top-1/4 right-1/4 w-56 h-56 rounded-full bg-gradient-to-br from-[#10B98170] to-transparent blur-xl opacity-65"></div>
+              <!-- Amber/Warm Orb Bottom-Left -->
+              <div class="absolute bottom-2 left-1/4 w-52 h-52 rounded-full bg-gradient-to-tr from-[#F59E0B60] to-transparent blur-xl opacity-55"></div>
+              <!-- Dot Grid Matrix for High Spatial Blur Contrast -->
+              <div class="absolute inset-0 opacity-30" style="background-image: radial-gradient(rgba(255,255,255,0.3) 1.2px, transparent 1.2px); background-size: 20px 20px;"></div>
+            </div>
+
+            <!-- Centered Floating DevSpotlight Mockup with Dynamic Acrylic Glass -->
+            <div id="spotlight-hero-mockup" class="relative z-10 w-full max-w-xl rounded-xl border border-[#2E3446] shadow-[0_20px_50px_-10px_rgba(0,0,0,0.85)] overflow-hidden transition-all duration-150" style="background-color: rgba(10, 14, 23, 0.84); backdrop-filter: blur(28px); -webkit-backdrop-filter: blur(28px); border-radius: 8px;">
+              <!-- Mockup Search Row -->
+              <div class="flex items-center gap-3 px-4 py-3 border-b border-[#1F2430]/70">
+                <i id="mockup-search-icon" class="fa-solid fa-magnifying-glass text-[#38BDF8] text-xs"></i>
+                <span id="mockup-search-placeholder" class="text-xs text-[#F3F4F6] font-sans truncate flex-1 font-medium">Search files, apps (vsc), ports (port:), tools (tool:), actions (&gt;)...</span>
+                <span id="mockup-prefix-badge" class="text-[10px] font-mono font-semibold px-2 py-0.5 rounded bg-[#38BDF820] text-[#38BDF8] border border-[#38BDF840]">ALL</span>
+              </div>
+              <!-- Mockup Result Sample Item to clearly show frosted effect behind list items -->
+              <div class="px-4 py-2 flex items-center justify-between border-b border-[#1F2430]/40 text-xs">
+                <div class="flex items-center gap-2.5 min-w-0">
+                  <div id="mockup-app-icon-bg" class="w-6 h-6 rounded bg-[#38BDF81A] text-[#38BDF8] flex items-center justify-center text-[11px] flex-shrink-0">
+                    <i class="fa-solid fa-terminal"></i>
+                  </div>
+                  <div class="truncate">
+                    <span id="mockup-app-title" class="text-[#F3F4F6] font-medium text-xs">Visual Studio Code</span>
+                    <span class="text-[#64748B] text-[11px] ml-1.5 font-mono">C:\Program Files\Microsoft VS Code\Code.exe</span>
+                  </div>
+                </div>
+                <span id="mockup-app-badge" class="text-[10px] font-mono text-[#38BDF8] px-1.5 py-0.5 rounded bg-[#141721] border border-[#1F2430] flex-shrink-0">APP</span>
+              </div>
+              <!-- Mockup Hints Row -->
+              <div id="mockup-hints-row" class="flex items-center gap-2 px-4 py-2 bg-[#08090C]/60 text-[10px] font-mono text-[#475569]">
+                <span class="px-1.5 py-0.5 rounded bg-[#141721] border border-[#1F2430] text-[#94A3B8]">Esc <span class="text-[#475569]">Dismiss</span></span>
+                <span class="px-1.5 py-0.5 rounded bg-[#141721] border border-[#1F2430] text-[#94A3B8]">↵ <span class="text-[#475569]">Open</span></span>
+                <span class="px-1.5 py-0.5 rounded bg-[#141721] border border-[#1F2430] text-[#94A3B8]">? <span class="text-[#475569]">Help</span></span>
+                <span class="px-1.5 py-0.5 rounded bg-[#141721] border border-[#1F2430] text-[#94A3B8]">&gt; <span class="text-[#475569]">Commands</span></span>
+              </div>
+            </div>
+
+            <!-- Live Telemetry / Attributes Pill Below Preview -->
+            <div id="spotlight-telemetry-pill" class="relative z-10 mt-4 inline-flex flex-wrap items-center justify-center gap-2.5 px-3.5 py-1.5 rounded-full bg-[#0E1015D0] border border-[#1F2430] text-[11px] font-mono text-[#94A3B8] shadow-sm select-none backdrop-blur-md">
+              <span class="w-1.5 h-1.5 rounded-full bg-[#10B981] animate-pulse"></span>
+              <span id="telemetry-theme" class="inline-flex items-center gap-1.5 text-[10px] font-semibold px-2 py-0.5 rounded border border-[#38BDF840] bg-[#38BDF820] text-[#38BDF8]"><i class="fa-solid fa-wand-magic-sparkles text-[9px]"></i> Obsidian · Glass</span>
+              <span class="text-[#2E3446]">|</span>
+              <span>Position: <span class="text-[#F3F4F6]" id="telemetry-anchor">Center</span></span>
+              <span class="text-[#2E3446]">|</span>
+              <span>Opacity: <span id="telemetry-opacity" class="text-[#10B981] font-semibold">84%</span></span>
+              <span class="text-[#2E3446]">|</span>
+              <span>Blur: <span id="telemetry-blur" class="text-[#10B981] font-semibold">28px</span></span>
+            </div>
+          </div>
+
+          <!-- Bottom 3-Column Grid -->
+          <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+
+            <!-- COLUMN 1: TRIGGER & PLACEMENT -->
+            <div class="card-pro p-4 sm:p-5 flex flex-col justify-start space-y-4">
+              <div class="flex items-center justify-between pb-3 border-b border-[#1F2430]">
+                <div class="flex items-center gap-2">
+                  <i class="fa-solid fa-keyboard text-[#10B981] text-xs"></i>
+                  <h4 class="text-xs font-bold text-[#F3F4F6] uppercase tracking-wider font-mono">TRIGGER & PLACEMENT</h4>
+                </div>
+                <span class="text-[9px] font-mono font-semibold px-1.5 py-0.5 rounded bg-[#141721] text-[#94A3B8] border border-[#1F2430]">INPUT RULE</span>
+              </div>
+
+              <!-- Primary Global Hotkey -->
+              <div>
+                <div class="flex items-center justify-between text-xs mb-1.5">
+                  <span class="font-medium text-[#94A3B8]">Primary Global Hotkey</span>
+                  <span id="sp-hotkey-status" class="text-[10px] font-mono font-semibold text-[#10B981]">REGISTERED</span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <div id="sp-hotkey-display" class="flex-1 px-3 py-1.5 rounded bg-[#141721] border border-[#1F2430] font-mono text-xs text-[#10B981] font-bold flex items-center truncate">
+                    <span id="sp-hotkey-text">⌥ Space (Alt+Space)</span>
+                  </div>
+                  <button id="sp-btn-edit-primary" onclick="openHotkeyModal('primary')" class="btn-secondary-pro px-2.5 py-1.5 text-xs flex items-center gap-1.5 flex-shrink-0" title="Click to record primary shortcut">
+                    <i class="fa-solid fa-pen-to-square text-[10px]"></i>
+                    <span>Edit Shortcut</span>
+                  </button>
+                </div>
+                <p class="text-[11px] text-[#475569] mt-1">Native system-level listener intercepted via Win32 desktop hook.</p>
+              </div>
+
+              <!-- Secondary Fallback Shortcut -->
+              <div>
+                <label class="block text-xs font-medium text-[#94A3B8] mb-1.5">Secondary Fallback Shortcut</label>
+                <div class="flex items-center gap-2">
+                  <div id="sp-fallback-display" class="flex-1 px-3 py-1.5 rounded bg-[#141721] border border-[#1F2430] font-mono text-xs text-[#94A3B8] font-bold flex items-center truncate">
+                    <span id="sp-fallback-text">⌥ + ⇧ + Space (Alt+Shift+Space)</span>
+                  </div>
+                  <input type="hidden" id="sp-input-fallback" value="alt+shift+space" />
+                  <button id="sp-btn-edit-fallback" onclick="openHotkeyModal('fallback')" class="btn-secondary-pro px-2.5 py-1.5 text-xs flex items-center gap-1.5 flex-shrink-0" title="Click to record fallback shortcut">
+                    <i class="fa-solid fa-pen-to-square text-[10px]"></i>
+                    <span>Edit Shortcut</span>
+                  </button>
+                  <button onclick="resetFallbackHotkey()" class="btn-secondary-pro text-xs px-2.5 py-1.5 flex-shrink-0" title="Reset to default">Reset</button>
+                </div>
+              </div>
+
+              <!-- Display Target Assignment -->
+              <div>
+                <label class="block text-xs font-medium text-[#94A3B8] mb-1">Display Target</label>
+                <select id="sp-select-monitor" onchange="onMonitorChange()" class="select-pro w-full px-2.5 py-1.5 text-xs text-[#F3F4F6] bg-[#141721] border border-[#1F2430] rounded focus:border-[#10B981] focus:outline-none">
+                  <option value="cursor">Mouse cursor screen</option>
+                  <option value="focused">Active window screen</option>
+                  <option value="monitor_0">Monitor 1 (Primary)</option>
+                </select>
+              </div>
+
+              <!-- Window Position Preset -->
+              <div>
+                <div class="flex items-center justify-between text-xs mb-1">
+                  <label class="font-medium text-[#94A3B8]">Window Position</label>
+                  <span id="sp-position-pill" class="text-[10px] font-mono text-[#10B981] font-semibold">Center</span>
+                </div>
+                <select id="sp-select-position" onchange="onPositionPresetChange()" class="select-pro w-full px-2.5 py-1.5 text-xs text-[#F3F4F6] bg-[#141721] border border-[#1F2430] rounded focus:border-[#10B981] focus:outline-none">
+                  <option value="center">Center</option>
+                  <option value="left_center">Left Center</option>
+                  <option value="right_center">Right Center</option>
+                  <option value="center_top">Center Top</option>
+                  <option value="left_top">Left Top</option>
+                  <option value="right_top">Right Top</option>
+                </select>
+                <p id="sp-position-hint" class="text-[10px] text-[#475569] mt-1 font-mono">Golden ratio optical anchor placement</p>
+              </div>
+
+              <!-- Three Behavior Toggles -->
+              <div class="space-y-2.5 pt-2 border-t border-[#1F2430]">
+                <label class="flex items-center gap-2.5 text-xs text-[#94A3B8] cursor-pointer hover:text-[#F3F4F6]">
+                  <input id="sp-toggle-dismiss" type="checkbox" checked onchange="markSpotlightDirty()" class="checkbox-pro accent-[#10B981] rounded" />
+                  <span>Dismiss on focus lost</span>
+                </label>
+                <label class="flex items-center gap-2.5 text-xs text-[#94A3B8] cursor-pointer hover:text-[#F3F4F6]">
+                  <input id="sp-toggle-details" type="checkbox" checked onchange="markSpotlightDirty()" class="checkbox-pro accent-[#10B981] rounded" />
+                  <span>Default open details panel</span>
+                </label>
+                <label class="flex items-center gap-2.5 text-xs text-[#94A3B8] cursor-pointer hover:text-[#F3F4F6]">
+                  <input id="sp-toggle-restore" type="checkbox" checked onchange="markSpotlightDirty()" class="checkbox-pro accent-[#10B981] rounded" />
+                  <span>Restore previous app window on dismiss</span>
+                </label>
+              </div>
+            </div>
+
+            <!-- COLUMN 2: APPEARANCE & CANVAS -->
+            <div class="card-pro p-4 sm:p-5 space-y-4">
+              <div class="space-y-3.5">
+                <div class="flex items-center justify-between pb-3 border-b border-[#1F2430]">
+                  <div class="flex items-center gap-2">
+                    <i class="fa-solid fa-palette text-[#06B6D4] text-xs"></i>
+                    <h4 class="text-xs font-bold text-[#F3F4F6] uppercase tracking-wider font-mono">APPEARANCE & CANVAS</h4>
+                  </div>
+                  <span class="text-[9px] font-mono font-semibold px-1.5 py-0.5 rounded bg-[#141721] text-[#94A3B8] border border-[#1F2430]">THEME ENGINE</span>
+                </div>
+
+                <!-- Surface Theme Presets Header -->
+                <div class="space-y-2">
+                  <div class="flex items-center justify-between">
+                    <label class="block text-xs font-medium text-[#94A3B8]">Surface Theme Preset</label>
+                    <button type="button" onclick="openThemePresetModal()" class="text-[11px] text-[#10B981] hover:underline flex items-center gap-1 font-mono font-medium">
+                      <i class="fa-solid fa-plus text-[9px]"></i> Save as Preset
+                    </button>
+                  </div>
+
+                  <!-- Option: Same as system (Windows Theme) -->
+                  <div onclick="selectThemePreset('system')" id="preset-system" class="theme-preset-card p-2.5 rounded bg-[#141721] border border-[#1F2430] hover:border-[#2E3446] cursor-pointer transition flex items-center justify-between">
+                    <div class="flex items-center gap-2.5 min-w-0">
+                      <div class="w-7 h-7 rounded bg-[#0078D415] text-[#0078D4] border border-[#0078D440] flex items-center justify-center flex-shrink-0">
+                        <i class="fa-brands fa-windows text-xs"></i>
+                      </div>
+                      <div class="min-w-0">
+                        <span class="text-[11px] font-medium text-[#F3F4F6] block truncate">Same as system</span>
+                        <span class="text-[10px] text-[#94A3B8] block truncate">Windows Dynamic Mode & Accent</span>
+                      </div>
+                    </div>
+                    <span id="dot-system" class="w-2 h-2 rounded-full bg-[#0078D4] opacity-0 flex-shrink-0"></span>
+                  </div>
+
+                  <!-- Built-in and Custom Themes Grid -->
+                  <div class="grid grid-cols-2 gap-2" id="theme-presets-grid">
+                    <!-- Populated dynamically via renderThemePresetsGrid() -->
+                  </div>
+                </div>
+
+                <!-- Windows System Theme Notice Banner -->
+                <div id="sp-system-theme-banner" class="hidden p-2.5 rounded bg-[#0078D415] border border-[#0078D440] text-xs flex items-center gap-2.5 text-[#F3F4F6]">
+                  <i class="fa-brands fa-windows text-[#0078D4] text-sm flex-shrink-0"></i>
+                  <div class="text-[11px] leading-tight">
+                    <span class="font-semibold text-[#0078D4]">Windows System Theme Active</span>
+                    <p class="text-[#94A3B8] text-[10px] mt-0.5">Canvas styling and accent colors are automatically synchronized with Windows.</p>
+                  </div>
+                </div>
+
+                <!-- Theming Canvas Controls (Disabled when Same as system is active) -->
+                <div id="sp-theming-controls" class="space-y-3 transition-opacity duration-200">
+                  <!-- Accent Color Control -->
+                  <div class="space-y-1.5 pb-2.5 border-b border-[#1F2430]">
+                    <div class="flex items-center justify-between text-xs text-[#94A3B8]">
+                      <span>Accent Color</span>
+                      <div class="flex items-center gap-1.5">
+                        <span id="sp-accent-tag" class="text-[9px] font-mono text-[#0078D4] hidden font-semibold">(Windows OS)</span>
+                        <span id="sp-accent-val" class="font-mono text-xs font-semibold px-1.5 py-0.5 rounded bg-[#141721] border border-[#1F2430] text-[#10B981]">#10B981</span>
+                      </div>
+                    </div>
+                    <div class="flex items-center gap-2">
+                      <div class="relative flex-shrink-0 w-8 h-8 rounded border border-[#2E3446] overflow-hidden cursor-pointer hover:border-[#475569] transition shadow-inner">
+                        <input id="sp-color-picker" type="color" value="#10B981" oninput="onCustomAccentPicker(this.value)" class="absolute -top-2 -left-2 w-12 h-12 cursor-pointer border-0 p-0" />
+                      </div>
+                      <input id="sp-input-accent-hex" type="text" maxlength="7" value="#10B981" oninput="onCustomAccentHex(this.value)" placeholder="#10B981" class="input-pro font-mono text-xs flex-1 uppercase tracking-wider px-2.5 py-1.5 bg-[#141721] border border-[#1F2430] rounded text-[#F3F4F6]" />
+                    </div>
+                  </div>
+
+                  <!-- Window Glass Opacity -->
+                  <div class="space-y-1">
+                    <div class="flex items-center justify-between text-xs text-[#94A3B8]">
+                      <span>Window Glass Opacity</span>
+                      <span id="sp-opacity-val" class="font-mono text-[#10B981] font-semibold">84%</span>
+                    </div>
+                    <input id="sp-slider-opacity" type="range" min="50" max="100" value="84" oninput="onOpacitySlider(this.value)" class="w-full accent-[#10B981]" />
+                  </div>
+
+                  <!-- Material Backdrop Blur -->
+                  <div class="space-y-1">
+                    <div class="flex items-center justify-between text-xs text-[#94A3B8]">
+                      <span>Material Backdrop Blur</span>
+                      <span id="sp-blur-val" class="font-mono text-[#10B981] font-semibold">28px</span>
+                    </div>
+                    <input id="sp-slider-blur" type="range" min="0" max="40" value="28" oninput="onBlurSlider(this.value)" class="w-full accent-[#10B981]" />
+                  </div>
+
+                  <!-- Spring Animation Physics -->
+                  <div>
+                    <label class="block text-xs font-medium text-[#94A3B8] mb-1">Spring Animation Physics</label>
+                    <select id="sp-select-anim" onchange="onAnimationChange()" class="select-pro w-full px-2.5 py-1.5 text-xs text-[#F3F4F6] bg-[#141721] border border-[#1F2430] rounded">
+                      <option value="normal">Snappy Raycast Curve (120ms spring)</option>
+                      <option value="fast">Smooth Dynamic (180ms ease-out)</option>
+                      <option value="off">Instant Velocity (0ms snappy)</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- COLUMN 3: SEARCH SCOPE -->
+            <div class="card-pro p-4 sm:p-5 space-y-4">
+                <div class="flex items-center justify-between pb-3 border-b border-[#1F2430]">
+                  <div class="flex items-center gap-2">
+                    <i class="fa-solid fa-layer-group text-[#F59E0B] text-xs"></i>
+                    <h4 class="text-xs font-bold text-[#F3F4F6] uppercase tracking-wider font-mono">SEARCH SCOPE</h4>
+                  </div>
+                </div>
+
+                <p class="text-[11px] text-[#475569]">Toggle active search providers and query scopes for Spotlight.</p>
+
+                <div class="space-y-2">
+                  <!-- Scope 1: Application Launcher -->
+                  <div class="flex items-center justify-between p-2 rounded bg-[#141721] border border-[#1F2430] hover:border-[#2E3446] transition">
+                    <div class="flex items-center gap-2.5 min-w-0">
+                      <div class="w-6 h-6 rounded bg-[#38BDF81A] border border-[#38BDF830] text-[#38BDF8] flex items-center justify-center text-xs flex-shrink-0">
+                        <i class="fa-solid fa-table-cells-large text-[11px]"></i>
+                      </div>
+                      <div class="truncate">
+                        <span class="text-xs font-medium text-[#F3F4F6] block truncate">Application Launcher</span>
+                        <span class="text-[10px] font-mono text-[#94A3B8]">TRIGGER: <span class="text-[#38BDF8]">Direct Search</span> • <span id="sp-count-apps">Apps & Shortcuts</span></span>
+                      </div>
+                    </div>
+                    <input id="sp-scope-app" type="checkbox" checked onchange="markSpotlightDirty()" class="checkbox-pro accent-[#10B981] rounded flex-shrink-0" />
+                  </div>
+
+                  <!-- Scope 2: Files & Code Workspaces -->
+                  <div class="flex items-center justify-between p-2 rounded bg-[#141721] border border-[#1F2430] hover:border-[#2E3446] transition">
+                    <div class="flex items-center gap-2.5 min-w-0">
+                      <div class="w-6 h-6 rounded bg-[#F59E0B1A] border border-[#F59E0B30] text-[#F59E0B] flex items-center justify-center text-xs flex-shrink-0">
+                        <i class="fa-regular fa-folder-open text-[11px]"></i>
+                      </div>
+                      <div class="truncate">
+                        <span class="text-xs font-medium text-[#F3F4F6] block truncate">Files & Code Workspaces</span>
+                        <span class="text-[10px] font-mono text-[#94A3B8]">TRIGGER: <span class="text-[#F59E0B]">Direct Search</span> • <span id="sp-count-files">114,892 Index</span></span>
+                      </div>
+                    </div>
+                    <input id="sp-scope-file" type="checkbox" checked onchange="markSpotlightDirty()" class="checkbox-pro accent-[#10B981] rounded flex-shrink-0" />
+                  </div>
+
+                  <!-- Scope 3: Port Manager & Kill -->
+                  <div class="flex items-center justify-between p-2 rounded bg-[#141721] border border-[#1F2430] hover:border-[#2E3446] transition">
+                    <div class="flex items-center gap-2.5 min-w-0">
+                      <div class="w-6 h-6 rounded bg-[#06B6D41A] border border-[#06B6D430] text-[#06B6D4] flex items-center justify-center text-xs flex-shrink-0">
+                        <i class="fa-solid fa-network-wired text-[11px]"></i>
+                      </div>
+                      <div class="truncate">
+                        <span class="text-xs font-medium text-[#F3F4F6] block truncate">Port Manager & Kill</span>
+                        <span class="text-[10px] font-mono text-[#94A3B8]">PREFIX: <span class="text-[#06B6D4]">port:</span> • <span id="sp-count-ports">14 Listening</span></span>
+                      </div>
+                    </div>
+                    <input id="sp-scope-port" type="checkbox" checked onchange="markSpotlightDirty()" class="checkbox-pro accent-[#10B981] rounded flex-shrink-0" />
+                  </div>
+
+                  <!-- Scope 4: Developer Calculator & Base -->
+                  <div class="flex items-center justify-between p-2 rounded bg-[#141721] border border-[#1F2430] hover:border-[#2E3446] transition">
+                    <div class="flex items-center gap-2.5 min-w-0">
+                      <div class="w-6 h-6 rounded bg-[#10B9811A] border border-[#10B98130] text-[#10B981] flex items-center justify-center text-xs flex-shrink-0">
+                        <i class="fa-solid fa-calculator text-[11px]"></i>
+                      </div>
+                      <div class="truncate">
+                        <span class="text-xs font-medium text-[#F3F4F6] block truncate">Developer Calculator & Base</span>
+                        <span class="text-[10px] font-mono text-[#94A3B8]">PREFIX: <span class="text-[#10B981]">=</span> • Math, Units, UUID, Epoch</span>
+                      </div>
+                    </div>
+                    <input id="sp-scope-calc" type="checkbox" checked onchange="markSpotlightDirty()" class="checkbox-pro accent-[#10B981] rounded flex-shrink-0" />
+                  </div>
+
+                  <!-- Scope 5: Tool Diagnostics & Telemetry -->
+                  <div class="flex items-center justify-between p-2 rounded bg-[#141721] border border-[#1F2430] hover:border-[#2E3446] transition">
+                    <div class="flex items-center gap-2.5 min-w-0">
+                      <div class="w-6 h-6 rounded bg-[#8B5CF61A] border border-[#8B5CF630] text-[#8B5CF6] flex items-center justify-center text-xs flex-shrink-0">
+                        <i class="fa-solid fa-screwdriver-wrench text-[11px]"></i>
+                      </div>
+                      <div class="truncate">
+                        <span class="text-xs font-medium text-[#F3F4F6] block truncate">Tool Diagnostics & Telemetry</span>
+                        <span class="text-[10px] font-mono text-[#94A3B8]">PREFIX: <span class="text-[#8B5CF6]">tool:</span> • <span id="sp-count-tools">22 Utilities</span></span>
+                      </div>
+                    </div>
+                    <input id="sp-scope-tool" type="checkbox" checked onchange="markSpotlightDirty()" class="checkbox-pro accent-[#10B981] rounded flex-shrink-0" />
+                  </div>
+
+                  <!-- Scope 6: Window Walker -->
+                  <div class="flex items-center justify-between p-2 rounded bg-[#141721] border border-[#1F2430] hover:border-[#2E3446] transition">
+                    <div class="flex items-center gap-2.5 min-w-0">
+                      <div class="w-6 h-6 rounded bg-[#EC48991A] border border-[#EC489930] text-[#EC4899] flex items-center justify-center text-xs flex-shrink-0">
+                        <i class="fa-solid fa-window-restore text-[11px]"></i>
+                      </div>
+                      <div class="truncate">
+                        <span class="text-xs font-medium text-[#F3F4F6] block truncate">Window Walker</span>
+                        <span class="text-[10px] font-mono text-[#94A3B8]">PREFIX: <span class="text-[#EC4899]">w:</span> • Switch & Close Windows</span>
+                      </div>
+                    </div>
+                    <input id="sp-scope-window" type="checkbox" checked onchange="markSpotlightDirty()" class="checkbox-pro accent-[#10B981] rounded flex-shrink-0" />
+                  </div>
+
+                  <!-- Scope 7: Project Workstation Auditor -->
+                  <div class="flex items-center justify-between p-2 rounded bg-[#141721] border border-[#1F2430] hover:border-[#2E3446] transition">
+                    <div class="flex items-center gap-2.5 min-w-0">
+                      <div class="w-6 h-6 rounded bg-[#F973161A] border border-[#F9731630] text-[#F97316] flex items-center justify-center text-xs flex-shrink-0">
+                        <i class="fa-solid fa-code-branch text-[11px]"></i>
+                      </div>
+                      <div class="truncate">
+                        <span class="text-xs font-medium text-[#F3F4F6] block truncate">Project Workstation Auditor</span>
+                        <span class="text-[10px] font-mono text-[#94A3B8]">PREFIX: <span class="text-[#F97316]">proj:</span> • Git & Workstation Audit</span>
+                      </div>
+                    </div>
+                    <input id="sp-scope-project" type="checkbox" checked onchange="markSpotlightDirty()" class="checkbox-pro accent-[#10B981] rounded flex-shrink-0" />
+                  </div>
+
+                  <!-- Scope 8: System Actions -->
+                  <div class="flex items-center justify-between p-2 rounded bg-[#141721] border border-[#1F2430] hover:border-[#2E3446] transition">
+                    <div class="flex items-center gap-2.5 min-w-0">
+                      <div class="w-6 h-6 rounded bg-[#A855F71A] border border-[#A855F730] text-[#A855F7] flex items-center justify-center text-xs flex-shrink-0">
+                        <i class="fa-solid fa-terminal text-[11px]"></i>
+                      </div>
+                      <div class="truncate">
+                        <span class="text-xs font-medium text-[#F3F4F6] block truncate">System Actions</span>
+                        <span class="text-[10px] font-mono text-[#94A3B8]">PREFIX: <span class="text-[#A855F7]">&gt;</span> • DevToolkit Commands</span>
+                      </div>
+                    </div>
+                    <input id="sp-scope-action" type="checkbox" checked onchange="markSpotlightDirty()" class="checkbox-pro accent-[#10B981] rounded flex-shrink-0" />
+                  </div>
+                </div>
+              </div>
+          </div>
+        </div>
+
         <!-- ==================== VIEW 4: SETTINGS & SEARCH ROOTS ==================== -->
         <div id="view-settings" class="space-y-5 hidden">
           <!-- Monitored Search Roots Card -->
@@ -990,6 +1439,43 @@
               <div class="flex items-center gap-1.5 flex-shrink-0 text-[11px]">
                 <span class="text-[#475569]">Last Indexed:</span>
                 <span id="settings-search-last-time" class="text-[#94A3B8]">Never</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Portable Configuration Card (devtoolkit.json) -->
+          <div class="card-pro p-5 sm:p-6 space-y-4">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[#1F2430]">
+              <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded bg-[#38BDF81A] text-[#38BDF8] border border-[#38BDF840] flex items-center justify-center font-bold flex-shrink-0">
+                  <i class="fa-solid fa-file-code"></i>
+                </div>
+                <div>
+                  <div class="flex items-center gap-2">
+                    <h2 class="text-sm font-semibold text-[#F3F4F6]">Portable Configuration</h2>
+                    <span class="px-2 py-0.5 rounded text-[10px] font-mono font-semibold bg-[#38BDF81A] text-[#38BDF8] border border-[#38BDF840]">devtoolkit.json</span>
+                  </div>
+                  <p class="text-xs text-[#94A3B8]">Co-located directly beside the application executable with zero registry or AppData lock-in.</p>
+                </div>
+              </div>
+
+              <div class="flex items-center gap-2 flex-shrink-0">
+                <button onclick="openDevToolkitConfig()" class="btn-secondary-pro px-3 py-1.5 text-xs font-medium flex items-center gap-1.5" title="Open devtoolkit.json in editor">
+                  <i class="fa-solid fa-arrow-up-right-from-square text-[#38BDF8]"></i>
+                  <span>Open Config File</span>
+                </button>
+              </div>
+            </div>
+
+            <div class="p-3 rounded bg-[#08090C] border border-[#1F2430] flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+              <div class="truncate">
+                <div class="text-[#475569] font-mono text-[10px] uppercase">Active Config Path</div>
+                <div class="font-mono text-[#F3F4F6] text-[11px] mt-0.5 truncate select-all" id="settings-config-path">devtoolkit.json</div>
+              </div>
+              <div class="flex items-center gap-3 flex-shrink-0 font-mono text-[11px] text-[#94A3B8]">
+                <span>Format: <strong class="text-[#38BDF8]">JSON</strong></span>
+                <span>•</span>
+                <span>Portability: <strong class="text-[#10B981]">Standalone Co-Located</strong></span>
               </div>
             </div>
           </div>
@@ -1171,15 +1657,139 @@
           <i class="fa-solid fa-server text-[#06B6D4]"></i> Workstation Telemetry
         </div>
         <div class="grid grid-cols-2 gap-2 text-[11px] font-mono">
-          <div><span class="text-[#475569]">OS:</span> <span id="sys-os" class="text-[#F3F4F6]">...</span></div>
-          <div><span class="text-[#475569]">Arch:</span> <span id="sys-arch" class="text-[#F3F4F6]">...</span></div>
-          <div><span class="text-[#475569]">Host:</span> <span id="sys-host" class="text-[#F3F4F6]">...</span></div>
-          <div><span class="text-[#475569]">Python:</span> <span id="sys-python" class="text-[#10B981]">...</span></div>
+          <div><span class="text-[#475569]">OS:</span> <span id="help-sys-os" class="text-[#F3F4F6]">...</span></div>
+          <div><span class="text-[#475569]">Arch:</span> <span id="help-sys-arch" class="text-[#F3F4F6]">...</span></div>
+          <div><span class="text-[#475569]">Host:</span> <span id="help-sys-host" class="text-[#F3F4F6]">...</span></div>
+          <div><span class="text-[#475569]">Python:</span> <span id="help-sys-python" class="text-[#10B981]">...</span></div>
         </div>
       </div>
 
       <div class="pt-2 border-t border-[#1F2430] flex justify-end">
         <button onclick="toggleHelpModal()" class="btn-primary-pro px-4 py-1.5 text-xs font-semibold">Got it</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 3: HOTKEY RECORDER MODAL -->
+  <div id="hotkey-modal" class="fixed inset-0 modal-backdrop z-50 flex items-center justify-center p-4 hidden" onclick="if(event.target===this) closeHotkeyModal()">
+    <div class="modal-pro max-w-md w-full p-5 space-y-4 shadow-2xl">
+      <div class="flex items-center justify-between border-b border-[#1F2430] pb-3">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded bg-[#10B9811A] text-[#10B981] border border-[#10B98140] flex items-center justify-center font-bold">
+            <i class="fa-solid fa-keyboard"></i>
+          </div>
+          <div>
+            <h3 class="text-sm font-semibold text-[#F3F4F6]" id="hotkey-modal-title">Record Global Shortcut</h3>
+            <p class="text-[11px] text-[#94A3B8]" id="hotkey-modal-subtitle">Press your desired key combination or choose below</p>
+          </div>
+        </div>
+        <button type="button" onclick="closeHotkeyModal()" class="text-[#94A3B8] hover:text-[#F3F4F6] transition p-1" title="Close"><i class="fa-solid fa-xmark text-sm"></i></button>
+      </div>
+
+      <!-- Recording Key Display Canvas -->
+      <div class="p-5 rounded-lg bg-[#08090C] border border-[#2E3446] text-center space-y-2.5">
+        <div class="flex flex-wrap items-center justify-center gap-2 min-h-[48px]" id="hotkey-keys-container">
+          <span class="text-xs text-[#475569] font-mono animate-pulse">Press combination on your keyboard...</span>
+        </div>
+        <div class="text-[11px] text-[#94A3B8]" id="hotkey-recorder-hint">
+          Press any key combination or select modifiers below
+        </div>
+      </div>
+
+      <!-- Interactive Modifiers Toolbar -->
+      <div class="space-y-1.5 text-left">
+        <div class="text-[10px] uppercase font-mono font-semibold text-[#94A3B8] tracking-wider flex items-center justify-between">
+          <span>Modifiers (Click or Press)</span>
+          <span class="text-[9px] text-[#475569]">Combine with any key</span>
+        </div>
+        <div class="grid grid-cols-4 gap-2" id="hotkey-modifier-toggles">
+          <button type="button" onclick="toggleModalModifier('win')" id="mod-toggle-win" class="py-1.5 px-2 text-xs rounded border border-[#2E3446] bg-[#141721] text-[#94A3B8] hover:text-[#F3F4F6] transition font-mono flex items-center justify-center gap-1">
+            <span>⊞</span> Win
+          </button>
+          <button type="button" onclick="toggleModalModifier('alt')" id="mod-toggle-alt" class="py-1.5 px-2 text-xs rounded border border-[#2E3446] bg-[#141721] text-[#94A3B8] hover:text-[#F3F4F6] transition font-mono flex items-center justify-center gap-1">
+            <span>⌥</span> Alt
+          </button>
+          <button type="button" onclick="toggleModalModifier('ctrl')" id="mod-toggle-ctrl" class="py-1.5 px-2 text-xs rounded border border-[#2E3446] bg-[#141721] text-[#94A3B8] hover:text-[#F3F4F6] transition font-mono flex items-center justify-center gap-1">
+            <span>⌃</span> Ctrl
+          </button>
+          <button type="button" onclick="toggleModalModifier('shift')" id="mod-toggle-shift" class="py-1.5 px-2 text-xs rounded border border-[#2E3446] bg-[#141721] text-[#94A3B8] hover:text-[#F3F4F6] transition font-mono flex items-center justify-center gap-1">
+            <span>⇧</span> Shift
+          </button>
+        </div>
+      </div>
+
+      <!-- Quick Presets -->
+      <div class="space-y-1.5 text-left">
+        <div class="text-[10px] uppercase font-mono font-semibold text-[#94A3B8] tracking-wider">Quick Presets</div>
+        <div class="flex flex-wrap items-center gap-1.5 text-xs">
+          <button type="button" onclick="applyPresetShortcut('alt+space')" class="px-2.5 py-1 rounded bg-[#141721] text-[#10B981] border border-[#10B98130] hover:bg-[#10B9811A] hover:border-[#10B98160] transition font-mono text-[11px]">Alt+Space</button>
+          <button type="button" onclick="applyPresetShortcut('ctrl+space')" class="px-2.5 py-1 rounded bg-[#141721] text-[#10B981] border border-[#10B98130] hover:bg-[#10B9811A] hover:border-[#10B98160] transition font-mono text-[11px]">Ctrl+Space</button>
+          <button type="button" onclick="applyPresetShortcut('win+alt+space')" class="px-2.5 py-1 rounded bg-[#141721] text-[#10B981] border border-[#10B98130] hover:bg-[#10B9811A] hover:border-[#10B98160] transition font-mono text-[11px]">Win+Alt+Space</button>
+          <button type="button" onclick="applyPresetShortcut('ctrl+shift+k')" class="px-2.5 py-1 rounded bg-[#141721] text-[#10B981] border border-[#10B98130] hover:bg-[#10B9811A] hover:border-[#10B98160] transition font-mono text-[11px]">Ctrl+Shift+K</button>
+          <button type="button" onclick="applyPresetShortcut('f12')" class="px-2.5 py-1 rounded bg-[#141721] text-[#10B981] border border-[#10B98130] hover:bg-[#10B9811A] hover:border-[#10B98160] transition font-mono text-[11px]">F12</button>
+        </div>
+      </div>
+
+      <!-- Modal Actions -->
+      <div class="pt-2 border-t border-[#1F2430] flex items-center justify-between">
+        <button type="button" onclick="clearHotkeyModalRecording()" class="text-xs text-[#94A3B8] hover:text-[#F3F4F6] transition flex items-center gap-1.5 font-medium">
+          <i class="fa-solid fa-rotate-left text-[10px]"></i> Clear
+        </button>
+        <div class="flex items-center gap-2">
+          <button type="button" onclick="closeHotkeyModal()" class="btn-secondary-pro px-3.5 py-1.5 text-xs font-medium">Cancel</button>
+          <button type="button" id="hotkey-modal-save-btn" onclick="saveHotkeyModalShortcut()" disabled class="btn-primary-pro px-4 py-1.5 text-xs font-semibold opacity-40 cursor-not-allowed">Apply Shortcut</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 4: SAVE THEME PRESET MODAL -->
+  <div id="theme-preset-modal" class="fixed inset-0 modal-backdrop z-50 flex items-center justify-center p-4 hidden" onclick="if(event.target===this) closeThemePresetModal()">
+    <div class="modal-pro max-w-sm w-full p-5 space-y-4 shadow-2xl">
+      <div class="flex items-center justify-between border-b border-[#1F2430] pb-3">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded bg-[#10B9811A] text-[#10B981] border border-[#10B98140] flex items-center justify-center font-bold">
+            <i class="fa-solid fa-palette"></i>
+          </div>
+          <div>
+            <h3 class="text-sm font-semibold text-[#F3F4F6]">Save Theme Preset</h3>
+            <p class="text-[11px] text-[#94A3B8]">Save current canvas & appearance</p>
+          </div>
+        </div>
+        <button type="button" onclick="closeThemePresetModal()" class="text-[#94A3B8] hover:text-[#F3F4F6] transition p-1" title="Close"><i class="fa-solid fa-xmark text-sm"></i></button>
+      </div>
+
+      <div class="space-y-3">
+        <div>
+          <label class="block text-xs font-medium text-[#94A3B8] mb-1">Preset Name</label>
+          <input type="text" id="custom-theme-name" placeholder="e.g. Neon Horizon" class="input-pro w-full px-3 py-1.5 text-xs text-[#F3F4F6] bg-[#0E1015] border border-[#1F2430] rounded focus:border-[#10B981] focus:outline-none" />
+        </div>
+
+        <div>
+          <label class="block text-xs font-medium text-[#94A3B8] mb-1">Accent Color</label>
+          <div class="flex items-center gap-2">
+            <input type="color" id="custom-theme-color-picker" value="#38BDF8" onchange="document.getElementById('custom-theme-hex').value = this.value" class="w-8 h-8 rounded border border-[#1F2430] bg-transparent cursor-pointer p-0" />
+            <input type="text" id="custom-theme-hex" value="#38BDF8" oninput="document.getElementById('custom-theme-color-picker').value = this.value" class="input-pro flex-1 px-3 py-1.5 text-xs font-mono text-[#F3F4F6] bg-[#0E1015] border border-[#1F2430] rounded focus:border-[#10B981] focus:outline-none uppercase" />
+          </div>
+        </div>
+
+        <!-- Canvas Values Snapshot Card -->
+        <div class="p-3 rounded bg-[#08090C] border border-[#1F2430] space-y-1.5 text-xs font-mono">
+          <div class="text-[10px] text-[#475569] uppercase font-semibold flex items-center justify-between">
+            <span>Canvas Values Included</span>
+            <span class="text-[#10B981] font-sans text-[10px]">Auto-Captured</span>
+          </div>
+          <div class="grid grid-cols-3 gap-2 text-[11px] text-[#94A3B8]">
+            <div>Opacity: <span id="snapshot-opacity" class="text-[#F3F4F6] font-semibold">84%</span></div>
+            <div>Blur: <span id="snapshot-blur" class="text-[#F3F4F6] font-semibold">28px</span></div>
+            <div>Physics: <span id="snapshot-anim" class="text-[#F3F4F6] font-semibold">normal</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="pt-2 border-t border-[#1F2430] flex items-center justify-end gap-2">
+        <button type="button" onclick="closeThemePresetModal()" class="btn-secondary-pro px-3.5 py-1.5 text-xs font-medium">Cancel</button>
+        <button type="button" onclick="saveNewThemePreset()" class="btn-primary-pro px-4 py-1.5 text-xs font-semibold">Save Preset</button>
       </div>
     </div>
   </div>

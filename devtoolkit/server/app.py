@@ -11,7 +11,7 @@ from typing import List
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 import uvicorn
 
@@ -61,6 +61,15 @@ from devtoolkit.server.routes.system import (
     post_close_action,
     post_daemon_notify,
     post_search_path,
+)
+from devtoolkit.server.routes.spotlight import (
+    get_spotlight_settings,
+    get_spotlight_status,
+    post_spotlight_launch,
+    post_spotlight_open_config,
+    post_spotlight_open_logs,
+    post_spotlight_settings,
+    post_spotlight_stop,
 )
 from devtoolkit.server.ui import EMBEDDED_UI_HTML, get_dashboard_html
 
@@ -136,14 +145,46 @@ def register_routes(application: FastAPI) -> None:
     application.add_api_route("/api/action/apply-fix", post_apply_fix, methods=["POST"], tags=["actions"])
 
     # Search Engine Query, Telemetry & Manual Re-indexing
+    application.add_api_route("/api/search", get_search_query, methods=["GET"], tags=["search"])
     application.add_api_route("/api/search/query", post_search_query, methods=["POST"], tags=["search"])
     application.add_api_route("/api/search/query", get_search_query, methods=["GET"], tags=["search"])
     application.add_api_route("/api/search/status", get_search_status, methods=["GET"], tags=["search"])
     application.add_api_route("/api/search/reindex", trigger_reindex, methods=["POST"], tags=["search"])
     application.add_api_route("/api/search/realtime", toggle_realtime, methods=["POST"], tags=["search"])
 
+    # DevSpotlight Desktop Client Management & Settings
+    application.add_api_route("/api/spotlight/status", get_spotlight_status, methods=["GET"], tags=["spotlight"])
+    application.add_api_route("/api/spotlight/launch", post_spotlight_launch, methods=["POST"], tags=["spotlight"])
+    application.add_api_route("/api/spotlight/stop", post_spotlight_stop, methods=["POST"], tags=["spotlight"])
+    application.add_api_route("/api/spotlight/settings", get_spotlight_settings, methods=["GET"], tags=["spotlight"])
+    application.add_api_route("/api/spotlight/settings", post_spotlight_settings, methods=["POST"], tags=["spotlight"])
+    application.add_api_route("/api/spotlight/open-config", post_spotlight_open_config, methods=["POST"], tags=["spotlight"])
+    application.add_api_route("/api/spotlight/open-logs", post_spotlight_open_logs, methods=["POST"], tags=["spotlight"])
+
 
 register_routes(app)
+
+if hasattr(sys, "_MEIPASS"):
+    DESIGN_DIR = Path(sys._MEIPASS) / "design"
+    ASSETS_DIR = Path(sys._MEIPASS) / "assets"
+    STATIC_DIR = Path(sys._MEIPASS) / "devtoolkit" / "server" / "static"
+else:
+    DESIGN_DIR = Path(__file__).resolve().parent.parent.parent / "design"
+    ASSETS_DIR = Path(__file__).resolve().parent.parent.parent / "assets"
+    STATIC_DIR = Path(__file__).resolve().parent / "static"
+
+if DESIGN_DIR.exists():
+    app.mount("/design", StaticFiles(directory=str(DESIGN_DIR)), name="design")
+
+if STATIC_DIR.exists():
+    app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
+
+@app.get("/favicon.ico", include_in_schema=False)
+def favicon():
+    favicon_path = ASSETS_DIR / "devtoolkit.ico"
+    if favicon_path.exists():
+        return FileResponse(favicon_path)
+    return HTMLResponse(status_code=404)
 
 FRONTEND_DIST = Path(__file__).resolve().parent.parent.parent / "frontend" / "dist"
 

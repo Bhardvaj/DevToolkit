@@ -1,0 +1,90 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <!-- Background Card 3D Depth Gradient (Cyber Emerald Obsidian) -->
+    <linearGradient id="tkCardGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#11261c"/>
+      <stop offset="45%" stop-color="#0c1a14"/>
+      <stop offset="100%" stop-color="#060e0a"/>
+    </linearGradient>
+
+    <!-- Outer Squircle 3D Border Gradient -->
+    <linearGradient id="tkBorderGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#34d399" stop-opacity="0.75"/>
+      <stop offset="50%" stop-color="#10b981" stop-opacity="0.25"/>
+      <stop offset="100%" stop-color="#059669" stop-opacity="0.55"/>
+    </linearGradient>
+
+    <!-- 3D Lightning Bolt Main Gradient -->
+    <linearGradient id="tkBoltGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#6ee7b7"/>
+      <stop offset="45%" stop-color="#10b981"/>
+      <stop offset="100%" stop-color="#047857"/>
+    </linearGradient>
+
+    <!-- 3D Inner Highlight Facet Gradient -->
+    <linearGradient id="tkInnerGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ecfdf5" stop-opacity="0.9"/>
+      <stop offset="50%" stop-color="#a7f3d0" stop-opacity="0.65"/>
+      <stop offset="100%" stop-color="#34d399" stop-opacity="0.3"/>
+    </linearGradient>
+
+    <!-- Code Chevrons Gradient -->
+    <linearGradient id="tkChevronGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#a7f3d0"/>
+      <stop offset="45%" stop-color="#34d399"/>
+      <stop offset="100%" stop-color="#059669"/>
+    </linearGradient>
+
+    <filter id="tkBoltGlow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="0" stdDeviation="16" flood-color="#10b981" flood-opacity="0.65"/>
+    </filter>
+
+    <filter id="tkChevronGlow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#000000" flood-opacity="0.5"/>
+      <feDropShadow dx="0" dy="0" stdDeviation="8" flood-color="#10b981" flood-opacity="0.4"/>
+    </filter>
+
+    <clipPath id="tkSquircleClip">
+      <rect x="46" y="46" width="420" height="420" rx="96"/>
+    </clipPath>
+  </defs>
+
+  <!-- Centered Icon Mark Container Tile (Standalone Squircle) -->
+  <g filter="url(#tkGlow)">
+    <rect x="46" y="46" width="420" height="420" rx="96" fill="url(#tkCardGrad)" stroke="url(#tkBorderGrad)" stroke-width="4"/>
+    <!-- Subtle Inner Border Highlight -->
+    <rect x="48" y="48" width="416" height="416" rx="94" fill="none" stroke="#34d399" stroke-width="1.5" stroke-opacity="0.28"/>
+  </g>
+
+  <!-- Clipped Interior Accents -->
+  <g clip-path="url(#tkSquircleClip)">
+    <!-- Top-Left Ambient Light Beam -->
+    <path d="M46 46 L260 46 L380 466 L46 466 Z" fill="#10b981" fill-opacity="0.035"/>
+
+    <!-- Subtle Developer Precision Crosshairs / Grid -->
+    <line x1="46" y1="256" x2="466" y2="256" stroke="#10b981" stroke-opacity="0.08" stroke-width="1.5" stroke-dasharray="6 6"/>
+    <line x1="256" y1="46" x2="256" y2="466" stroke="#10b981" stroke-opacity="0.08" stroke-width="1.5" stroke-dasharray="6 6"/>
+
+    <!-- Concentric Workstation Diagnostics Rings -->
+    <circle cx="256" cy="256" r="168" fill="none" stroke="#10b981" stroke-opacity="0.09" stroke-width="1.5" stroke-dasharray="8 8"/>
+    <circle cx="256" cy="256" r="118" fill="none" stroke="#10b981" stroke-opacity="0.06" stroke-width="1"/>
+
+    <!-- Left Code Chevron with 3D Bevel -->
+    <g filter="url(#tkChevronGlow)">
+      <path d="M172 192 L114 256 L172 320" fill="none" stroke="url(#tkChevronGrad)" stroke-width="20" stroke-linecap="round" stroke-linejoin="round"/>
+    </g>
+
+    <!-- Right Code Chevron with 3D Bevel -->
+    <g filter="url(#tkChevronGlow)">
+      <path d="M340 192 L398 256 L340 320" fill="none" stroke="url(#tkChevronGrad)" stroke-width="20" stroke-linecap="round" stroke-linejoin="round"/>
+    </g>
+
+    <!-- Original DevToolkit Central Lightning Bolt in 3D -->
+    <g filter="url(#tkBoltGlow)">
+      <!-- Main Bolt Body -->
+      <path d="M282 108 L190 256 L256 256 L224 404 L330 250 L264 250 Z" fill="url(#tkBoltGrad)"/>
+      <!-- 3D Bevel / Top-Facet Highlight -->
+      <path d="M272 130 L204 248 L250 248 L232 362 L308 254 L262 254 Z" fill="url(#tkInnerGrad)"/>
+    </g>
+  </g>
+</svg>

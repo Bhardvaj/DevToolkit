@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="spCardGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#16273d"/>
+      <stop offset="45%" stop-color="#0e1522"/>
+      <stop offset="100%" stop-color="#080b11"/>
+    </linearGradient>
+    <linearGradient id="spBoltGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#7dd3fc"/>
+      <stop offset="45%" stop-color="#38bdf8"/>
+      <stop offset="100%" stop-color="#0284c7"/>
+    </linearGradient>
+    <linearGradient id="spBorderGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38bdf8" stop-opacity="0.65"/>
+      <stop offset="50%" stop-color="#38bdf8" stop-opacity="0.25"/>
+      <stop offset="100%" stop-color="#0284c7" stop-opacity="0.45"/>
+    </linearGradient>
+    
+    <filter id="spBoltGlow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="0" stdDeviation="16" flood-color="#38bdf8" flood-opacity="0.65"/>
+    </filter>
+    <clipPath id="spSquircleClip">
+      <rect x="46" y="46" width="420" height="420" rx="96"/>
+    </clipPath>
+  </defs>
+
+  <!-- Centered Icon Mark Container Tile (Standalone Squircle) -->
+  <g filter="url(#spGlow)">
+    <rect x="46" y="46" width="420" height="420" rx="96" fill="url(#spCardGrad)" stroke="url(#spBorderGrad)" stroke-width="4"/>
+    <!-- Subtle Inner Border Highlight -->
+    <rect x="48" y="48" width="416" height="416" rx="94" fill="none" stroke="#38bdf8" stroke-width="1.5" stroke-opacity="0.25"/>
+  </g>
+
+  <!-- Clipped Interior Accents -->
+  <g clip-path="url(#spSquircleClip)">
+    <!-- Spotlight Conical / Aperture Light Beam Accent from top-left -->
+    <path d="M46 46 L260 46 L380 466 L46 466 Z" fill="#38bdf8" fill-opacity="0.035"/>
+
+    <!-- Concentric Aperture / Spotlight Guide Rings -->
+    <circle cx="256" cy="256" r="172" fill="none" stroke="#38bdf8" stroke-opacity="0.12" stroke-width="2" stroke-dasharray="10 10"/>
+    <circle cx="256" cy="256" r="126" fill="none" stroke="#38bdf8" stroke-opacity="0.08" stroke-width="1.5"/>
+    <circle cx="256" cy="256" r="70" fill="none" stroke="#38bdf8" stroke-opacity="0.05" stroke-width="1.5"/>
+  </g>
+
+  <!-- Central DevSpotlight Lightning Bolt with Glow -->
+  <g filter="url(#spBoltGlow)" transform="translate(148, 108) scale(0.565)">
+    <path d="M0 256L28.5 28c2-16 15.6-28 31.8-28H228.9c15 0 27.1 12.1 27.1 27.1c0 3.2-.6 6.5-1.7 9.5L208 160H347.3c20.2 0 36.7 16.4 36.7 36.7c0 7.4-2.2 14.6-6.4 20.7l-192.2 281c-5.9 8.6-15.6 13.7-25.9 13.7h-2.9c-15.7 0-28.5-12.8-28.5-28.5c0-2.3 .3-4.6 .9-6.9L176 288H32c-17.7 0-32-14.3-32-32z" fill="url(#spBoltGrad)"/>
+    <!-- Top Face Highlight Accent -->
+    <path d="M28.5 28c2-16 15.6-28 31.8-28H228.9c15 0 27.1 12.1 27.1 27.1c0 3.2-.6 6.5-1.7 9.5L208 160H347.3c14 0 24 7 30 16L185 282L206 166L48 166L28.5 28z" fill="#e0f2fe" opacity="0.28"/>
+  </g>
+</svg>

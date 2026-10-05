@@ -23,6 +23,8 @@ ID_RESCAN = 1003
 ID_REINDEX = 1004
 ID_STATUS = 1005
 ID_EXIT = 1006
+ID_OPEN_SPOTLIGHT = 1007
+SPOTLIGHT_TITLE = "DevToolkit Spotlight"
 
 # Win32 Constants
 NIM_ADD = 0x00000000
@@ -146,6 +148,55 @@ def activate_or_launch_ui(port: int = 4321, title: str = WINDOW_TITLE) -> bool:
         return False
 
 
+def activate_or_launch_spotlight(title: str = SPOTLIGHT_TITLE) -> bool:
+    """Restore an existing Spotlight window if present, otherwise spawn Spotlight client."""
+    hwnd = find_existing_window(title)
+    if hwnd:
+        return restore_window_by_hwnd(hwnd)
+
+    if getattr(sys, "frozen", False):
+        exe_dir = Path(sys.executable).resolve().parent
+        spotlight_exe = exe_dir / "DevToolkitSpotlight.exe"
+        if spotlight_exe.is_file():
+            cmd = [str(spotlight_exe)]
+        else:
+            cmd = [sys.executable, "--spotlight"]
+    else:
+        py_exe = sys.executable
+        if sys.platform == "win32":
+            pyw = Path(py_exe).with_name("pythonw.exe")
+            if pyw.is_file():
+                py_exe = str(pyw)
+        cmd = [py_exe, "-m", "clients.spotlight.entry"]
+
+    try:
+        if sys.platform == "win32":
+            CREATE_NO_WINDOW = 0x08000000
+            creationflags = CREATE_NO_WINDOW | subprocess.DETACHED_PROCESS | subprocess.CREATE_NEW_PROCESS_GROUP
+            subprocess.Popen(
+                cmd,
+                creationflags=creationflags,
+                close_fds=True,
+                stdin=subprocess.DEVNULL,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+            )
+        else:
+            subprocess.Popen(
+                cmd,
+                start_new_session=True,
+                close_fds=True,
+                stdin=subprocess.DEVNULL,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+            )
+        return True
+    except Exception as e:
+        logger.error(f"Failed to spawn Spotlight process: {e}")
+        return False
+
+
+
 
 if sys.platform == "win32":
     import ctypes
@@ -239,6 +290,16 @@ if sys.platform == "win32":
 
     user32.LoadIconW.argtypes = [wintypes.HINSTANCE, ctypes.c_void_p]
     user32.LoadIconW.restype = wintypes.HICON
+
+    user32.LoadImageW.argtypes = [
+        wintypes.HINSTANCE,
+        wintypes.LPCWSTR,
+        wintypes.UINT,
+        ctypes.c_int,
+        ctypes.c_int,
+        wintypes.UINT,
+    ]
+    user32.LoadImageW.restype = wintypes.HANDLE
 
     user32.CreatePopupMenu.restype = wintypes.HMENU
     user32.AppendMenuW.argtypes = [wintypes.HMENU, wintypes.UINT, wintypes.UINT, wintypes.LPCWSTR]
@@ -380,37 +441,50 @@ class DevToolkitTray:
     def _get_icon_handle(self):
         """Retrieve standard or custom application icon handle."""
         try:
-            # 1. Check embedded executable icon resource (resource ID 1 or default app icon)
-            if self._hinst:
-                h = user32.LoadIconW(self._hinst, ctypes.cast(1, wintypes.LPCWSTR))
-                if h:
-                    return h
+            cx = user32.GetSystemMetrics(49)  # SM_CXSMICON
+            cy = user32.GetSystemMetrics(50)  # SM_CYSMICON
 
-            # 2. Check candidate paths: PyInstaller bundle directory, executable directory, repo assets
+            # 1. Check candidate paths: PyInstaller bundle directory, executable directory, repo assets
             candidates = []
             if getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS"):
-                candidates.append(Path(sys._MEIPASS) / "assets" / "icon.ico")
-                candidates.append(Path(sys._MEIPASS) / "icon.ico")
+                candidates.append(Path(sys._MEIPASS) / "assets" / "devtoolkit.ico")
+                candidates.append(Path(sys._MEIPASS) / "devtoolkit.ico")
             if getattr(sys, "frozen", False):
-                candidates.append(Path(sys.executable).resolve().parent / "assets" / "icon.ico")
-                candidates.append(Path(sys.executable).resolve().parent / "icon.ico")
+                candidates.append(Path(sys.executable).resolve().parent / "assets" / "devtoolkit.ico")
+                candidates.append(Path(sys.executable).resolve().parent / "devtoolkit.ico")
 
             # Workspace / development candidates
             package_root = Path(__file__).resolve().parent.parent.parent
-            candidates.append(package_root / "assets" / "icon.ico")
-            candidates.append(Path("assets/icon.ico").resolve())
-            candidates.append(Path("icon.ico").resolve())
+            candidates.append(package_root / "assets" / "devtoolkit.ico")
+            candidates.append(Path("assets/devtoolkit.ico").resolve())
+            candidates.append(Path("devtoolkit.ico").resolve())
 
             for p in candidates:
                 if p.is_file():
+                    h = user32.LoadImageW(None, str(p), 1, cx, cy, 0x00000010)
+                    if h:
+                        return h
                     h = user32.LoadImageW(None, str(p), 1, 0, 0, 0x00000010 | 0x00000040)
                     if h:
                         return h
 
-            # Default: standard Windows application icon (IDI_APPLICATION = 32512)
+            # 2. Check embedded executable icon resource (resource ID 1) in frozen .exe
+            if getattr(sys, "frozen", False) and self._hinst:
+                h = user32.LoadImageW(self._hinst, ctypes.cast(1, wintypes.LPCWSTR), 1, cx, cy, 0)
+                if h:
+                    return h
+                h = user32.LoadIconW(self._hinst, ctypes.cast(1, wintypes.LPCWSTR))
+                if h:
+                    return h
+
+            # 3. Default: standard Windows application icon (IDI_APPLICATION = 32512)
             return user32.LoadIconW(None, ctypes.cast(32512, wintypes.LPCWSTR))
-        except Exception:
-            return None
+        except Exception as e:
+            logger.warning(f"Error loading DevToolkit system tray icon: {e}", exc_info=True)
+            try:
+                return user32.LoadIconW(None, ctypes.cast(32512, wintypes.LPCWSTR))
+            except Exception:
+                return None
 
     def _window_proc(self, hwnd, msg, wparam, lparam):
         if msg == WM_CLOSE:
@@ -510,6 +584,7 @@ class DevToolkitTray:
         act = get_activity_tracker().get_status()
         hmenu = user32.CreatePopupMenu()
         try:
+            user32.AppendMenuW(hmenu, MF_STRING, ID_OPEN_SPOTLIGHT, "Open DevSpotlight (Alt+Space)")
             user32.AppendMenuW(hmenu, MF_STRING, ID_OPEN_WINDOW, "Open DevToolkit Window (Embedded)")
             user32.AppendMenuW(hmenu, MF_STRING, ID_OPEN_BROWSER, "Open in Web Browser")
             user32.AppendMenuW(hmenu, MF_SEPARATOR, 0, None)
@@ -552,7 +627,9 @@ class DevToolkitTray:
             )
             user32.PostMessageW(self._hwnd, WM_NULL, 0, 0)
 
-            if cmd == ID_OPEN_WINDOW:
+            if cmd == ID_OPEN_SPOTLIGHT:
+                activate_or_launch_spotlight()
+            elif cmd == ID_OPEN_WINDOW:
                 self._handle_primary_click()
             elif cmd == ID_OPEN_BROWSER:
                 self._handle_open_browser()

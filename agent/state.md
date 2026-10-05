@@ -4,9 +4,9 @@ This document is continuously updated to reflect current project status, complet
 
 ---
 
-## Current Status: Phase 14 Complete (Decoupled Background Daemon, Windowless GUI, Portable Logging & Test Optimization)
-- **Active Task**: Decoupled Architecture overhaul 100% complete: Background Daemon (`devtoolkit.daemon.server`), pure Win32 system tray (`devtoolkit.daemon.tray`), Windowless GUI PE subsystem (`devtoolkit.entry:main`), Client SDK (`devtoolkit.client.api`), centralized co-located rotating logging (`daemon.log`, `client.log`), zero host pollution (`daemon.json` beside executable), Everything-class Fast Search Engine (`FastSearchEngine`, `NTFSUSNReader`, `ParallelPrunedCrawler`, `LiveDirectoryWatcher`), repository de-bloating, and test suite optimization (235 passing tests in ~60s). Standalone executable `dist/DevToolkit.exe` (28.51 MB).
-- **Architecture**: Decoupled Host Daemon + 22 Tool Inspectors + 4-Layer Generalized Discovery + Standalone FastSearchEngine + Client SDK + PyWebView Edge Chromium Desktop Client + Native Win32 Tray + Synchronized Activity Telemetry + Co-located Portable Configuration & Logging.
+## Current Status: Phase 15 Complete (DevToolkit Spotlight Command Palette & Search Extension)
+- **Active Task**: DevToolkit Spotlight (`DevToolkitSpotlight.exe`) completed: Independent standalone command palette client combining macOS Spotlight ergonomics, Flow Launcher acronym matching, and PowerToys Run developer features. Features <10ms instant `Alt+Space` summoning, 25% golden ratio optical positioning, multi-monitor targeting, dedicated system tray, zero daemon code bundling, 8 query modes (Fast Search + Apps, Ports, Tools, Projects, Window Walker, Calculator, Command Palette, Interactive Guide), customizable Obsidian theme tokens (`spotlight.json`), and dedicated build script (`scripts/build_spotlight.ps1`). Core search engine expanded with `app` indexing, Flow Launcher acronym matcher (`matcher.py`), and Start Menu watchers.
+- **Architecture**: Decoupled Host Daemon + 22 Tool Inspectors + Everything-class FastSearchEngine (Files, Folders, Apps + Acronyms) + Client SDK + PyWebView Edge Chromium Desktop Client + DevToolkit Spotlight Command Palette + Native Win32 Tray + Portable Configuration & Logging.
 - **Repository**: Synced on GitHub at [https://github.com/Bhardvaj/DevToolkit](https://github.com/Bhardvaj/DevToolkit).
 
 ---
@@ -369,8 +369,74 @@ This document is continuously updated to reflect current project status, complet
   - Linked re-index operations across server route, daemon worker, system tray, and UI.
   - Standalone binary recompiled: `dist/DevToolkit.exe` (28.51 MB, Windowless GUI).
 
+---
 
-
-
-
+## Milestone Checklist: Phase 15 (Completed - DevToolkit Spotlight Command Palette & Core Search Extension)
+- [x] **Task 15 - 01: Core Search Engine Model & Query Extension**:
+  - Extended `FastSearchEngine`, `SearchResult`, and `SearchItemDTO` to support three first-class item types: `file`, `folder`, and `app`.
+  - Added `acronym` field to `SearchResult` and indexed entries.
+  - Implemented Flow Launcher-grade acronym matcher (`devtoolkit/core/search/matcher.py`: `StringMatcher`) with CamelCase, word-boundary, and digit token extraction.
+  - Built Windows application discovery scanner (`devtoolkit/core/search/apps.py`: `index_all_applications`) aggregating Start Menu (User & Common), Desktop `.lnk`, and Registry `App Paths`.
+  - Added Start Menu directories to `LiveDirectoryWatcher` for real-time app installation detection.
+  - Updated query parsing and scoring to boost exact acronym matches to top rank.
+- [x] **Task 15 - 02: Background Daemon Tray Integration**:
+  - Added `"Open DevSpotlight (Alt+Space)"` menu item to native Win32 system tray (`devtoolkit/daemon/tray.py`).
+  - Implemented `activate_or_launch_spotlight()` restoring resident Spotlight window or launching `DevToolkitSpotlight.exe`.
+- [x] **Task 15 - 03: DevToolkit Spotlight Command Palette Client (`clients/spotlight/`)**:
+  - Completely independent client with zero daemon code bundling, communicating strictly through `devtoolkit.client.api:DevToolkitClient`.
+  - Built resident window manager (`clients/spotlight/window.py`: `SpotlightWindowManager`) using PyWebView, Win32 `WS_EX_TOOLWINDOW` (no taskbar/Alt-Tab clutter), and `HWND_TOPMOST`.
+  - Implemented 25% golden ratio optical positioning (`WorkingArea.Height / 4`) and multi-monitor placement (Cursor monitor, Focused window monitor, Fixed monitor).
+  - Built global keyboard hotkey listener (`clients/spotlight/hotkey.py`: `GlobalHotkeyListener`) registering `Alt+Space` via Win32 `RegisterHotKey` for `<10ms` instant summoning.
+  - Built dedicated Win32 notification system tray (`clients/spotlight/tray.py`: `SpotlightTray`) with context menu for Spotlight.
+  - Built single-instance mutex guard (`Local\DevToolkitSpotlight_SingleInstance_Mutex`) in `clients/spotlight/entry.py` restoring existing window on duplicate launch.
+  - Implemented portable settings manager (`clients/spotlight/settings.py`) persisting to co-located `spotlight.json`.
+- [x] **Task 15 - 04: Dedicated Query Modes & Developer Utilities**:
+  - Default mode: Fast Search + Desktop Applications with Acronym Matching (`vsc` -> VS Code, `wt` -> Windows Terminal), `Ctrl+Shift+Enter` Admin launch, `Shift+Enter` Reveal in Explorer, and offline Start Menu fallback.
+  - Port Inspector & Killer (`port:`, `ports:`, `port:dev`, `port:<num>`, `port:<num> kill`, `Ctrl+K`).
+  - Tool Diagnostics (`tool:`, `tools:`, `t:`, `tool:<name>`, deep drawer trigger).
+  - Project Auditor (`proj:<path>`, `Enter` opens terminal, `Shift+Enter` opens Explorer).
+  - Window Walker (`w:`, `window:`: Win32 `EnumWindows` window enumeration, search, switch, close).
+  - Inline Developer Utilities (`=`: math, storage unit conversions, hex/bin base conversions, UUIDv4, unix epoch).
+  - Full Command Palette (`>`, `/`: `> settings`, `> config`, `> dashboard`, `> reindex`, `> rescan`, `> logs`, `> quit`).
+  - Interactive Command Cheatsheet & Guide (`?`).
+- [x] **Task 15 - 05: Obsidian Glassmorphic UI & Resident Shell**:
+  - Custom glassmorphic HTML/CSS/JS interface (`clients/spotlight/ui/spotlight.html`) with customizable accent color, opacity (0.50–1.00), and blur radius (0–40px).
+  - Fluid keyboard navigation (Arrow keys, Enter, Shift+Enter, Ctrl+Shift+Enter, Ctrl+K, Escape, Settings modal).
+- [x] **Task 15 - 07: Embedded UI DevSpotlight Manager & Interactive Hotkey Recorder**:
+  - Redesigned the DevSpotlight embedded dashboard page (`devtoolkit/server/static/index.html` & `app.js`) to match professional multi-column desktop layout.
+  - Replaced text-based hotkey inputs with an interactive modal recorder capturing all keyboard keycodes and modifier combinations (Alt, Ctrl, Shift, Win, Function keys, Special keys, and Punctuation).
+  - Added dedicated secondary fallback shortcut recorder, multi-monitor display target selector with live monitor enumeration, and behavior toggles (Dismiss on blur, Default open details panel, Restore previous window on Esc).
+  - Removed outdated switcher pill in favor of immersive live hero preview with Aurora & Grid background.
+  - Implemented smart dirty detection enabling top "Save" button only when pending unsaved changes exist.
+- [x] **Task 15 - 08: Comprehensive Theming System & Dynamic Windows System Theme Integration**:
+  - Implemented full preset schema in `clients/spotlight/settings.py` supporting `custom_themes` and built-in themes (`system`, `obsidian`, `emerald`, `indigo`, `amber`).
+  - Added native Windows Registry theme detection (`get_windows_system_theme()`) reading `AppsUseLightTheme` and DWM `AccentColor`/`ColorizationColor`.
+  - Added "Same as system" option that dynamically adapts to Windows dark/light mode and OS accent color while disabling manual canvas sliders.
+  - Built preset creation modal with live preview snapshot and custom color picker; presets encapsulate `opacity`, `blur_radius`, `corner_radius`, `animation_speed`, and `accent_color`.
+  - Exposed REST endpoints (`POST /api/spotlight/themes`, `DELETE /api/spotlight/themes/{id}`) with direct persistence to `spotlight.json`.
+  - Updated PyWebView client (`spotlight.html`) to dynamically apply custom themes and native Windows system theme.
+- [x] **Task 15 - 09: Unified 3D Brand Identity & DevSpotlight Preview Telemetry Modernization**:
+  - Unified 3D brand identity system across both apps: DevToolkit (emerald green `#10B981`) and DevSpotlight (sky blue `#38BDF8`).
+  - Standardized vector master assets in `design/`: `devtoolkit-icon.svg`, `devtoolkit-logo.svg`, `devtoolkit-ui-badge.svg`, `devspotlight-icon.svg`, `devspotlight-logo.svg`, `devspotlight-ui-badge.svg`.
+  - Upgraded multi-resolution `.ico` (16 to 256px) and high-res `.png` assets in `assets/devtoolkit.*` and `assets/devspotlight.*`.
+  - Refined DevSpotlight preview in DevToolkit dashboard (`devtoolkit/server/static/index.html` & `app.js`):
+    - Removed `WINDOWS ACRYLIC (DARK)` preset chip from inside search mockup; replaced with authentic launcher filter badge (`ALL`).
+    - Removed `Windows Acrylic Glass Active` badge from inside the footer hints row.
+    - Added comprehensive live telemetry pill below preview rendering a consolidated surface chip (`#telemetry-theme`, e.g. `Acrylic (Dark)` or `Obsidian · Glass`), optical position (`#telemetry-anchor`), opacity (`#telemetry-opacity`), and blur radius (`#telemetry-blur`).
+  - Fixed native Win32 tray icon loading in `clients/spotlight/tray.py` with multi-tier fallback (resource ID 1, system small icon metrics `SM_CXSMICON`/`SM_CYSMICON`, and disk asset paths).
+  - All 288 tests passing (100% pass rate). Rebuilt standalone binary `dist/DevToolkit.exe` (28.82 MB).
+- [x] **Task 15 - 10: Native Win32 Tray Icon Fix for 64-bit Windows**:
+  - Identified `ctypes.ArgumentError: OverflowError` when 64-bit module handle was passed to undeclared `user32.LoadImageW`.
+  - Added explicit 64-bit argument and return types for `user32.LoadImageW` (`wintypes.HINSTANCE`, `wintypes.LPCWSTR`, etc.) and `user32.LoadIconW` in both `devtoolkit/daemon/tray.py` and `clients/spotlight/tray.py`.
+  - Prioritized multi-tier `.ico` disk and bundle assets (`assets/devtoolkit.ico` and `assets/devspotlight.ico`) with exact `SM_CXSMICON`/`SM_CYSMICON` resolution.
+  - Rebuilt both standalone binaries: `dist/DevToolkit.exe` (28.82 MB) and `dist/DevToolkitSpotlight.exe` (14.10 MB).
+- [x] **Task 15 - 11: Configuration Migration to Portable devtoolkit.json**:
+  - Migrated DevToolkit configuration from YAML to JSON (`devtoolkit.json`), eliminating external PyYAML configuration overhead.
+  - Aligned configuration resolution with `spotlight.json`:
+    - Frozen executable mode: ALWAYS resolves `devtoolkit.json` in the exact same directory as `DevToolkit.exe`.
+    - Development mode: resolves `devtoolkit.json` in root.
+    - If the configuration file does not exist, automatically creates it in the same directory with default settings.
+  - Removed all YAML backward compatibility code and legacy `.devtoolkit.yaml` resolution.
+  - Updated `scripts/build_standalone.ps1`, `.gitignore`, `tests/conftest.py`, and `tests/test_config.py`.
+  - All 289 tests passing (100% pass rate). Rebuilt standalone binary `dist/DevToolkit.exe` (28.82 MB).
 
