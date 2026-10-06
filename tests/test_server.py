@@ -351,3 +351,73 @@ def test_apply_fix_does_not_execute_unsupported_commands(monkeypatch):
 
     res = post_apply_fix(ApplyFixRequest(command=r"setx PATH C:\evil /m"))
     assert res["status"] == "info"
+
+
+def test_cross_site_mutation_guard():
+    """CORS does not stop a simple-request POST, so the middleware must.
+
+    A cross-origin form or text/plain POST is CORS-safelisted: the browser
+    sends it without a preflight and only hides the response, so the side
+    effect runs. Its Host header is the genuine loopback, so the rebinding
+    guard passes it too.
+    """
+    from devtoolkit.server.app import is_cross_site_mutation
+
+    # Blocked: state-changing and demonstrably from another site.
+    assert is_cross_site_mutation("POST", "https://evil.example", "")
+    assert is_cross_site_mutation("POST", "http://10.0.0.5:4321", "")
+    assert is_cross_site_mutation("DELETE", "https://evil.example", "")
+    assert is_cross_site_mutation("POST", "", "cross-site")
+    # Sec-Fetch-Site wins even when Origin looks local.
+    assert is_cross_site_mutation("POST", "http://127.0.0.1:4321", "cross-site")
+
+    # Allowed: the bundled UI and a local dev server.
+    assert not is_cross_site_mutation("POST", "http://127.0.0.1:4321", "same-origin")
+    assert not is_cross_site_mutation("POST", "http://localhost:4321", "")
+    assert not is_cross_site_mutation("POST", "http://localhost:5173", "")
+    # Allowed: no browser context at all (curl, the Spotlight client).
+    assert not is_cross_site_mutation("POST", "", "")
+    # Allowed: safe methods are never blocked, whatever the origin.
+    for method in ("GET", "HEAD", "OPTIONS"):
+        assert not is_cross_site_mutation(method, "https://evil.example", "cross-site")
+
+
+def test_zero_parameter_post_endpoints_are_guarded():
+    """The endpoints #16 added take no body, so FastAPI's 422 does not shield them."""
+    import asyncio
+
+    from devtoolkit.server.app import app
+
+    async def post(path, origin):
+        scope = {
+            "type": "http", "asgi": {"version": "3.0"}, "http_version": "1.1",
+            "method": "POST", "path": path, "raw_path": path.encode(),
+            "query_string": b"", "root_path": "", "scheme": "http",
+            "client": ("127.0.0.1", 5555), "server": ("127.0.0.1", 4321),
+            "headers": [
+                (b"host", b"127.0.0.1:4321"),
+                (b"origin", origin.encode()),
+                (b"content-type", b"application/x-www-form-urlencoded"),
+                (b"content-length", b"0"),
+            ],
+        }
+        status = {}
+
+        async def receive():
+            return {"type": "http.request", "body": b"", "more_body": False}
+
+        async def send(msg):
+            if msg["type"] == "http.response.start":
+                status["code"] = msg["status"]
+
+        await app(scope, receive, send)
+        return status["code"]
+
+    for path in (
+        "/api/spotlight/launch",
+        "/api/spotlight/stop",
+        "/api/spotlight/open-config",
+        "/api/spotlight/open-logs",
+        "/api/search/reindex",
+    ):
+        assert asyncio.run(post(path, "https://evil.example")) == 403, path
