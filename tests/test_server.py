@@ -268,3 +268,156 @@ def test_open_and_reveal_file_handlers(tmp_path, monkeypatch):
 
 
 
+def test_cors_restricted_to_loopback_origins():
+    """Remote origins must not be able to drive the local API."""
+    import re
+    from devtoolkit.server.app import LOOPBACK_ORIGIN_REGEX
+
+    pattern = re.compile(LOOPBACK_ORIGIN_REGEX)
+    for allowed in ("http://127.0.0.1:4321", "http://localhost:5173", "http://[::1]:4321"):
+        assert pattern.match(allowed), allowed
+    for blocked in ("http://evil.test", "https://devtoolkit.example.com", "http://10.0.0.5:4321"):
+        assert not pattern.match(blocked), blocked
+
+    cors = next(
+        (mw for mw in app.user_middleware if "CORSMiddleware" in str(mw.cls)),
+        None,
+    )
+    assert cors is not None
+    assert "*" not in cors.kwargs.get("allow_origins", [])
+
+
+def test_host_header_guard_blocks_dns_names():
+    """DNS rebinding: a hostname resolving to 127.0.0.1 is same-origin, so CORS never applies."""
+    from devtoolkit.server.app import host_without_port, is_local_host_header
+
+    assert host_without_port("127.0.0.1:4321") == "127.0.0.1"
+    assert host_without_port("[::1]:4321") == "::1"
+    assert host_without_port("localhost") == "localhost"
+
+    for allowed in ("127.0.0.1:4321", "localhost:4321", "[::1]:4321", "192.168.1.20:4321", ""):
+        assert is_local_host_header(allowed), allowed
+    for blocked in ("evil.test:4321", "devtoolkit.example.com", "rebind.attacker.test"):
+        assert not is_local_host_header(blocked), blocked
+
+
+def test_apply_fix_accepts_only_plain_user_scope_setx():
+    from devtoolkit.server.routes.actions import parse_setx_command
+
+    assert parse_setx_command(r'setx JAVA_HOME "C:\Program Files\Java\jdk-21"') == [
+        "setx",
+        "JAVA_HOME",
+        r"C:\Program Files\Java\jdk-21",
+    ]
+    # /m writes the machine-wide environment; extra tokens are refused outright.
+    assert parse_setx_command(r"setx PATH C:\bin /m") is None
+    assert parse_setx_command("setx PATH") is None
+    assert parse_setx_command('setx "BAD NAME" value') is None
+    assert parse_setx_command("notsetx FOO bar") is None
+
+
+def test_apply_fix_refuses_commands_that_would_destroy_path():
+    """setx replaces rather than appends, and SafeRunner runs it with shell=False.
+
+    `setx PATH "%PATH%;..."` would therefore write the literal text `%PATH%;...`
+    into the user PATH. cmake, golang, java and bun all emit that exact form.
+    """
+    from devtoolkit.server.routes.actions import parse_setx_command
+
+    # %VAR% is never expanded with shell=False, and setx writes REG_SZ.
+    assert parse_setx_command(r'setx PATH "%PATH%;C:\Go\bin"') is None
+    assert parse_setx_command(r'setx TF_PLUGIN_CACHE_DIR "%USERPROFILE%\.terraform.d"') is None
+
+    # setx replaces, so any PATH write discards the existing user PATH.
+    assert parse_setx_command(r'setx PATH "C:\only\this"') is None
+    assert parse_setx_command(r'setx path "C:\only\this"') is None
+
+    # The forms the inspectors emit that are safe to apply still are.
+    assert parse_setx_command(r'setx JAVA_HOME "C:\Program Files\Java\jdk-21"') == [
+        "setx",
+        "JAVA_HOME",
+        r"C:\Program Files\Java\jdk-21",
+    ]
+
+
+def test_apply_fix_does_not_execute_unsupported_commands(monkeypatch):
+    import devtoolkit.server.routes.actions as actions
+    from devtoolkit.server.app import ApplyFixRequest, post_apply_fix
+
+    def _fail(*args, **kwargs):
+        raise AssertionError("apply-fix must not execute this command")
+
+    monkeypatch.setattr(actions.SafeRunner, "run_command", _fail)
+
+    res = post_apply_fix(ApplyFixRequest(command=r"setx PATH C:\evil /m"))
+    assert res["status"] == "info"
+
+
+def test_cross_site_mutation_guard():
+    """CORS does not stop a simple-request POST, so the middleware must.
+
+    A cross-origin form or text/plain POST is CORS-safelisted: the browser
+    sends it without a preflight and only hides the response, so the side
+    effect runs. Its Host header is the genuine loopback, so the rebinding
+    guard passes it too.
+    """
+    from devtoolkit.server.app import is_cross_site_mutation
+
+    # Blocked: state-changing and demonstrably from another site.
+    assert is_cross_site_mutation("POST", "https://evil.example", "")
+    assert is_cross_site_mutation("POST", "http://10.0.0.5:4321", "")
+    assert is_cross_site_mutation("DELETE", "https://evil.example", "")
+    assert is_cross_site_mutation("POST", "", "cross-site")
+    # Sec-Fetch-Site wins even when Origin looks local.
+    assert is_cross_site_mutation("POST", "http://127.0.0.1:4321", "cross-site")
+
+    # Allowed: the bundled UI and a local dev server.
+    assert not is_cross_site_mutation("POST", "http://127.0.0.1:4321", "same-origin")
+    assert not is_cross_site_mutation("POST", "http://localhost:4321", "")
+    assert not is_cross_site_mutation("POST", "http://localhost:5173", "")
+    # Allowed: no browser context at all (curl, the Spotlight client).
+    assert not is_cross_site_mutation("POST", "", "")
+    # Allowed: safe methods are never blocked, whatever the origin.
+    for method in ("GET", "HEAD", "OPTIONS"):
+        assert not is_cross_site_mutation(method, "https://evil.example", "cross-site")
+
+
+def test_zero_parameter_post_endpoints_are_guarded():
+    """The endpoints #16 added take no body, so FastAPI's 422 does not shield them."""
+    import asyncio
+
+    from devtoolkit.server.app import app
+
+    async def post(path, origin):
+        scope = {
+            "type": "http", "asgi": {"version": "3.0"}, "http_version": "1.1",
+            "method": "POST", "path": path, "raw_path": path.encode(),
+            "query_string": b"", "root_path": "", "scheme": "http",
+            "client": ("127.0.0.1", 5555), "server": ("127.0.0.1", 4321),
+            "headers": [
+                (b"host", b"127.0.0.1:4321"),
+                (b"origin", origin.encode()),
+                (b"content-type", b"application/x-www-form-urlencoded"),
+                (b"content-length", b"0"),
+            ],
+        }
+        status = {}
+
+        async def receive():
+            return {"type": "http.request", "body": b"", "more_body": False}
+
+        async def send(msg):
+            if msg["type"] == "http.response.start":
+                status["code"] = msg["status"]
+
+        await app(scope, receive, send)
+        return status["code"]
+
+    for path in (
+        "/api/spotlight/launch",
+        "/api/spotlight/stop",
+        "/api/spotlight/open-config",
+        "/api/spotlight/open-logs",
+        "/api/search/reindex",
+    ):
+        assert asyncio.run(post(path, "https://evil.example")) == 403, path

@@ -1,6 +1,8 @@
 """FastAPI local server and PyWebView desktop window launcher."""
 
+import ipaddress
 import os
+import re
 import sys
 import threading
 import time
@@ -9,9 +11,9 @@ from pathlib import Path
 from typing import List
 
 from contextlib import asynccontextmanager
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse, FileResponse
+from fastapi.responses import HTMLResponse, FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 import uvicorn
 
@@ -101,13 +103,98 @@ async def lifespan(application: FastAPI):
 
 app = FastAPI(title="DevToolkit API", version=__version__, lifespan=lifespan)
 
+# The bundled UI is always served from the same loopback origin as the API, so
+# cross-origin access is never needed by DevToolkit itself. Allowing any origin
+# let every page the user browsed drive this API: launching files via
+# /api/action/open-file, terminating processes via /api/ports/kill, and reading
+# the whole filesystem index via /api/search/query. Loopback origins only keeps
+# local frontend dev servers working while shutting remote pages out.
+LOOPBACK_ORIGIN_REGEX = r"^https?://(127(\.\d+){3}|localhost|\[::1\])(:\d+)?$"
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origin_regex=LOOPBACK_ORIGIN_REGEX,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+def host_without_port(raw_host: str) -> str:
+    """Strip the optional port from a Host header value."""
+    value = raw_host.strip()
+    if value.startswith("["):  # bracketed IPv6 literal, e.g. [::1]:4321
+        closing = value.find("]")
+        return value[1:closing] if closing != -1 else value[1:]
+    if value.count(":") == 1:
+        return value.rsplit(":", 1)[0]
+    return value
+
+
+def is_local_host_header(raw_host: str) -> bool:
+    """Whether a Host header addressed this server directly rather than via a DNS name.
+
+    Blocks DNS rebinding: a remote page on ``http://attacker.test:4321`` whose
+    name resolves to 127.0.0.1 is same-origin to the browser, so CORS never
+    applies. Bare IP literals are accepted so that binding to a LAN address
+    (``--host 0.0.0.0``) keeps working.
+    """
+    host = host_without_port(raw_host).lower()
+    if not host or host == "localhost" or host.endswith(".localhost"):
+        return True
+    try:
+        ipaddress.ip_address(host)
+    except ValueError:
+        return False
+    return True
+
+
+SAFE_METHODS = frozenset({"GET", "HEAD", "OPTIONS", "TRACE"})
+
+
+def is_cross_site_mutation(method: str, origin: str, sec_fetch_site: str) -> bool:
+    """Whether this is a state-changing request issued from another site.
+
+    CORS alone does not stop these. A cross-origin form or ``text/plain`` POST
+    is a CORS-safelisted *simple request*: the browser sends it without a
+    preflight and only hides the response, so the side effect still runs. Its
+    Host header is the genuine loopback address, so the rebinding guard passes
+    it too. Endpoints that require a JSON body survive by accident, because
+    FastAPI will not parse a form content type into a Pydantic model — but any
+    handler taking no body is fully exposed, and several do
+    (``/api/spotlight/launch``, ``/stop``, ``/open-config``, ``/open-logs``,
+    ``/api/search/reindex``).
+
+    ``Sec-Fetch-Site`` is the more reliable signal where the browser sends it;
+    ``Origin`` is the fallback, and browsers always set it on a cross-origin
+    POST. A request carrying neither is not coming from a browser page, so it
+    is left to the Host guard.
+    """
+    if method.upper() in SAFE_METHODS:
+        return False
+    if sec_fetch_site and sec_fetch_site.lower() == "cross-site":
+        return True
+    return bool(origin) and re.match(LOOPBACK_ORIGIN_REGEX, origin) is None
+
+
+@app.middleware("http")
+async def reject_rebound_hostnames(request: Request, call_next):
+    host_header = request.headers.get("host", "")
+    if not is_local_host_header(host_header):
+        return JSONResponse(
+            status_code=421,
+            content={"detail": f"Host '{host_header}' is not a local address for this server."},
+        )
+    if is_cross_site_mutation(
+        request.method,
+        request.headers.get("origin", ""),
+        request.headers.get("sec-fetch-site", ""),
+    ):
+        return JSONResponse(
+            status_code=403,
+            content={"detail": "Cross-origin state-changing requests are refused."},
+        )
+    return await call_next(request)
 
 
 def register_routes(application: FastAPI) -> None:

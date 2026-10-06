@@ -14,8 +14,11 @@ from devtoolkit.core.signatures import scan_roots_for_tools, SIGNATURE_CHECKERS
 
 def test_search_index_exact_and_batch():
     idx = SearchIndex()
+    # Two distinct directories: on Windows the index folds path keys, so the same
+    # directory could not hold both of these (NTFS cannot either). The casing
+    # that matters here is the filename, which is what find_exact looks up.
     idx.add_entry(path="/tools/bin/javac.exe", name="javac.exe", is_dir=False, size=1024)
-    idx.add_entry(path="/tools/bin/JAVAC.EXE", name="JAVAC.EXE", is_dir=False, size=1024)
+    idx.add_entry(path="/tools/sbin/JAVAC.EXE", name="JAVAC.EXE", is_dir=False, size=1024)
     idx.add_entry(path="/sdk/flutter/bin/flutter.bat", name="flutter.bat", is_dir=False)
     idx.add_entry(path="/sdk/flutter", name="flutter", is_dir=True)
 
@@ -212,3 +215,94 @@ def test_search_engine_telemetry_and_singleton():
     assert "process_ram_bytes" in telemetry
     assert "process_ram_formatted" in telemetry
 
+
+
+def test_index_path_lookups_are_separator_agnostic():
+    """add / update / rename / remove must resolve the same entry regardless of separator."""
+    from devtoolkit.core.search.index import normalize_path_key
+
+    win_path = "D:" + chr(92) + "Proj" + chr(92) + "src" + chr(92) + "main.py"
+    posix_path = "D:/Proj/src/main.py"
+    # Both separator styles collapse to one key. On Windows that key is also
+    # case-folded, so compare against the platform's expected form.
+    expected = posix_path.lower() if sys.platform == "win32" else posix_path
+    assert normalize_path_key(win_path) == normalize_path_key(posix_path) == expected
+
+    idx = SearchIndex()
+    idx.add_entry(win_path, "main.py", False, 10, 1.0)
+    assert idx.total_entries == 1
+
+    # Re-adding via the other separator style updates in place instead of duplicating.
+    idx.add_entry(posix_path, "main.py", False, 20, 2.0)
+    assert idx.total_entries == 1
+
+    assert idx.update_entry(win_path, size=30, mtime=3.0) is True
+    assert idx.find_exact("main.py")[0].size == 30
+
+    assert idx.rename_entry(posix_path, "D:/Proj/src/app.py") is True
+    assert idx.find_exact("app.py")
+    assert idx.remove_entry(win_path) is False
+    assert idx.remove_entry("D:" + chr(92) + "Proj" + chr(92) + "src" + chr(92) + "app.py") is True
+    assert idx.total_entries == 0
+
+
+@pytest.mark.skipif(sys.platform != "win32", reason="path keys are only folded on Windows")
+def test_index_case_variant_event_does_not_duplicate_entry():
+    """A watcher event whose casing differs from the crawled path must not add a second entry.
+
+    The watcher builds paths from its own resolved root, so its casing can differ
+    from the crawler's. Before keys were folded, the miss fell through to
+    add_entry and grew the index instead of updating it.
+    """
+    idx = SearchIndex()
+    idx.add_entry(r"C:\Tools\Bin\javac.exe", "javac.exe", False, 10, 1.0)
+
+    assert idx.update_entry(r"C:\tools\bin\javac.exe", size=99) is True
+    assert idx.total_entries == 1
+    assert idx.find_exact("javac.exe")[0].size == 99
+
+    assert idx.rename_entry(r"C:\TOOLS\Bin\javac.exe", r"C:\Tools\Bin\jj.exe") is True
+    assert idx.total_entries == 1
+
+    assert idx.remove_entry(r"C:\tools\BIN\jj.exe") is True
+    assert idx.total_entries == 0
+
+
+def test_index_miss_does_not_scan_every_key():
+    """A live-watcher event for an unindexed path must stay O(1), not scan the path map."""
+    idx = SearchIndex()
+    idx.add_entries_batch([
+        SearchResult(path=f"D:/Proj/f{i}.txt", name=f"f{i}.txt", is_dir=False, size=1, mtime=1.0)
+        for i in range(20000)
+    ])
+
+    import time
+    t0 = time.perf_counter()
+    for i in range(200):
+        assert idx.remove_entry(f"D:/Proj/missing/deep/gone{i}.tmp") is False
+    elapsed_ms = (time.perf_counter() - t0) * 1000.0
+
+    # 200 misses against a 20k index: a linear fallback scan took ~1ms each.
+    assert elapsed_ms < 50, f"misses are not O(1): {elapsed_ms:.1f} ms for 200 lookups"
+
+
+def test_rename_and_update_preserve_app_classification():
+    """entry_type and acronym must survive a rename or a metadata update.
+
+    Both methods rebuild the SearchResult, so a field added to the model but
+    not carried through here silently demotes an app entry to a plain file and
+    drops it out of `app:` queries.
+    """
+    idx = SearchIndex()
+    idx.add_entry(
+        "C:/Apps/Visual Studio Code.lnk", "Visual Studio Code.lnk", False, 10, 1.0,
+        entry_type="app", acronym="vsc",
+    )
+
+    assert idx.update_entry("C:/Apps/Visual Studio Code.lnk", size=20) is True
+    e = idx.find_exact("Visual Studio Code.lnk")[0]
+    assert (e.entry_type, e.acronym) == ("app", "vsc")
+
+    assert idx.rename_entry("C:/Apps/Visual Studio Code.lnk", "C:/Apps/VS Code.lnk") is True
+    e = idx.find_exact("VS Code.lnk")[0]
+    assert (e.entry_type, e.acronym) == ("app", "vsc")
