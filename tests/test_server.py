@@ -316,6 +316,30 @@ def test_apply_fix_accepts_only_plain_user_scope_setx():
     assert parse_setx_command("notsetx FOO bar") is None
 
 
+def test_apply_fix_refuses_commands_that_would_destroy_path():
+    """setx replaces rather than appends, and SafeRunner runs it with shell=False.
+
+    `setx PATH "%PATH%;..."` would therefore write the literal text `%PATH%;...`
+    into the user PATH. cmake, golang, java and bun all emit that exact form.
+    """
+    from devtoolkit.server.routes.actions import parse_setx_command
+
+    # %VAR% is never expanded with shell=False, and setx writes REG_SZ.
+    assert parse_setx_command(r'setx PATH "%PATH%;C:\Go\bin"') is None
+    assert parse_setx_command(r'setx TF_PLUGIN_CACHE_DIR "%USERPROFILE%\.terraform.d"') is None
+
+    # setx replaces, so any PATH write discards the existing user PATH.
+    assert parse_setx_command(r'setx PATH "C:\only\this"') is None
+    assert parse_setx_command(r'setx path "C:\only\this"') is None
+
+    # The forms the inspectors emit that are safe to apply still are.
+    assert parse_setx_command(r'setx JAVA_HOME "C:\Program Files\Java\jdk-21"') == [
+        "setx",
+        "JAVA_HOME",
+        r"C:\Program Files\Java\jdk-21",
+    ]
+
+
 def test_apply_fix_does_not_execute_unsupported_commands(monkeypatch):
     import devtoolkit.server.routes.actions as actions
     from devtoolkit.server.app import ApplyFixRequest, post_apply_fix

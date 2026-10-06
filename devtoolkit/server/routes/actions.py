@@ -150,6 +150,19 @@ def parse_setx_command(cmd_str: str) -> Optional[list]:
     the backslashes in ``C:\\Program Files\\Java``). Only the exact three-token
     form is accepted so that extra flags such as ``/m`` — which writes to the
     machine-wide environment — cannot be smuggled through this endpoint.
+
+    Two further forms are refused because ``setx`` would silently destroy the
+    value it is meant to extend:
+
+    * Anything containing ``%``. ``SafeRunner`` runs with ``shell=False``, so
+      ``%PATH%`` is never expanded, and ``setx`` writes ``REG_SZ`` — applying
+      ``setx PATH "%PATH%;C:\\Go\\bin"`` would replace the user PATH with that
+      literal text. Several inspectors emit exactly that form.
+    * Writes to ``PATH`` itself. ``setx`` replaces rather than appends, so any
+      PATH write here discards the existing user PATH.
+
+    Both fall through to the "copy and run in terminal" response, where the
+    shell expands ``%VAR%`` as the suggested fix intends.
     """
     try:
         parts = shlex.split(cmd_str, posix=False)
@@ -160,10 +173,14 @@ def parse_setx_command(cmd_str: str) -> Optional[list]:
         return None
 
     name = parts[1].strip('"')
-    if not ENV_VAR_NAME_RE.match(name):
+    if not ENV_VAR_NAME_RE.match(name) or name.upper() == "PATH":
         return None
 
-    return ["setx", name, parts[2].strip('"')]
+    value = parts[2].strip('"')
+    if "%" in value:
+        return None
+
+    return ["setx", name, value]
 
 
 @router.post("/action/apply-fix")
