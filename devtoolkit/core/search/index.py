@@ -15,9 +15,18 @@ def normalize_path_key(path: str) -> str:
 
     Deliberately free of ``pathlib``: this runs once per indexed entry and once
     per live filesystem event, and ``Path(p).as_posix()`` dominates the cost of
-    both (78% of indexing time for a 100k-entry batch).
+    both (78% of indexing time for a 100k-entry batch). Callers must pass an
+    OS-normalized path — the separator replace does not collapse duplicate
+    separators or resolve ``.`` components the way ``as_posix()`` does.
+
+    Keys are case-folded on Windows. NTFS cannot hold two paths differing only
+    in case, so folding makes index identity match the filesystem: a live
+    filesystem event whose casing differs from the crawled path resolves to the
+    same entry in O(1), instead of missing and being added a second time.
+    ``SearchResult.path`` keeps its original casing, so results are unaffected.
     """
-    return path.replace("\\", "/")
+    key = path.replace("\\", "/")
+    return key.lower() if sys.platform == "win32" else key
 
 
 def format_bytes(bytes_count: int) -> str:

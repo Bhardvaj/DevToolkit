@@ -14,8 +14,11 @@ from devtoolkit.core.signatures import scan_roots_for_tools, SIGNATURE_CHECKERS
 
 def test_search_index_exact_and_batch():
     idx = SearchIndex()
+    # Two distinct directories: on Windows the index folds path keys, so the same
+    # directory could not hold both of these (NTFS cannot either). The casing
+    # that matters here is the filename, which is what find_exact looks up.
     idx.add_entry(path="/tools/bin/javac.exe", name="javac.exe", is_dir=False, size=1024)
-    idx.add_entry(path="/tools/bin/JAVAC.EXE", name="JAVAC.EXE", is_dir=False, size=1024)
+    idx.add_entry(path="/tools/sbin/JAVAC.EXE", name="JAVAC.EXE", is_dir=False, size=1024)
     idx.add_entry(path="/sdk/flutter/bin/flutter.bat", name="flutter.bat", is_dir=False)
     idx.add_entry(path="/sdk/flutter", name="flutter", is_dir=True)
 
@@ -220,7 +223,10 @@ def test_index_path_lookups_are_separator_agnostic():
 
     win_path = "D:" + chr(92) + "Proj" + chr(92) + "src" + chr(92) + "main.py"
     posix_path = "D:/Proj/src/main.py"
-    assert normalize_path_key(win_path) == normalize_path_key(posix_path) == posix_path
+    # Both separator styles collapse to one key. On Windows that key is also
+    # case-folded, so compare against the platform's expected form.
+    expected = posix_path.lower() if sys.platform == "win32" else posix_path
+    assert normalize_path_key(win_path) == normalize_path_key(posix_path) == expected
 
     idx = SearchIndex()
     idx.add_entry(win_path, "main.py", False, 10, 1.0)
@@ -237,6 +243,28 @@ def test_index_path_lookups_are_separator_agnostic():
     assert idx.find_exact("app.py")
     assert idx.remove_entry(win_path) is False
     assert idx.remove_entry("D:" + chr(92) + "Proj" + chr(92) + "src" + chr(92) + "app.py") is True
+    assert idx.total_entries == 0
+
+
+@pytest.mark.skipif(sys.platform != "win32", reason="path keys are only folded on Windows")
+def test_index_case_variant_event_does_not_duplicate_entry():
+    """A watcher event whose casing differs from the crawled path must not add a second entry.
+
+    The watcher builds paths from its own resolved root, so its casing can differ
+    from the crawler's. Before keys were folded, the miss fell through to
+    add_entry and grew the index instead of updating it.
+    """
+    idx = SearchIndex()
+    idx.add_entry(r"C:\Tools\Bin\javac.exe", "javac.exe", False, 10, 1.0)
+
+    assert idx.update_entry(r"C:\tools\bin\javac.exe", size=99) is True
+    assert idx.total_entries == 1
+    assert idx.find_exact("javac.exe")[0].size == 99
+
+    assert idx.rename_entry(r"C:\TOOLS\Bin\javac.exe", r"C:\Tools\Bin\jj.exe") is True
+    assert idx.total_entries == 1
+
+    assert idx.remove_entry(r"C:\tools\BIN\jj.exe") is True
     assert idx.total_entries == 0
 
 
