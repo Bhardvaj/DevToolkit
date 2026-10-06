@@ -284,3 +284,25 @@ def test_index_miss_does_not_scan_every_key():
 
     # 200 misses against a 20k index: a linear fallback scan took ~1ms each.
     assert elapsed_ms < 50, f"misses are not O(1): {elapsed_ms:.1f} ms for 200 lookups"
+
+
+def test_rename_and_update_preserve_app_classification():
+    """entry_type and acronym must survive a rename or a metadata update.
+
+    Both methods rebuild the SearchResult, so a field added to the model but
+    not carried through here silently demotes an app entry to a plain file and
+    drops it out of `app:` queries.
+    """
+    idx = SearchIndex()
+    idx.add_entry(
+        "C:/Apps/Visual Studio Code.lnk", "Visual Studio Code.lnk", False, 10, 1.0,
+        entry_type="app", acronym="vsc",
+    )
+
+    assert idx.update_entry("C:/Apps/Visual Studio Code.lnk", size=20) is True
+    e = idx.find_exact("Visual Studio Code.lnk")[0]
+    assert (e.entry_type, e.acronym) == ("app", "vsc")
+
+    assert idx.rename_entry("C:/Apps/Visual Studio Code.lnk", "C:/Apps/VS Code.lnk") is True
+    e = idx.find_exact("VS Code.lnk")[0]
+    assert (e.entry_type, e.acronym) == ("app", "vsc")

@@ -276,6 +276,8 @@ class SearchIndex:
                     is_dir=old_item.is_dir,
                     size=old_item.size,
                     mtime=old_item.mtime,
+                    entry_type=old_item.entry_type,
+                    acronym=old_item.acronym,
                 )
                 self._entries[idx] = new_res
                 del self._path_map[norm_old]
@@ -318,6 +320,8 @@ class SearchIndex:
                     is_dir=e.is_dir,
                     size=new_sz,
                     mtime=new_mt,
+                    entry_type=e.entry_type,
+                    acronym=e.acronym,
                 )
                 return True
             else:
